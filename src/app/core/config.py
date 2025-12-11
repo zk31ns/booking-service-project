@@ -6,7 +6,7 @@
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
-from app.core.constants import (
+from .constants import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     MAX_UPLOAD_SIZE_BYTES,
     REFRESH_TOKEN_EXPIRE_DAYS,

@@ -7,7 +7,7 @@ import sys
 
 from loguru import logger as _logger
 
-from app.core.config import settings
+from .config import settings
 
 
 def setup_logging() -> None:

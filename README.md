@@ -138,7 +138,7 @@ pre-commit run --all-files
 ```bash
 # Убедитесь, что виртуальное окружение активировано (venv)
 # Команда запускается из корня проекта
-python -m uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+python -m uvicorn src.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 API будет доступен на: **http://localhost:8000**

@@ -5,9 +5,9 @@ from datetime import datetime
 from fastapi import APIRouter, status
 from pydantic import BaseModel
 
-from app.core.config import settings
-from app.core.constants import TAGS_HEALTH
-from app.core.logging import logger
+from ...core.config import settings
+from ...core.constants import TAGS_HEALTH
+from ...core.logging import logger
 
 router = APIRouter(tags=TAGS_HEALTH)
 

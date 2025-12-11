@@ -275,9 +275,6 @@ async def validate_refresh_token(
     return user
 
 
-# Дополнительные полезные зависимости
-
-
 async def get_current_user_id(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> int:

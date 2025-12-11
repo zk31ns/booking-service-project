@@ -9,6 +9,7 @@ from uuid import UUID
 
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from app.api.v1.users.models import User
 from app.core.security import get_password_hash, verify_password
@@ -47,10 +48,8 @@ class UserRepository:
 
         """
         query = select(self.model).where(self.model.id == user_id)
-
         if active_only:
             query = query.where(self.model.active.is_(True))
-
         result = await session.execute(query)
         return result.scalars().first()
 
@@ -77,10 +76,8 @@ class UserRepository:
 
         """
         query = select(self.model)
-
         if active_only:
             query = query.where(self.model.active.is_(True))
-
         if filters:
             for field, value in filters.items():
                 if hasattr(self.model, field):
@@ -92,15 +89,13 @@ class UserRepository:
                         query = query.where(
                             getattr(self.model, field) == value,
                         )
-
         query = (
             query.offset(skip)
             .limit(limit)
             .order_by(self.model.created_at.desc())
         )
-
         result = await session.execute(query)
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     async def get_by_username(
         self,
@@ -120,10 +115,8 @@ class UserRepository:
 
         """
         query = select(self.model).where(self.model.username == username)
-
         if active_only:
             query = query.where(self.model.active.is_(True))
-
         result = await session.execute(query)
         return result.scalars().first()
 
@@ -145,10 +138,8 @@ class UserRepository:
 
         """
         query = select(self.model).where(self.model.email == email)
-
         if active_only:
             query = query.where(self.model.active.is_(True))
-
         result = await session.execute(query)
         return result.scalars().first()
 
@@ -170,10 +161,8 @@ class UserRepository:
 
         """
         query = select(self.model).where(self.model.phone == phone)
-
         if active_only:
             query = query.where(self.model.active.is_(True))
-
         result = await session.execute(query)
         return result.scalars().first()
 
@@ -349,8 +338,7 @@ class UserRepository:
 
         """
         query = select(self.model.id).limit(1)
-
-        conditions = []
+        conditions: List[BinaryExpression] = []
         if username:
             conditions.append(self.model.username == username)
         if email:
@@ -434,13 +422,13 @@ class UserRepository:
             Список найденных пользователей
 
         """
-        search_query = select(self.model).where(
-            and_(
-                self.model.username.ilike(f'%{query_str}%'),
-                self.model.active.is_(True) if active_only else True,
-            ),
-        )
+        conditions: List[BooleanClauseList] = []
+        if query_str:
+            conditions.append(self.model.username.ilike(f'%{query_str}%'))
+        if active_only:
+            conditions.append(self.model.active.is_(True))
 
+        search_query = select(self.model).where(and_(*conditions))
         search_query = (
             search_query.offset(skip)
             .limit(limit)
@@ -448,4 +436,4 @@ class UserRepository:
         )
 
         result = await session.execute(search_query)
-        return result.scalars().all()
+        return list(result.scalars().all())

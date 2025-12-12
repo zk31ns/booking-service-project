@@ -1,3 +1,9 @@
+"""Сервисный слой для модуля пользователей.
+
+Содержит бизнес-логику, валидации и обработку ошибок.
+Использует Repository для доступа к данным и возвращает Pydantic схемы.
+"""
+
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession

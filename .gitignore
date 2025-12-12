@@ -3,6 +3,19 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Environment & Config
+.env
+.env.local
+.env*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
 # C extensions
 *.so
 

@@ -26,7 +26,7 @@ from app.api.v1.users.schemas import (
 )
 from app.api.v1.users.service import UserService, get_user_service
 
-router = APIRouter(prefix='/api/v1', tags=['Пользователи'])
+router = APIRouter(tags=['Пользователи'])
 
 
 @router.post(

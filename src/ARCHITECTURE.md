@@ -27,8 +27,9 @@
 ```
 src/
 │   main.py
-│   requirements.txt
+│   requirements.txt            (Dependencies for Docker and local dev)
 │   ARCHITECTURE.md
+│   alembic.ini                (Alembic configuration)
 │
 ├───app/
 │   ├───api/
@@ -68,15 +69,34 @@ src/
 │   ├───utils/                 (uuid, validators, file utils)
 │   └───media/                 (папка хранения изображений)
 │
-├───alembic/
-│       env.py
-│       versions/
-│
-└───tests/                     (опционально)
-    ├───api/
-    ├───services/
-    ├───repositories/
-    └───utils/
+├───alembic/                   (Database migrations)
+│       env.py                 (Alembic runtime configuration)
+│       script.py.mako         (Migration script template)
+│       versions/              (Migration files - auto-generated)
+│       README                 (Alembic documentation)
+```
+
+**Проект также содержит:**
+
+```
+/                              (Project Root)
+├── tests/                      (Unit & integration tests)
+│   ├── api/                   (API endpoint tests)
+│   ├── services/              (Business logic tests)
+│   ├── repositories/          (Database tests)
+│   ├── utils/                 (Utility function tests)
+│   ├── conftest.py           (Pytest fixtures)
+│   └── README.md             (Testing guide)
+├── infra/                      (Infrastructure)
+│   ├── docker-compose.yml
+│   └── .env.example
+├── pytest.ini                  (Pytest configuration)
+├── ARCHITECTURE.md             (This file)
+├── DATABASE_SCHEMA.md
+├── CONSTANTS_GUIDE.md
+├── TEAM_MEMBERS.md
+├── ISSUES_CHECKLIST.md
+└── README.md
 ```
 
 ---
@@ -378,7 +398,7 @@ src/main.py
 
 ```bash
 # Database
-DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/booking_db
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/booking_db
 
 # JWT
 JWT_SECRET_KEY=your-secret-key-change-in-production
@@ -410,30 +430,38 @@ ALLOWED_IMAGE_TYPES=image/jpeg,image/png
 
 ## 12. Миграции БД (Alembic)
 
-**Первичная установка:**
+**Alembic уже инициализирован и настроен для работы с async SQLAlchemy 2.0.**
+
+Структура:
+```
+alembic/
+├── env.py              (настроен для async операций)
+├── script.py.mako      (шаблон миграций)
+├── versions/           (папка с миграциями)
+└── alembic.ini         (конфигурация с DATABASE_URL)
+```
+
+**Основные команды:**
 
 ```bash
-# Инициализация Alembic (выполнить один раз)
-alembic init alembic
-
 # Применить все миграции
 alembic upgrade head
-```
 
-**Создание новой миграции:**
-
-```bash
-# После изменения моделей
+# Создать новую миграцию после изменения моделей
 alembic revision --autogenerate -m "описание изменений"
 alembic upgrade head
-```
 
-**Проверка версии БД:**
-
-```bash
+# Проверка версии БД и истории
 alembic current  # текущая версия
 alembic history  # история миграций
 ```
+
+**Рекомендации для команды:**
+
+- Каждый разработчик создаёт миграции в своей feature-ветке
+- Миграции имеют уникальные имена (timestamp-based), конфликты маловероятны
+- Перед merge в develop убедитесь что `alembic upgrade head` выполняется без ошибок
+- В локальном окружении используйте настоящую PostgreSQL (не SQLite)
 
 ---
 

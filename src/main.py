@@ -7,8 +7,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1 import health
+from app.api.v1.users import router as users_router
 from app.core.config import settings
-from app.core.constants import API_V1_PREFIX, TAGS_HEALTH
+from app.core.constants import API_V1_PREFIX, TAGS_HEALTH, TAGS_USERS
 from app.core.logging import logger, setup_logging
 
 # Инициализировать логирование
@@ -39,7 +40,7 @@ app.add_middleware(
 app.include_router(health.router, prefix=API_V1_PREFIX, tags=TAGS_HEALTH)
 
 # Users/Auth (TODO: Александр)
-# app.include_router(users_router, prefix=API_V1_PREFIX, tags=TAGS_USERS)
+app.include_router(users_router, prefix=API_V1_PREFIX, tags=TAGS_USERS)
 
 # Cafes (TODO: Павел)
 # app.include_router(cafes_router, prefix=API_V1_PREFIX, tags=TAGS_CAFES)

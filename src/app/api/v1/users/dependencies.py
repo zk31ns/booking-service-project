@@ -9,7 +9,6 @@
 from typing import Annotated, AsyncGenerator, Optional
 
 from app.api.v1.cafes.models import cafe_managers
-from app.db.session import get_session
 from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import (
     HTTPAuthorizationCredentials,
@@ -25,6 +24,7 @@ from app.core.security import (
     get_current_username_from_token,
     verify_refresh_token,
 )
+from app.db.session import get_session
 
 security = HTTPBearer(auto_error=False)
 

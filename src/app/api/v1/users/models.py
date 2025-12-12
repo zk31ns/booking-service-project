@@ -6,7 +6,6 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
-from app.db.base import Base
 from sqlalchemy import (
     Boolean,
     Column,
@@ -17,6 +16,8 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db.base import Base
 
 if TYPE_CHECKING:
     from app.api.v1.booking.models import Booking

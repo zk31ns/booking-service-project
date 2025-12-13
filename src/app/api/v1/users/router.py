@@ -25,8 +25,9 @@ from app.api.v1.users.schemas import (
     UserUpdate,
 )
 from app.api.v1.users.service import UserService, get_user_service
+from app.core.constants import API, ErrorCode, Limits, Messages
 
-router = APIRouter(tags=['Пользователи'])
+router = APIRouter(tags=API.USERS)
 
 
 @router.post(
@@ -57,10 +58,10 @@ async def login(
             'token_type': 'bearer',
             'user': result['user'],
         }
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f'Ошибка аутентификации: {str(e)}',
+            detail=Messages.error(ErrorCode.INVALID_CREDENTIALS),
         )
 
 
@@ -91,10 +92,10 @@ async def refresh_tokens(
             'token_type': 'bearer',
             'user': result['user'],
         }
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f'Ошибка обновления токена: {str(e)}',
+            detail=Messages.error(ErrorCode.TOKEN_REFRESH_FAILED),
         )
 
 
@@ -115,8 +116,12 @@ async def get_users(
     ] = 0,
     limit: Annotated[
         int,
-        Query(ge=1, le=100, description='Максимальное количество записей'),
-    ] = 100,
+        Query(
+            ge=1,
+            le=Limits.MAX_PAGE_SIZE,
+            description='Максимальное количество записей',
+        ),
+    ] = Limits.DEFAULT_PAGE_SIZE,
     active_only: Annotated[
         bool,
         Query(description='Показывать только активных пользователей'),
@@ -136,7 +141,6 @@ async def get_users(
 ) -> List[UserInfo]:
     """Получает список пользователей."""
     try:
-        # Формируем фильтры
         filters: Dict[str, Any] = {}
         if username:
             filters['username'] = username
@@ -154,10 +158,10 @@ async def get_users(
             filters=filters if filters else None,
         )
 
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f'Доступ запрещён: {str(e)}',
+            detail=Messages.error(ErrorCode.INSUFFICIENT_PERMISSIONS),
         )
 
 
@@ -190,10 +194,10 @@ async def create_user(
             current_user=current_user,
         )
 
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f'Конфликт данных: {str(e)}',
+            detail=Messages.error(ErrorCode.DATA_CONFLICT),
         )
 
 
@@ -218,10 +222,10 @@ async def get_user_by_id(
             current_user=current_user,
         )
 
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f'Пользователь не найден: {str(e)}',
+            detail=Messages.error(ErrorCode.USER_NOT_FOUND),
         )
 
 
@@ -248,10 +252,10 @@ async def update_user(
             current_user=current_user,
         )
 
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f'Пользователь не найден: {str(e)}',
+            detail=Messages.error(ErrorCode.USER_NOT_FOUND),
         )
 
 
@@ -291,10 +295,10 @@ async def update_current_user(
             current_user=current_user,
         )
 
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f'Пользователь не найден: {str(e)}',
+            detail=Messages.error(ErrorCode.USER_NOT_FOUND),
         )
 
 
@@ -321,10 +325,10 @@ async def change_password(
             current_user=current_user,
         )
 
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f'Ошибка смены пароля: {str(e)}',
+            detail=Messages.error(ErrorCode.PASSWORD_CHANGE_FAILED),
         )
 
 
@@ -348,10 +352,10 @@ async def delete_user(
             user_id=user_id,
             current_user=current_user,
         )
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f'Пользователь не найден: {str(e)}',
+            detail=Messages.error(ErrorCode.USER_NOT_FOUND),
         )
 
 
@@ -374,18 +378,18 @@ async def delete_current_user(
     if not confirm:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Требуется подтверждение удаления аккаунта',
+            detail=Messages.error(ErrorCode.CONFIRMATION_REQUIRED),
         )
 
     try:
         current_user.active = False
         session.add(current_user)
         await session.commit()
-    except Exception as e:
+    except Exception:
         await session.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f'Ошибка при деактивации аккаунта: {str(e)}',
+            detail=Messages.error(ErrorCode.INTERNAL_SERVER_ERROR),
         )
 
 
@@ -399,13 +403,19 @@ async def delete_current_user(
 async def search_users(
     query: Annotated[
         str,
-        Query(..., min_length=2, description='Строка поиска'),
+        Query(
+            ...,
+            min_length=Limits.MIN_SEARCH_QUERY_LENGTH,
+            description='Строка поиска',
+        ),
     ],
     session: Annotated[AsyncSession, Depends(get_db)],
     service: Annotated[UserService, Depends(get_user_service)],
     current_user: Annotated[User, Depends(get_current_superuser)],
     skip: Annotated[int, Query(ge=0)] = 0,
-    limit: Annotated[int, Query(ge=1, le=100)] = 100,
+    limit: Annotated[
+        int, Query(ge=1, le=Limits.MAX_PAGE_SIZE)
+    ] = Limits.DEFAULT_PAGE_SIZE,
 ) -> List[UserInfo]:
     """Ищет пользователей по строке запроса."""
     try:
@@ -417,10 +427,10 @@ async def search_users(
             current_user=current_user,
         )
 
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f'Доступ запрещён: {str(e)}',
+            detail=Messages.error(ErrorCode.INSUFFICIENT_PERMISSIONS),
         )
 
 
@@ -443,8 +453,8 @@ async def health_check(
             'users_count': count,
             'timestamp': '2024-01-01T00:00:00Z',
         }
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f'Сервис недоступен: {str(e)}',
+            detail=Messages.error(ErrorCode.INTERNAL_SERVER_ERROR),
         )

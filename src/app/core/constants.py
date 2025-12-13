@@ -91,6 +91,9 @@ class Limits:
     MIN_PRICE = 0.0
     MAX_PRICE = 999999.99
 
+    # Минимальная длина строки поиска
+    MIN_SEARCH_QUERY_LENGTH = 2
+
 
 # ========== Времена (в минутах/днях) ==========
 
@@ -141,6 +144,10 @@ class ErrorCode(str, Enum):
     USER_NOT_FOUND = 'user_not_found'
     USER_ALREADY_EXISTS = 'user_already_exists'
     USER_BLOCKED = 'user_blocked'
+    CONFIRMATION_REQUIRED = 'confirmation_required'
+    PASSWORD_CHANGE_FAILED = 'password_change_failed'
+    DATA_CONFLICT = 'data_conflict'
+    TOKEN_REFRESH_FAILED = 'token_refresh_failed'
 
     # Cafe
     CAFE_NOT_FOUND = 'cafe_not_found'
@@ -241,6 +248,10 @@ class Messages:
         ErrorCode.MEDIA_NOT_FOUND: 'Изображение не найдено',
         ErrorCode.VALIDATION_ERROR: 'Ошибка валидации',
         ErrorCode.INTERNAL_SERVER_ERROR: 'Внутренняя ошибка сервера',
+        ErrorCode.CONFIRMATION_REQUIRED: 'Требуется подтверждение действия',
+        ErrorCode.PASSWORD_CHANGE_FAILED: 'Ошибка смены пароля',
+        ErrorCode.DATA_CONFLICT: 'Конфликт данных',
+        ErrorCode.TOKEN_REFRESH_FAILED: 'Ошибка обновления токена',
     }
 
     success_messages = {

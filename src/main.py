@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import health
 from app.core.config import settings
 from app.core.constants import API_V1_PREFIX, TAGS_HEALTH
+from app.core.lifespan import lifespan
 from app.core.logging import logger, setup_logging
 
 # Инициализировать логирование
@@ -22,6 +23,7 @@ app = FastAPI(
     docs_url='/docs',
     redoc_url='/redoc',
     openapi_url='/openapi.json',
+    lifespan=lifespan,
 )
 
 # Добавить CORS middleware

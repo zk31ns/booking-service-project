@@ -92,6 +92,9 @@ class Limits:
 class Times:
     """Временные константы для токенов, бронирования и задач."""
 
+    # Временная зона
+    TIME_ZONE = 'Europe/Moscow'
+
     # JWT токены
     ACCESS_TOKEN_MINUTES = 60  # 1 час
     REFRESH_TOKEN_DAYS = 7
@@ -104,6 +107,14 @@ class Times:
     # Celery задачи
     CELERY_TASK_TIMEOUT = 300  # 5 минут
 
+    # Время хранения кэща Redis
+    REDIS_CACHE_EXPIRE_TIME = 300
+
+    # Время хранения результатов в RabbitMQ
+    RABBITMQ_RESULT_EXPIRE = 86400
+
+    # Telegram request timeout
+    TELEGRAM_REQUEST_TIMEOUT = 30
 
 # ========== Enum классы ==========
 
@@ -194,6 +205,11 @@ class EventType(str, Enum):
     # Media
     FILE_UPLOADED = 'file_uploaded'
     FILE_DELETED = 'file_deleted'
+
+    # Celery tasks
+    TASK_STARTED = 'task_started'
+    TASK_FINISHED = 'task_finished'
+    REMINDER_SENT = 'reminder_sent'
 
 
 # ========== Сообщения об ошибках ==========
@@ -325,6 +341,7 @@ BOOKING_REMINDER_MINUTES = Times.BOOKING_REMINDER_MINUTES
 MIN_BOOKING_ADVANCE_MINUTES = Times.MIN_BOOKING_ADVANCE_MINUTES
 MAX_BOOKING_DAYS_AHEAD = Times.MAX_BOOKING_DAYS_AHEAD
 CELERY_TASK_TIMEOUT = Times.CELERY_TASK_TIMEOUT
+REDIS_CACHE_EXPIRE_TIME = Times.REDIS_CACHE_EXPIRE_TIME
 
 # Messages
 ERROR_MESSAGES = Messages.errors

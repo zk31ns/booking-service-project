@@ -88,6 +88,10 @@ class Settings(BaseSettings):
     SMTP_USER: str = Field(default='', description='SMTP пользователь')
     SMTP_PASSWORD: str = Field(default='', description='SMTP пароль')
 
+    # ========== Telegram bot ID ==========
+    TELEGRAM_BOT_TOKEN: str
+    TELEGRAM_API_URL: str = 'https://api.telegram.org'
+
     class Config:
         """Pydantic конфигурация."""
 

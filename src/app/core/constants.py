@@ -65,6 +65,12 @@ class Limits:
     MIN_PASSWORD_LENGTH = 8
     MAX_PASSWORD_LENGTH = 255
 
+    # Email
+    MAX_EMAIL_LENGTH = 255
+
+    # Telegram
+    MAX_TG_ID_LENGTH = 100
+
     # Cafe name
     MIN_CAFE_NAME_LENGTH = 3
     MAX_CAFE_NAME_LENGTH = 255

@@ -17,6 +17,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.constants import Limits
 from app.db.base import Base
 
 if TYPE_CHECKING:
@@ -55,22 +56,30 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(
-        String(255),
+        String(Limits.MAX_USERNAME_LENGTH),
         unique=True,
         nullable=False,
+        comment=f'Имя пользователя от {Limits.MIN_USERNAME_LENGTH} до '
+        f'{Limits.MAX_USERNAME_LENGTH} символов',
     )
     email: Mapped[Optional[str]] = mapped_column(
-        String(255),
+        String(Limits.MAX_EMAIL_LENGTH),
         unique=True,
         nullable=True,
     )
     phone: Mapped[Optional[str]] = mapped_column(
-        String(20),
+        String(Limits.MAX_PHONE_LENGTH),
         unique=True,
         nullable=True,
+        comment=f'Номер телефона от {Limits.MIN_PHONE_LENGTH} до '
+        f'{Limits.MAX_PHONE_LENGTH} символов',
     )
-    tg_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    tg_id: Mapped[str | None] = mapped_column(
+        String(Limits.MAX_TG_ID_LENGTH), nullable=True
+    )
+    password_hash: Mapped[str] = mapped_column(
+        String(Limits.MAX_PASSWORD_LENGTH), nullable=False
+    )
     is_blocked: Mapped[bool] = mapped_column(Boolean, default=False)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())

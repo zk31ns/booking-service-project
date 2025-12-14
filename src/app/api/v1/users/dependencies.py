@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.users.models import User
 from app.api.v1.users.repository import UserRepository
+from app.core.constants import ErrorCode, Messages
 from app.core.security import (
     get_current_user_id_from_token,
     get_current_username_from_token,
@@ -75,7 +76,7 @@ async def get_current_user(
     if credentials is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Требуется аутентификация',
+            detail=Messages.error(ErrorCode.AUTHENTICATION_REQUIRED),
             headers={'WWW-Authenticate': 'Bearer'},
         )
 
@@ -87,7 +88,7 @@ async def get_current_user(
         if username is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail='Неверный или истёкший токен',
+                detail=Messages.error(ErrorCode.INVALID_TOKEN),
                 headers={'WWW-Authenticate': 'Bearer'},
             )
         user = await repo.get_by_username(db, username, active_only=True)
@@ -97,14 +98,14 @@ async def get_current_user(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Пользователь не найден или деактивирован',
+            detail=Messages.error(ErrorCode.USER_NOT_FOUND),
             headers={'WWW-Authenticate': 'Bearer'},
         )
 
     if user.is_blocked:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail='Пользователь заблокирован',
+            detail=Messages.error(ErrorCode.USER_BLOCKED),
         )
 
     return user
@@ -130,13 +131,13 @@ async def get_current_active_user(
     if current_user.is_blocked:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail='Пользователь заблокирован',
+            detail=Messages.error(ErrorCode.USER_BLOCKED),
         )
 
     if not current_user.active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail='Пользователь деактивирован',
+            detail=Messages.error(ErrorCode.USER_DEACTIVATED),
         )
 
     return current_user
@@ -160,7 +161,7 @@ async def get_current_superuser(
     if not current_user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail='Недостаточно прав',
+            detail=Messages.error(ErrorCode.INSUFFICIENT_PERMISSIONS),
         )
 
     return current_user
@@ -227,7 +228,7 @@ async def require_cafe_manager(
     if not is_manager:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail='Вы не являетесь менеджером этого кафе',
+            detail=Messages.error(ErrorCode.NOT_CAFE_MANAGER),
         )
 
     return current_user
@@ -256,20 +257,20 @@ async def validate_refresh_token(
     if not token_data or not token_data.user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Неверный или истёкший refresh токен',
+            detail=Messages.error(ErrorCode.TOKEN_EXPIRED),
         )
 
     user = await repo.get(db, token_data.user_id, active_only=True)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Пользователь не найден',
+            detail=Messages.error(ErrorCode.USER_NOT_FOUND),
         )
 
     if user.is_blocked:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail='Пользователь заблокирован',
+            detail=Messages.error(ErrorCode.USER_BLOCKED),
         )
 
     return user

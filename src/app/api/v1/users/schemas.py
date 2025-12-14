@@ -9,9 +9,10 @@ from pydantic import (
     model_validator,
 )
 
-from app.api.v1.users.models import User
 from app.core.constants import Limits
 from app.utils.validators import validate_phone_format
+
+from src.app.models.models import User
 
 
 class UserBase(BaseModel):

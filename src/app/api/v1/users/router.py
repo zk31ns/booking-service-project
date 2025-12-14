@@ -17,7 +17,6 @@ from app.api.v1.users.dependencies import (
     get_optional_user,
     get_user_repository,
 )
-from app.api.v1.users.models import User
 from app.api.v1.users.repository import UserRepository
 from app.api.v1.users.schemas import (
     UserCreate,
@@ -35,6 +34,8 @@ from app.core.exceptions import (
     ServiceUnavailableException,
     ValidationException,
 )
+
+from src.app.models.models import User
 
 router = APIRouter(tags=API.USERS)
 

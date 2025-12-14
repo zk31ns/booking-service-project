@@ -17,7 +17,6 @@ from fastapi.security import (
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.users.models import User
 from app.api.v1.users.repository import UserRepository
 from app.core.constants import ErrorCode
 from app.core.exceptions import AuthenticationException, AuthorizationException
@@ -27,6 +26,8 @@ from app.core.security import (
     verify_refresh_token,
 )
 from app.db.session import get_session
+
+from src.app.models.models import User
 
 security = HTTPBearer(auto_error=False)
 

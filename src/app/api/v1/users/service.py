@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.users.models import User
 from app.api.v1.users.repository import UserRepository
 from app.api.v1.users.schemas import (
     UserCreate,
@@ -26,6 +25,8 @@ from app.core.exceptions import (
     ValidationException,
 )
 from app.core.security import create_tokens_pair, verify_password
+
+from src.app.models.models import User
 
 
 class UserService:

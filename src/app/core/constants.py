@@ -150,6 +150,12 @@ class ErrorCode(str, Enum):
     DATA_CONFLICT = 'data_conflict'
     TOKEN_REFRESH_FAILED = 'token_refresh_failed'
     AUTHENTICATION_REQUIRED = 'authentication_required'
+    SERVICE_UNAVAILABLE = 'service_unavailable'
+    INVALID_REFRESH_TOKEN = 'invalid_refresh_token'
+    PHONE_ALREADY_REGISTERED = 'phone_already_registered'
+    PASSWORD_SAME_AS_OLD = 'password_same_as_old'
+    CANNOT_DELETE_OWN_ACCOUNT = 'cannot_delete_own_account'
+    INCORRECT_CURRENT_PASSWORD = 'incorrect_current_password'
 
     # Cafe
     CAFE_NOT_FOUND = 'cafe_not_found'
@@ -227,6 +233,7 @@ class Messages:
         ErrorCode.USER_ALREADY_EXISTS: (
             'Пользователь с этим именем/email уже существует'
         ),
+        ErrorCode.PHONE_ALREADY_REGISTERED: 'Телефон уже зарегистрирован',
         ErrorCode.USER_DEACTIVATED: 'Пользователь деактивирован',
         ErrorCode.CAFE_NOT_FOUND: 'Кафе не найдено',
         ErrorCode.CAFE_INACTIVE: 'Кафе неактивно',
@@ -258,6 +265,15 @@ class Messages:
         ErrorCode.DATA_CONFLICT: 'Конфликт данных',
         ErrorCode.TOKEN_REFRESH_FAILED: 'Ошибка обновления токена',
         ErrorCode.AUTHENTICATION_REQUIRED: 'Требуется аутентификация',
+        ErrorCode.SERVICE_UNAVAILABLE: 'Сервис временно недоступен',
+        ErrorCode.INVALID_REFRESH_TOKEN: 'Неверный или истёкший refresh токен',
+        ErrorCode.PASSWORD_SAME_AS_OLD: (
+            'Новый пароль должен отличаться от старого'
+        ),
+        ErrorCode.CANNOT_DELETE_OWN_ACCOUNT: (
+            'Нельзя удалить свой собственный аккаунт'
+        ),
+        ErrorCode.INCORRECT_CURRENT_PASSWORD: 'Текущий пароль неверен',
     }
 
     success_messages = {

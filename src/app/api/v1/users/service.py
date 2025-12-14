@@ -16,7 +16,15 @@ from app.api.v1.users.schemas import (
     UserShortInfo,
     UserUpdate,
 )
-from app.core.constants import Limits
+from app.core.constants import ErrorCode, Limits
+from app.core.exceptions import (
+    AuthenticationException,
+    AuthorizationException,
+    ConflictException,
+    InternalServerException,
+    NotFoundException,
+    ValidationException,
+)
 from app.core.security import create_tokens_pair, verify_password
 
 
@@ -52,7 +60,9 @@ class UserService:
         """
         user = await self.repository.get(session, user_id, active_only=True)
         if not user:
-            raise Exception(f'Пользователь с ID {user_id} не найден')
+            raise NotFoundException(
+                ErrorCode.USER_NOT_FOUND, extra={'user_id': user_id}
+            )
 
         await self._check_user_access(user, current_user, 'просмотр')
 
@@ -83,9 +93,7 @@ class UserService:
 
         """
         if not self._is_superuser_or_none(current_user):
-            raise Exception(
-                'Недостаточно прав для просмотра списка пользователей',
-            )
+            raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
 
         users = await self.repository.get_multi(
             session,
@@ -120,9 +128,9 @@ class UserService:
             user_create.username,
             active_only=False,
         ):
-            raise Exception(
-                f"Пользователь с именем '{user_create.username}' "
-                'уже существует',
+            raise ConflictException(
+                ErrorCode.USER_ALREADY_EXISTS,
+                extra={'username': user_create.username},
             )
 
         if user_create.email and await self.repository.get_by_email(
@@ -130,15 +138,19 @@ class UserService:
             user_create.email,
             active_only=False,
         ):
-            raise Exception(f"Email '{user_create.email}' уже зарегистрирован")
+            raise ConflictException(
+                ErrorCode.USER_ALREADY_EXISTS,
+                extra={'email': user_create.email},
+            )
 
         if user_create.phone and await self.repository.get_by_phone(
             session,
             user_create.phone,
             active_only=False,
         ):
-            raise Exception(
-                f"Телефон '{user_create.phone}' уже зарегистрирован",
+            raise ConflictException(
+                ErrorCode.PHONE_ALREADY_REGISTERED,
+                extra={'phone': user_create.phone},
             )
 
         try:
@@ -146,7 +158,10 @@ class UserService:
             user = await self.repository.create(session, user_data)
             return UserInfo.from_orm(user)
         except Exception as e:
-            raise Exception(f'Ошибка при создании пользователя: {str(e)}')
+            raise InternalServerException(
+                ErrorCode.INTERNAL_SERVER_ERROR,
+                extra={'original_error': str(e)},
+            )
 
     async def update_user(
         self,
@@ -169,7 +184,9 @@ class UserService:
         """
         user = await self.repository.get(session, user_id, active_only=False)
         if not user:
-            raise Exception(f'Пользователь с ID {user_id} не найден')
+            raise NotFoundException(
+                ErrorCode.USER_NOT_FOUND, extra={'user_id': user_id}
+            )
 
         await self._check_user_access(user, current_user, 'обновление')
 
@@ -179,7 +196,7 @@ class UserService:
 
         if 'password' in update_data:
             if verify_password(update_data['password'], user.password_hash):
-                raise Exception('Новый пароль должен отличаться от старого')
+                raise ValidationException(ErrorCode.PASSWORD_SAME_AS_OLD)
 
         updated_user = await self.repository.update(session, user, update_data)
 
@@ -204,12 +221,14 @@ class UserService:
         """
         user = await self.repository.get(session, user_id, active_only=False)
         if not user:
-            raise Exception(f'Пользователь с ID {user_id} не найден')
+            raise NotFoundException(
+                ErrorCode.USER_NOT_FOUND, extra={'user_id': user_id}
+            )
 
         await self._check_user_access(user, current_user, 'удаление')
 
         if current_user and user.id == current_user.id:
-            raise Exception('Нельзя удалить свой собственный аккаунт')
+            raise ValidationException(ErrorCode.CANNOT_DELETE_OWN_ACCOUNT)
 
         deleted_user = await self.repository.delete(session, user_id)
 
@@ -235,13 +254,13 @@ class UserService:
         user = await self.repository.authenticate(session, login, password)
 
         if not user:
-            raise Exception('Неверный логин или пароль')
+            raise AuthenticationException(ErrorCode.INVALID_CREDENTIALS)
 
         if not user.active:
-            raise Exception('Пользователь деактивирован')
+            raise AuthorizationException(ErrorCode.USER_DEACTIVATED)
 
         if user.is_blocked:
-            raise Exception('Пользователь заблокирован')
+            raise AuthorizationException(ErrorCode.USER_BLOCKED)
 
         tokens = create_tokens_pair(user.id, user.username)
 
@@ -269,7 +288,7 @@ class UserService:
 
         token_data = verify_refresh_token(refresh_token)
         if not token_data or not token_data.user_id:
-            raise Exception('Неверный или истёкший refresh токен')
+            raise AuthenticationException(ErrorCode.INVALID_REFRESH_TOKEN)
 
         user = await self.repository.get(
             session,
@@ -277,10 +296,10 @@ class UserService:
             active_only=True,
         )
         if not user:
-            raise Exception('Пользователь не найден')
+            raise AuthenticationException(ErrorCode.USER_NOT_FOUND)
 
         if user.is_blocked:
-            raise Exception('Пользователь заблокирован')
+            raise AuthorizationException(ErrorCode.USER_BLOCKED)
 
         tokens = create_tokens_pair(user.id, user.username)
 
@@ -312,15 +331,17 @@ class UserService:
         """
         user = await self.repository.get(session, user_id, active_only=True)
         if not user:
-            raise Exception(f'Пользователь с ID {user_id} не найден')
+            raise NotFoundException(
+                ErrorCode.USER_NOT_FOUND, extra={'user_id': user_id}
+            )
 
         await self._check_user_access(user, current_user, 'изменение пароля')
 
         if not verify_password(current_password, user.password_hash):
-            raise Exception('Текущий пароль неверен')
+            raise AuthenticationException(ErrorCode.INCORRECT_CURRENT_PASSWORD)
 
         if verify_password(new_password, user.password_hash):
-            raise Exception('Новый пароль должен отличаться от старого')
+            raise ValidationException(ErrorCode.PASSWORD_SAME_AS_OLD)
 
         updated_user = await self.repository.update_password(
             session,
@@ -352,7 +373,7 @@ class UserService:
 
         """
         if not self._is_superuser_or_none(current_user):
-            raise Exception('Недостаточно прав для поиска пользователей')
+            raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
 
         users = await self.repository.search(
             session,
@@ -416,17 +437,17 @@ class UserService:
 
         """
         if current_user is None:
-            raise Exception(
-                f'Требуется аутентификация для {action} пользователя',
+            raise AuthenticationException(
+                ErrorCode.AUTHENTICATION_REQUIRED, extra={'action': action}
             )
 
         if current_user.is_superuser:
             return
 
         if current_user.id != target_user.id:
-            raise Exception(
-                f'Недостаточно прав для {action} пользователя '
-                f'{target_user.id}',
+            raise AuthorizationException(
+                ErrorCode.INSUFFICIENT_PERMISSIONS,
+                extra={'action': action, 'target_user_id': target_user.id},
             )
 
     async def _validate_update_uniqueness(
@@ -452,8 +473,9 @@ class UserService:
                 active_only=False,
             )
             if existing and existing.id != user.id:
-                raise Exception(
-                    f"Username '{update_data['username']}' уже занят",
+                raise ConflictException(
+                    ErrorCode.USER_ALREADY_EXISTS,
+                    extra={'username': update_data['username']},
                 )
 
         if 'email' in update_data and update_data['email']:
@@ -463,7 +485,10 @@ class UserService:
                 active_only=False,
             )
             if existing and existing.id != user.id:
-                raise Exception(f"Email '{update_data['email']}' уже занят")
+                raise ConflictException(
+                    ErrorCode.USER_ALREADY_EXISTS,
+                    extra={'email': update_data['email']},
+                )
 
         if 'phone' in update_data and update_data['phone']:
             existing = await self.repository.get_by_phone(
@@ -472,7 +497,10 @@ class UserService:
                 active_only=False,
             )
             if existing and existing.id != user.id:
-                raise Exception(f"Телефон '{update_data['phone']}' уже занят")
+                raise ConflictException(
+                    ErrorCode.PHONE_ALREADY_REGISTERED,
+                    extra={'phone': update_data['phone']},
+                )
 
 
 def get_user_service() -> UserService:

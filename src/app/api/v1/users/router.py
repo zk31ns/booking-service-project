@@ -5,7 +5,7 @@
 
 from typing import Annotated, Any, Dict, List, Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Body, Depends, Query, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,7 +25,16 @@ from app.api.v1.users.schemas import (
     UserUpdate,
 )
 from app.api.v1.users.service import UserService, get_user_service
-from app.core.constants import API, ErrorCode, Limits, Messages
+from app.core.constants import API, ErrorCode, Limits
+from app.core.exceptions import (
+    AuthenticationException,
+    AuthorizationException,
+    ConflictException,
+    InternalServerException,
+    NotFoundException,
+    ServiceUnavailableException,
+    ValidationException,
+)
 
 router = APIRouter(tags=API.USERS)
 
@@ -59,10 +68,7 @@ async def login(
             'user': result['user'],
         }
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=Messages.error(ErrorCode.INVALID_CREDENTIALS),
-        )
+        raise AuthenticationException(ErrorCode.INVALID_CREDENTIALS)
 
 
 @router.post(
@@ -93,10 +99,7 @@ async def refresh_tokens(
             'user': result['user'],
         }
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=Messages.error(ErrorCode.TOKEN_REFRESH_FAILED),
-        )
+        raise AuthenticationException(ErrorCode.TOKEN_REFRESH_FAILED)
 
 
 @router.get(
@@ -159,10 +162,7 @@ async def get_users(
         )
 
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=Messages.error(ErrorCode.INSUFFICIENT_PERMISSIONS),
-        )
+        raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
 
 
 @router.post(
@@ -195,10 +195,7 @@ async def create_user(
         )
 
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=Messages.error(ErrorCode.DATA_CONFLICT),
-        )
+        raise ConflictException(ErrorCode.DATA_CONFLICT)
 
 
 @router.get(
@@ -223,10 +220,7 @@ async def get_user_by_id(
         )
 
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=Messages.error(ErrorCode.USER_NOT_FOUND),
-        )
+        raise NotFoundException(ErrorCode.USER_NOT_FOUND)
 
 
 @router.patch(
@@ -253,10 +247,7 @@ async def update_user(
         )
 
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=Messages.error(ErrorCode.USER_NOT_FOUND),
-        )
+        raise NotFoundException(ErrorCode.USER_NOT_FOUND)
 
 
 @router.get(
@@ -296,10 +287,7 @@ async def update_current_user(
         )
 
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=Messages.error(ErrorCode.USER_NOT_FOUND),
-        )
+        raise NotFoundException(ErrorCode.USER_NOT_FOUND)
 
 
 @router.post(
@@ -326,10 +314,7 @@ async def change_password(
         )
 
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=Messages.error(ErrorCode.PASSWORD_CHANGE_FAILED),
-        )
+        raise AuthenticationException(ErrorCode.PASSWORD_CHANGE_FAILED)
 
 
 @router.delete(
@@ -353,10 +338,7 @@ async def delete_user(
             current_user=current_user,
         )
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=Messages.error(ErrorCode.USER_NOT_FOUND),
-        )
+        raise NotFoundException(ErrorCode.USER_NOT_FOUND)
 
 
 @router.delete(
@@ -376,10 +358,7 @@ async def delete_current_user(
 ) -> None:
     """Деактивирует аккаунт текущего пользователя."""
     if not confirm:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=Messages.error(ErrorCode.CONFIRMATION_REQUIRED),
-        )
+        raise ValidationException(ErrorCode.CONFIRMATION_REQUIRED)
 
     try:
         current_user.active = False
@@ -387,10 +366,7 @@ async def delete_current_user(
         await session.commit()
     except Exception:
         await session.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=Messages.error(ErrorCode.INTERNAL_SERVER_ERROR),
-        )
+        raise InternalServerException(ErrorCode.INTERNAL_SERVER_ERROR)
 
 
 @router.get(
@@ -428,10 +404,7 @@ async def search_users(
         )
 
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=Messages.error(ErrorCode.INSUFFICIENT_PERMISSIONS),
-        )
+        raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
 
 
 @router.get(
@@ -454,7 +427,4 @@ async def health_check(
             'timestamp': '2024-01-01T00:00:00Z',
         }
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=Messages.error(ErrorCode.INTERNAL_SERVER_ERROR),
-        )
+        raise ServiceUnavailableException(ErrorCode.SERVICE_UNAVAILABLE)

@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.users.models import User
 from app.api.v1.users.repository import UserRepository
 from app.core.constants import ErrorCode, Messages
+from app.core.exceptions import AuthenticationException, AuthorizationException
 from app.core.security import (
     get_current_user_id_from_token,
     get_current_username_from_token,
@@ -74,9 +75,8 @@ async def get_current_user(
 
     """
     if credentials is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=Messages.error(ErrorCode.AUTHENTICATION_REQUIRED),
+        raise AuthenticationException(
+            ErrorCode.AUTHENTICATION_REQUIRED,
             headers={'WWW-Authenticate': 'Bearer'},
         )
 
@@ -86,9 +86,8 @@ async def get_current_user(
     if user_id is None:
         username = get_current_username_from_token(token)
         if username is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=Messages.error(ErrorCode.INVALID_TOKEN),
+            raise AuthenticationException(
+                ErrorCode.INVALID_TOKEN,
                 headers={'WWW-Authenticate': 'Bearer'},
             )
         user = await repo.get_by_username(db, username, active_only=True)
@@ -96,17 +95,13 @@ async def get_current_user(
         user = await repo.get(db, user_id, active_only=True)
 
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=Messages.error(ErrorCode.USER_NOT_FOUND),
+        raise AuthenticationException(
+            ErrorCode.USER_NOT_FOUND,
             headers={'WWW-Authenticate': 'Bearer'},
         )
 
     if user.is_blocked:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=Messages.error(ErrorCode.USER_BLOCKED),
-        )
+        raise AuthorizationException(ErrorCode.USER_BLOCKED)
 
     return user
 
@@ -129,16 +124,10 @@ async def get_current_active_user(
 
     """
     if current_user.is_blocked:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=Messages.error(ErrorCode.USER_BLOCKED),
-        )
+        raise AuthorizationException(ErrorCode.USER_BLOCKED)
 
     if not current_user.active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=Messages.error(ErrorCode.USER_DEACTIVATED),
-        )
+        raise AuthorizationException(ErrorCode.USER_DEACTIVATED)
 
     return current_user
 
@@ -159,10 +148,7 @@ async def get_current_superuser(
 
     """
     if not current_user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=Messages.error(ErrorCode.INSUFFICIENT_PERMISSIONS),
-        )
+        raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
 
     return current_user
 
@@ -226,10 +212,7 @@ async def require_cafe_manager(
     is_manager = result.scalar() is not None
 
     if not is_manager:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=Messages.error(ErrorCode.NOT_CAFE_MANAGER),
-        )
+        raise AuthorizationException(ErrorCode.NOT_CAFE_MANAGER)
 
     return current_user
 
@@ -255,10 +238,7 @@ async def validate_refresh_token(
     """
     token_data = verify_refresh_token(refresh_token)
     if not token_data or not token_data.user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=Messages.error(ErrorCode.TOKEN_EXPIRED),
-        )
+        raise AuthenticationException(ErrorCode.TOKEN_EXPIRED)
 
     user = await repo.get(db, token_data.user_id, active_only=True)
     if not user:
@@ -268,10 +248,7 @@ async def validate_refresh_token(
         )
 
     if user.is_blocked:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=Messages.error(ErrorCode.USER_BLOCKED),
-        )
+        raise AuthenticationException(ErrorCode.USER_NOT_FOUND)
 
     return user
 

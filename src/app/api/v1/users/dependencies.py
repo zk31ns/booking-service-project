@@ -9,7 +9,7 @@
 from typing import Annotated, AsyncGenerator, Optional
 
 from app.api.v1.cafes.models import cafe_managers
-from fastapi import Depends, HTTPException, Security, status
+from fastapi import Depends, HTTPException, Security
 from fastapi.security import (
     HTTPAuthorizationCredentials,
     HTTPBearer,
@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.users.models import User
 from app.api.v1.users.repository import UserRepository
-from app.core.constants import ErrorCode, Messages
+from app.core.constants import ErrorCode
 from app.core.exceptions import AuthenticationException, AuthorizationException
 from app.core.security import (
     get_current_user_id_from_token,
@@ -242,10 +242,7 @@ async def validate_refresh_token(
 
     user = await repo.get(db, token_data.user_id, active_only=True)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=Messages.error(ErrorCode.USER_NOT_FOUND),
-        )
+        raise AuthenticationException(ErrorCode.USER_NOT_FOUND)
 
     if user.is_blocked:
         raise AuthenticationException(ErrorCode.USER_NOT_FOUND)

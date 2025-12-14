@@ -144,14 +144,17 @@ class ErrorCode(str, Enum):
     USER_NOT_FOUND = 'user_not_found'
     USER_ALREADY_EXISTS = 'user_already_exists'
     USER_BLOCKED = 'user_blocked'
+    USER_DEACTIVATED = 'user_deactivated'
     CONFIRMATION_REQUIRED = 'confirmation_required'
     PASSWORD_CHANGE_FAILED = 'password_change_failed'
     DATA_CONFLICT = 'data_conflict'
     TOKEN_REFRESH_FAILED = 'token_refresh_failed'
+    AUTHENTICATION_REQUIRED = 'authentication_required'
 
     # Cafe
     CAFE_NOT_FOUND = 'cafe_not_found'
     CAFE_INACTIVE = 'cafe_inactive'
+    NOT_CAFE_MANAGER = 'not_cafe_manager'
 
     # Table
     TABLE_NOT_FOUND = 'table_not_found'
@@ -220,12 +223,15 @@ class Messages:
         ErrorCode.TOKEN_EXPIRED: 'Токен истёк',
         ErrorCode.INVALID_TOKEN: 'Неверный токен',
         ErrorCode.USER_NOT_FOUND: 'Пользователь не найден',
+        ErrorCode.USER_BLOCKED: 'Пользователь заблокирован',
         ErrorCode.USER_ALREADY_EXISTS: (
             'Пользователь с этим именем/email уже существует'
         ),
         ErrorCode.USER_BLOCKED: 'Учётная запись заблокирована',
+        ErrorCode.USER_DEACTIVATED: 'Пользователь деактивирован',
         ErrorCode.CAFE_NOT_FOUND: 'Кафе не найдено',
         ErrorCode.CAFE_INACTIVE: 'Кафе неактивно',
+        ErrorCode.NOT_CAFE_MANAGER: 'Вы не являетесь менеджером этого кафе',
         ErrorCode.TABLE_NOT_FOUND: 'Столик не найден',
         ErrorCode.TABLE_INACTIVE: 'Столик неактивен',
         ErrorCode.INVALID_SEATS_COUNT: 'Некорректное количество мест',
@@ -235,10 +241,10 @@ class Messages:
         ErrorCode.INVALID_TIME_RANGE: (
             'Время начала должно быть раньше времени окончания'
         ),
+        ErrorCode.USER_ALREADY_BOOKED: 'У вас уже есть бронь на это время',
         ErrorCode.BOOKING_NOT_FOUND: 'Бронь не найдена',
         ErrorCode.BOOKING_PAST_DATE: 'Нельзя забронировать на прошедшую дату',
         ErrorCode.TABLE_ALREADY_BOOKED: 'Столик уже забронирован на это время',
-        ErrorCode.USER_ALREADY_BOOKED: 'У вас уже есть бронь на это время',
         ErrorCode.INSUFFICIENT_PERMISSIONS: 'Недостаточно прав доступа',
         ErrorCode.INVALID_STATUS_TRANSITION: 'Неверный переход статуса',
         ErrorCode.FILE_TOO_LARGE: 'Файл слишком большой (макс. 5MB)',
@@ -252,6 +258,7 @@ class Messages:
         ErrorCode.PASSWORD_CHANGE_FAILED: 'Ошибка смены пароля',
         ErrorCode.DATA_CONFLICT: 'Конфликт данных',
         ErrorCode.TOKEN_REFRESH_FAILED: 'Ошибка обновления токена',
+        ErrorCode.AUTHENTICATION_REQUIRED: 'Требуется аутентификация',
     }
 
     success_messages = {

@@ -16,6 +16,7 @@ from app.api.v1.users.schemas import (
     UserShortInfo,
     UserUpdate,
 )
+from app.core.constants import Limits
 from app.core.security import create_tokens_pair, verify_password
 
 
@@ -61,7 +62,7 @@ class UserService:
         self,
         session: AsyncSession,
         skip: int = 0,
-        limit: int = 100,
+        limit: int = Limits.DEFAULT_PAGE_SIZE,
         active_only: bool = True,
         current_user: Optional[User] = None,
         filters: Optional[Dict[str, Any]] = None,
@@ -334,7 +335,7 @@ class UserService:
         session: AsyncSession,
         query: str,
         skip: int = 0,
-        limit: int = 100,
+        limit: int = Limits.DEFAULT_PAGE_SIZE,
         current_user: Optional[User] = None,
     ) -> List[UserInfo]:
         """Ищет пользователей по строке запроса.

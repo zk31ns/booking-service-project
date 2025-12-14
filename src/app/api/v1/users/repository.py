@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from app.api.v1.users.models import User
+from app.core.constants import Limits
 from app.core.security import get_password_hash, verify_password
 
 
@@ -58,7 +59,7 @@ class UserRepository:
         session: AsyncSession,
         *,
         skip: int = 0,
-        limit: int = 100,
+        limit: int = Limits.DEFAULT_PAGE_SIZE,
         active_only: bool = True,
         filters: Optional[Dict[str, Any]] = None,
     ) -> List[User]:
@@ -406,7 +407,7 @@ class UserRepository:
         session: AsyncSession,
         query_str: str,
         skip: int = 0,
-        limit: int = 100,
+        limit: int = Limits.DEFAULT_PAGE_SIZE,
         active_only: bool = True,
     ) -> List[User]:
         """Ищет пользователей по строке запроса.

@@ -227,7 +227,6 @@ class Messages:
         ErrorCode.USER_ALREADY_EXISTS: (
             'Пользователь с этим именем/email уже существует'
         ),
-        ErrorCode.USER_BLOCKED: 'Учётная запись заблокирована',
         ErrorCode.USER_DEACTIVATED: 'Пользователь деактивирован',
         ErrorCode.CAFE_NOT_FOUND: 'Кафе не найдено',
         ErrorCode.CAFE_INACTIVE: 'Кафе неактивно',

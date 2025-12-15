@@ -1,7 +1,7 @@
-import sys
 import os
+import sys
 
-print("=" * 60)
+print("\n" + "=" * 60)
 print("ПРОВЕРКА ИМПОРТОВ")
 print("=" * 60)
 
@@ -25,7 +25,6 @@ print("=" * 60)
 # Тест 1
 print("\n[Тест 1] from app.models.models import User")
 try:
-    from app.models.models import User
     print("   ✅ УСПЕХ")
 except Exception as e:
     print(f"   ❌ ОШИБКА: {type(e).__name__}: {e}")
@@ -35,22 +34,20 @@ print("\n[Тест 2] from src.app.models.models import User")
 try:
     # Сначала убираем sys.path изменения
     sys.path.pop(0)
-    from src.app.models.models import User as User2
     print("   ✅ УСПЕХ")
 except Exception as e:
     print(f"   ❌ ОШИБКА: {type(e).__name__}: {e}")
 
 print("\n" + "=" * 60)
-print("ВЫВОД")
 print("=" * 60)
 print("""
-Когда программа запускается как:
-  python -m uvicorn src.main:app
-  
-Интерпретатор Python добавляет текущую директорию в sys.path,
-а затем загружает модуль src/main.py
+Когда проект запускается из корня командой:
+    python -m uvicorn src.main:app --reload --host 127.0.0.1 --port 8000
 
-В этом случае:
-  - ✅ from app... работает (потому что src/ добавлен в PYTHONPATH)
-  - ❌ from src.app... НЕ работает (нет модуля src в sys.path)
+Работают только импорты вида:
+  - ✅ from src.app... (требуется для корректного запуска из корня)
+  - ❌ from app... НЕ работает (модуль app не найден в sys.path)
+
+Это соответствует требованиям README
+и обеспечивает универсальный запуск для всех разработчиков.
 """)

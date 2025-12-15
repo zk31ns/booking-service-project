@@ -155,7 +155,7 @@ class UserService:
             )
 
         try:
-            user_data = user_create.dict()
+            user_data = user_create.model_dump()
             user = await self.repository.create(session, user_data)
             return UserInfo.from_orm(user)
         except Exception as e:
@@ -193,7 +193,7 @@ class UserService:
 
         await self._validate_update_uniqueness(session, user, user_update)
 
-        update_data = user_update.dict(exclude_unset=True)
+        update_data = user_update.model_dump(exclude_unset=True)
 
         if 'password' in update_data:
             if verify_password(update_data['password'], user.password_hash):
@@ -465,7 +465,7 @@ class UserService:
             user_update: Данные для обновления
 
         """
-        update_data = user_update.dict(exclude_unset=True)
+        update_data = user_update.model_dump(exclude_unset=True)
 
         if 'username' in update_data:
             existing = await self.repository.get_by_username(

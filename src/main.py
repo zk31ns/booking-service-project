@@ -25,28 +25,28 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Lifespan-менеджер для старта и завершения приложения FastAPI."""
     # Startup
     startup_msg = (
-        f'Application startup | Title: {settings.APP_TITLE} '
-        f'v{settings.APP_VERSION}'
+        f'Application startup | Title: {settings.app_title} '
+        f'v{settings.app_version}'
     )
     logger.info(startup_msg)
     logger.info(
-        f'Environment: {settings.ENVIRONMENT} | Debug: {settings.DEBUG}',
+        f'Environment: {settings.environment} | Debug: {settings.debug}',
     )
     db_url = (
-        settings.DATABASE_URL.split('@')[1]
-        if '@' in settings.DATABASE_URL
+        settings.database_url.split('@')[1]
+        if '@' in settings.database_url
         else 'configured'
     )
     logger.info(f'Database: {db_url}')
-    logger.info(f'Frontend URL: {settings.FRONTEND_URL}')
+    logger.info(f'Frontend URL: {settings.frontend_url}')
     yield
     # Shutdown
     logger.info('Application shutdown')
 
 
 app = FastAPI(
-    title=settings.APP_TITLE,
-    version=settings.APP_VERSION,
+    title=settings.app_title,
+    version=settings.app_version,
     description='API для бронирования мест в кафе',
     docs_url='/docs',
     redoc_url='/redoc',
@@ -57,7 +57,7 @@ app = FastAPI(
 # Добавить CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origins=settings.allowed_origins,
     allow_credentials=True,
     allow_methods=['*'],
     allow_headers=['*'],

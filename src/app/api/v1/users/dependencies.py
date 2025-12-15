@@ -8,7 +8,6 @@
 
 from typing import Annotated, AsyncGenerator, Optional
 
-from src.app.api.v1.cafes.models import cafe_managers
 from fastapi import Depends, HTTPException, Security
 from fastapi.security import (
     HTTPAuthorizationCredentials,
@@ -17,6 +16,7 @@ from fastapi.security import (
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.app.api.v1.cafes.models import cafe_managers
 from src.app.api.v1.users.repository import UserRepository
 from src.app.core.constants import ErrorCode
 from src.app.core.exceptions import (

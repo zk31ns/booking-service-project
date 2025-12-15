@@ -1,6 +1,7 @@
 
 """События жизненного цикла приложения."""
 
+from typing import AsyncIterator
 from contextlib import asynccontextmanager
 
 import redis.asyncio as redis
@@ -11,7 +12,8 @@ from app.core.redis_cache import RedisCache
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Управление жизненным циклом приложения."""
     redis_connection = await redis.from_url(settings.REDIS_URL,
                                             encoding='utf-8',
                                             decode_responses=False)

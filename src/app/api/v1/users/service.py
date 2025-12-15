@@ -172,61 +172,35 @@ class UserService:
     ) -> UserInfo:
         """Обновляет информацию о пользователе.
 
-        from sqlalchemy.exc import IntegrityError
-        try:
-            user_data = user_create.model_dump()
-            user = await self.repository.create(session, user_data)
-            await session.commit()
-            return UserInfo.from_orm(user)
-        except IntegrityError as e:
-            await session.rollback()
-            raise ConflictException(
-                ErrorCode.USER_ALREADY_EXISTS,
-                extra={'original_error': str(e)},
-            )
-        except Exception as e:
-            await session.rollback()
-            raise InternalServerException(
-                ErrorCode.INTERNAL_SERVER_ERROR,
-                extra={'original_error': str(e)},
-            )
+        Args:
+            session: Асинхронная сессия БД
+            user_id: ID пользователя для обновления
+            user_update: Данные для обновления
+            current_user: Текущий аутентифицированный пользователь
+
+        Returns:
+            UserInfo: Обновлённый пользователь
+
         """
-        from sqlalchemy.exc import IntegrityError
+        user = await self.repository.get(session, user_id, active_only=False)
+        if not user:
+            raise NotFoundException(
+                ErrorCode.USER_NOT_FOUND, extra={'user_id': user_id}
+            )
 
-        try:
-            user = await self.repository.get(
-                session, user_id, active_only=False
-            )
-            if not user:
-                raise NotFoundException(
-                    ErrorCode.USER_NOT_FOUND, extra={'user_id': user_id}
-                )
+        await self._check_user_access(user, current_user, 'обновление')
 
-            await self._check_user_access(user, current_user, 'обновление')
-            await self._validate_update_uniqueness(session, user, user_update)
-            update_data = user_update.model_dump(exclude_unset=True)
-            if 'password' in update_data:
-                if verify_password(
-                    update_data['password'], user.password_hash
-                ):
-                    raise ValidationException(ErrorCode.PASSWORD_SAME_AS_OLD)
-                updated_user = await self.repository.update(
-                    session, user, update_data
-                )
-            await session.commit()
-            return UserInfo.from_orm(updated_user)
-        except IntegrityError as e:
-            await session.rollback()
-            raise ConflictException(
-                ErrorCode.USER_ALREADY_EXISTS,
-                extra={'original_error': str(e)},
-            )
-        except Exception as e:
-            await session.rollback()
-            raise InternalServerException(
-                ErrorCode.INTERNAL_SERVER_ERROR,
-                extra={'original_error': str(e)},
-            )
+        await self._validate_update_uniqueness(session, user, user_update)
+
+        update_data = user_update.model_dump(exclude_unset=True)
+
+        if 'password' in update_data:
+            if verify_password(update_data['password'], user.password_hash):
+                raise ValidationException(ErrorCode.PASSWORD_SAME_AS_OLD)
+
+        updated_user = await self.repository.update(session, user, update_data)
+
+        return UserInfo.from_orm(updated_user)
 
     async def delete_user(
         self,
@@ -245,34 +219,20 @@ class UserService:
             UserInfo: Деактивированный пользователь
 
         """
-        from sqlalchemy.exc import IntegrityError
+        user = await self.repository.get(session, user_id, active_only=False)
+        if not user:
+            raise NotFoundException(
+                ErrorCode.USER_NOT_FOUND, extra={'user_id': user_id}
+            )
 
-        try:
-            user = await self.repository.get(
-                session, user_id, active_only=False
-            )
-            if not user:
-                raise NotFoundException(
-                    ErrorCode.USER_NOT_FOUND, extra={'user_id': user_id}
-                )
-            await self._check_user_access(user, current_user, 'удаление')
-            if current_user and user.id == current_user.id:
-                raise ValidationException(ErrorCode.CANNOT_DELETE_OWN_ACCOUNT)
-            deleted_user = await self.repository.delete(session, user_id)
-            await session.commit()
-            return UserInfo.from_orm(deleted_user)
-        except IntegrityError as e:
-            await session.rollback()
-            raise ConflictException(
-                ErrorCode.USER_ALREADY_EXISTS,
-                extra={'original_error': str(e)},
-            )
-        except Exception as e:
-            await session.rollback()
-            raise InternalServerException(
-                ErrorCode.INTERNAL_SERVER_ERROR,
-                extra={'original_error': str(e)},
-            )
+        await self._check_user_access(user, current_user, 'удаление')
+
+        if current_user and user.id == current_user.id:
+            raise ValidationException(ErrorCode.CANNOT_DELETE_OWN_ACCOUNT)
+
+        deleted_user = await self.repository.delete(session, user_id)
+
+        return UserInfo.from_orm(deleted_user)
 
     async def authenticate_user(
         self,

@@ -65,6 +65,12 @@ class Limits:
     MIN_PASSWORD_LENGTH = 8
     MAX_PASSWORD_LENGTH = 255
 
+    # Email
+    MAX_EMAIL_LENGTH = 255
+
+    # Telegram
+    MAX_TG_ID_LENGTH = 100
+
     # Cafe name
     MIN_CAFE_NAME_LENGTH = 3
     MAX_CAFE_NAME_LENGTH = 255
@@ -84,6 +90,9 @@ class Limits:
     # Prices
     MIN_PRICE = 0.0
     MAX_PRICE = 999999.99
+
+    # Минимальная длина строки поиска
+    MIN_SEARCH_QUERY_LENGTH = 2
 
 
 # ========== Времена (в минутах/днях) ==========
@@ -135,10 +144,23 @@ class ErrorCode(str, Enum):
     USER_NOT_FOUND = 'user_not_found'
     USER_ALREADY_EXISTS = 'user_already_exists'
     USER_BLOCKED = 'user_blocked'
+    USER_DEACTIVATED = 'user_deactivated'
+    CONFIRMATION_REQUIRED = 'confirmation_required'
+    PASSWORD_CHANGE_FAILED = 'password_change_failed'
+    DATA_CONFLICT = 'data_conflict'
+    TOKEN_REFRESH_FAILED = 'token_refresh_failed'
+    AUTHENTICATION_REQUIRED = 'authentication_required'
+    SERVICE_UNAVAILABLE = 'service_unavailable'
+    INVALID_REFRESH_TOKEN = 'invalid_refresh_token'
+    PHONE_ALREADY_REGISTERED = 'phone_already_registered'
+    PASSWORD_SAME_AS_OLD = 'password_same_as_old'
+    CANNOT_DELETE_OWN_ACCOUNT = 'cannot_delete_own_account'
+    INCORRECT_CURRENT_PASSWORD = 'incorrect_current_password'
 
     # Cafe
     CAFE_NOT_FOUND = 'cafe_not_found'
     CAFE_INACTIVE = 'cafe_inactive'
+    NOT_CAFE_MANAGER = 'not_cafe_manager'
 
     # Table
     TABLE_NOT_FOUND = 'table_not_found'
@@ -207,12 +229,15 @@ class Messages:
         ErrorCode.TOKEN_EXPIRED: 'Токен истёк',
         ErrorCode.INVALID_TOKEN: 'Неверный токен',
         ErrorCode.USER_NOT_FOUND: 'Пользователь не найден',
+        ErrorCode.USER_BLOCKED: 'Пользователь заблокирован',
         ErrorCode.USER_ALREADY_EXISTS: (
             'Пользователь с этим именем/email уже существует'
         ),
-        ErrorCode.USER_BLOCKED: 'Учётная запись заблокирована',
+        ErrorCode.PHONE_ALREADY_REGISTERED: 'Телефон уже зарегистрирован',
+        ErrorCode.USER_DEACTIVATED: 'Пользователь деактивирован',
         ErrorCode.CAFE_NOT_FOUND: 'Кафе не найдено',
         ErrorCode.CAFE_INACTIVE: 'Кафе неактивно',
+        ErrorCode.NOT_CAFE_MANAGER: 'Вы не являетесь менеджером этого кафе',
         ErrorCode.TABLE_NOT_FOUND: 'Столик не найден',
         ErrorCode.TABLE_INACTIVE: 'Столик неактивен',
         ErrorCode.INVALID_SEATS_COUNT: 'Некорректное количество мест',
@@ -222,10 +247,10 @@ class Messages:
         ErrorCode.INVALID_TIME_RANGE: (
             'Время начала должно быть раньше времени окончания'
         ),
+        ErrorCode.USER_ALREADY_BOOKED: 'У вас уже есть бронь на это время',
         ErrorCode.BOOKING_NOT_FOUND: 'Бронь не найдена',
         ErrorCode.BOOKING_PAST_DATE: 'Нельзя забронировать на прошедшую дату',
         ErrorCode.TABLE_ALREADY_BOOKED: 'Столик уже забронирован на это время',
-        ErrorCode.USER_ALREADY_BOOKED: 'У вас уже есть бронь на это время',
         ErrorCode.INSUFFICIENT_PERMISSIONS: 'Недостаточно прав доступа',
         ErrorCode.INVALID_STATUS_TRANSITION: 'Неверный переход статуса',
         ErrorCode.FILE_TOO_LARGE: 'Файл слишком большой (макс. 5MB)',
@@ -235,6 +260,20 @@ class Messages:
         ErrorCode.MEDIA_NOT_FOUND: 'Изображение не найдено',
         ErrorCode.VALIDATION_ERROR: 'Ошибка валидации',
         ErrorCode.INTERNAL_SERVER_ERROR: 'Внутренняя ошибка сервера',
+        ErrorCode.CONFIRMATION_REQUIRED: 'Требуется подтверждение действия',
+        ErrorCode.PASSWORD_CHANGE_FAILED: 'Ошибка смены пароля',
+        ErrorCode.DATA_CONFLICT: 'Конфликт данных',
+        ErrorCode.TOKEN_REFRESH_FAILED: 'Ошибка обновления токена',
+        ErrorCode.AUTHENTICATION_REQUIRED: 'Требуется аутентификация',
+        ErrorCode.SERVICE_UNAVAILABLE: 'Сервис временно недоступен',
+        ErrorCode.INVALID_REFRESH_TOKEN: 'Неверный или истёкший refresh токен',
+        ErrorCode.PASSWORD_SAME_AS_OLD: (
+            'Новый пароль должен отличаться от старого'
+        ),
+        ErrorCode.CANNOT_DELETE_OWN_ACCOUNT: (
+            'Нельзя удалить свой собственный аккаунт'
+        ),
+        ErrorCode.INCORRECT_CURRENT_PASSWORD: 'Текущий пароль неверен',
     }
 
     success_messages = {

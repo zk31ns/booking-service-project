@@ -6,10 +6,10 @@ Main entry point приложения.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1 import health
-from app.core.config import settings
-from app.core.constants import API_V1_PREFIX, TAGS_HEALTH
-from app.core.logging import logger, setup_logging
+from src.app.api.v1 import health
+from src.app.core.config import settings
+from src.app.core.constants import API_V1_PREFIX, TAGS_HEALTH
+from src.app.core.logging import logger, setup_logging
 
 # Инициализировать логирование
 setup_logging()

@@ -5,6 +5,7 @@ from datetime import datetime
 from http import HTTPStatus
 
 import aiohttp
+from celery import Task
 
 from app.core.celery_app import celery_app
 from app.core.config import settings
@@ -19,7 +20,7 @@ from app.core.logging import logger
     default_retry_delay=60,
     acks_late=True,
 )
-def send_booking_reminder(self,
+def send_booking_reminder(self: Task,
                           booking_id: int,
                           telegram_id: str,
                           cafe_name: str,
@@ -27,9 +28,18 @@ def send_booking_reminder(self,
                           start_time: str
                           ) -> None:
     """Отправка напоминания о бронировании в Telegram.
+
     Запускает асинхронный код.
     Задача Выполняется один раз в указанное время.
-    booking_id: ID бронирования
+
+    Args:
+        self: экземпляр задачи
+        booking_id: ID бронирования
+        telegram_id: ID пользователя в Telegram
+        cafe_name: название кафе
+        booking_date: дата бронирования
+        start_time: дата начала слота бронирования
+
     """
     logger.info(
         f'SYSTEM: {EventType.TASK_STARTED} for booking {booking_id} '
@@ -67,7 +77,14 @@ async def _send_reminder_async(booking_id: int,
                                booking_date: datetime,
                                start_time: str) -> None:
     """Асинхронная отправка напоминания.
-    booking_id: ID бронирования
+
+    Args:
+        booking_id: ID бронирования
+        telegram_id: ID пользователя в Telegram
+        cafe_name: название кафе
+        booking_date: дата бронирования
+        start_time: дата начала слота бронирования
+
     """
     date_formatted = booking_date.strftime('%d.%m.%Y')
     message_text = f"""🔔 <b>Напоминание о бронировании</b>
@@ -91,8 +108,11 @@ async def _send_telegram_message(
     text: str,
  ) -> None:
     """Отправка сообщения в Telegram пользователя.
-    telegram_id: ID пользователя в Telegram
-    text: текст сообщения
+
+    Args:
+        telegram_id: ID пользователя в Telegram
+        text: текст сообщения
+
     """
     url = (f'{settings.TELEGRAM_API_URL}/bot'
            f'{settings.TELEGRAM_BOT_TOKEN}/sendMessage')

@@ -12,6 +12,7 @@ from app.core.constants import Times
 
 class RedisCache:
     """Класс для работы с кэшем Redis.
+
     Реализует методы для сериализации данных,
     кэширования и получения информации из кэша.
     """
@@ -19,15 +20,20 @@ class RedisCache:
     redis: Optional[Redis] = None
 
     @classmethod
-    def init(cls, redis: Redis):
+    def init(cls, redis: Redis) -> None:
         """Инициализация подключения Redis."""
         cls.redis = redis
 
     @classmethod
     async def get(cls, key: str) -> Optional[Any]:
         """Получение данных из кэша.
-        key: ключ для поиска в Redis
-        Returns: Десериализованные данные или None
+
+        Args:
+            key: ключ для поиска в Redis
+
+        Returns:
+            Десериализованные данные или None
+
         """
         if not cls.redis:
             return None
@@ -39,6 +45,7 @@ class RedisCache:
     @classmethod
     def _serialize_value(cls, value: Any) -> str:
         """Сериализация значения в JSON.
+
         Поддерживает:
         - Pydantic модели
         - SQLAlchemy модели
@@ -69,10 +76,15 @@ class RedisCache:
         return json.dumps(value)
 
     @staticmethod
-    def _sqlalchemy_to_dict(obj) -> dict:
+    def _sqlalchemy_to_dict(obj: DeclarativeMeta) -> dict:
         """Конвертирует модель SQLAlchemy в dict.
-        obj: модель SQLAlchemy
-        Returns: Dict с полями модели
+
+        Args:
+            obj: модель SQLAlchemy
+
+        Returns:
+            Dict с полями модели
+
         """
         result = {}
         for column in obj.__table__.columns:
@@ -90,9 +102,12 @@ class RedisCache:
                   value: Any,
                   expire: int = Times.REDIS_CACHE_EXPIRE_TIME) -> None:
         """Сохраняет данные в кэш.
-        key: ключ для хранения
-        value: данные для кэширования
-        expire: время жизни в секундах
+
+        Args:
+            key: ключ для хранения
+            value: данные для кэширования
+            expire: время жизни в секундах
+
         """
         if not cls.redis:
             return
@@ -103,7 +118,10 @@ class RedisCache:
     @classmethod
     async def delete(cls, key: str) -> None:
         """Удаление данных из кэша.
-        key: ключ для удаления
+
+        Args:
+            key: ключ для удаления
+
         """
         if not cls.redis:
             return

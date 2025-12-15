@@ -192,6 +192,7 @@ class UserService:
             )
         """
         from sqlalchemy.exc import IntegrityError
+
         try:
             user = await self.repository.get(
                 session, user_id, active_only=False
@@ -245,6 +246,7 @@ class UserService:
 
         """
         from sqlalchemy.exc import IntegrityError
+
         try:
             user = await self.repository.get(
                 session, user_id, active_only=False

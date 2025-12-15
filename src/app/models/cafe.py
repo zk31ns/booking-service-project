@@ -6,10 +6,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.constants import Limits
 from app.db.base import Base
+from app.models.table import Table
 
 if TYPE_CHECKING:
     from app.api.v1.media.models import Media
-    from app.api.v1.tables.models import Table
 
 
 class Cafe(Base):
@@ -59,4 +59,4 @@ class Cafe(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<Cafe(id='{self.id}', name='{self.name}')>"
+        return f'<Cafe(id="{self.id}", name="{self.name}")>'

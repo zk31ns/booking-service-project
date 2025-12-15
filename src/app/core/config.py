@@ -17,76 +17,86 @@ class Settings(BaseSettings):
     """Основные настройки приложения."""
 
     # ========== App Settings ==========
-    APP_TITLE: str = 'Booking Seats API'
-    APP_VERSION: str = '1.0.0'
-    DEBUG: bool = False
-    ENVIRONMENT: str = Field(default='development', description='dev или prod')
+    app_title: str = 'Booking Seats API'
+    app_version: str = '1.0.0'
+    debug: bool = False
+    environment: str = Field(
+        default='development', description='dev или prod', env='ENVIRONMENT'
+    )
 
     # ========== Server ==========
-    HOST: str = '0.0.0.0'
-    PORT: int = 8000
+    host: str = Field(..., env='HOST')
+    port: int = Field(..., env='PORT')
 
     # ========== Database ==========
-    DATABASE_URL: str = Field(
-        default='postgresql+asyncpg://user:password@localhost:5433/booking_db',
-        description='Async PostgreSQL URL (нестандартный порт 5433)',
+    database_url: str = Field(
+        ...,
+        env='DATABASE_URL',
+        description='Async PostgreSQL URL (пример: postgresql+asyncpg://user:password@host:port/db)',
     )
-    DB_ECHO: bool = False  # SQL logs в консоль
+    db_echo: bool = Field(default=False, env='DB_ECHO')  # SQL logs в консоль
 
     # ========== JWT & Auth ==========
-    JWT_SECRET_KEY: str = Field(
-        default='your-secret-key-change-in-production',
-        description='Секретный ключ для JWT',
+    jwt_secret_key: str = Field(
+        ..., env='JWT_SECRET_KEY', description='Секретный ключ для JWT'
     )
-    JWT_ALGORITHM: str = 'HS256'
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = ACCESS_TOKEN_EXPIRE_MINUTES
-    REFRESH_TOKEN_EXPIRE_DAYS: int = REFRESH_TOKEN_EXPIRE_DAYS
+    jwt_algorithm: str = Field(default='HS256', env='JWT_ALGORITHM')
+    access_token_expire_minutes: int = ACCESS_TOKEN_EXPIRE_MINUTES
+    refresh_token_expire_days: int = REFRESH_TOKEN_EXPIRE_DAYS
 
     # ========== Redis ==========
-    REDIS_URL: str = Field(
-        default='redis://localhost:6379/0',
-        description='Redis connection URL',
+    redis_url: str = Field(
+        ..., env='REDIS_URL', description='Redis connection URL'
     )
 
     # ========== RabbitMQ / Celery ==========
-    RABBITMQ_URL: str = Field(
-        default='amqp://guest:guest@localhost:5672/',
-        description='RabbitMQ broker URL',
+    rabbitmq_url: str = Field(
+        ..., env='RABBITMQ_URL', description='RabbitMQ broker URL'
     )
-    CELERY_BROKER_URL: str = Field(
+    celery_broker_url: str = Field(
         default='',
+        env='CELERY_BROKER_URL',
         description='Celery broker (по умолчанию RABBITMQ_URL)',
     )
-    CELERY_RESULT_BACKEND: str = Field(
+    celery_result_backend: str = Field(
         default='',
+        env='CELERY_RESULT_BACKEND',
         description='Celery result backend (по умолчанию REDIS_URL)',
     )
 
     # ========== Files / Media ==========
-    MAX_UPLOAD_SIZE: int = MAX_UPLOAD_SIZE_BYTES  # 5MB in bytes
-    ALLOWED_IMAGE_TYPES: str = 'image/jpeg,image/png'
-    MEDIA_PATH: str = '/app/media'
+    max_upload_size: int = MAX_UPLOAD_SIZE_BYTES  # 5MB in bytes
+    allowed_image_types: str = Field(
+        default='image/jpeg,image/png', env='ALLOWED_IMAGE_TYPES'
+    )
+    media_path: str = Field(default='/app/media', env='MEDIA_PATH')
 
     # ========== Logging ==========
-    LOG_LEVEL: str = 'INFO'
-    LOG_FILE: str = 'logs/app.log'
-    LOG_ROTATION: str = '10 MB'
-    LOG_RETENTION: str = '7 days'
+    log_level: str = Field(default='INFO', env='LOG_LEVEL')
+    log_file: str = Field(default='logs/app.log', env='LOG_FILE')
+    log_rotation: str = Field(default='10 MB', env='LOG_ROTATION')
+    log_retention: str = Field(default='7 days', env='LOG_RETENTION')
 
     # ========== CORS ==========
-    FRONTEND_URL: str = Field(
-        default='http://localhost:3000',
-        description='URL фронтенда',
+    frontend_url: str = Field(
+        ..., env='FRONTEND_URL', description='URL фронтенда'
     )
-    ALLOWED_ORIGINS: list = Field(
+    allowed_origins: list = Field(
         default=['http://localhost:3000', 'http://localhost:8000'],
+        env='ALLOWED_ORIGINS',
     )
 
     # ========== Email (опционально) ==========
-    SMTP_SERVER: str = Field(default='', description='SMTP сервер')
-    SMTP_PORT: int = 587
-    SMTP_USER: str = Field(default='', description='SMTP пользователь')
-    SMTP_PASSWORD: str = Field(default='', description='SMTP пароль')
+    smtp_server: str = Field(
+        default='', env='SMTP_SERVER', description='SMTP сервер'
+    )
+    smtp_port: int = Field(default=587, env='SMTP_PORT')
+    smtp_user: str = Field(
+        default='', env='SMTP_USER', description='SMTP пользователь'
+    )
+    smtp_password: str = Field(
+        default='', env='SMTP_PASSWORD', description='SMTP пароль'
+    )
 
     class Config:
         """Pydantic конфигурация."""
@@ -98,12 +108,12 @@ class Settings(BaseSettings):
     @property
     def celery_broker(self) -> str:
         """Вернуть URL брокера для Celery."""
-        return self.CELERY_BROKER_URL or self.RABBITMQ_URL
+        return self.celery_broker_url or self.rabbitmq_url
 
     @property
     def celery_backend(self) -> str:
         """Вернуть URL бэкенда для Celery."""
-        return self.CELERY_RESULT_BACKEND or self.REDIS_URL
+        return self.celery_result_backend or self.redis_url
 
 
 # Глобальный объект настроек

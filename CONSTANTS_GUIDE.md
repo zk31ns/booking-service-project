@@ -221,7 +221,7 @@ async def validate_booking_date(booking_date: datetime) -> bool:
     now = datetime.utcnow()
     min_advance = now + timedelta(minutes=Times.MIN_BOOKING_ADVANCE_MINUTES)
     max_future = now + timedelta(days=Times.MAX_BOOKING_DAYS_AHEAD)
-    
+
     return min_advance <= booking_date <= max_future
 ```
 
@@ -260,7 +260,7 @@ def update_booking_status(booking_id: int, new_status: BookingStatus):
     # Валидация: статус должен быть из enum
     if new_status not in BookingStatus:
         raise ValueError("Неверный статус")
-    
+
     # Переход только из допустимых статусов
     allowed_transitions = {
         BookingStatus.NEW: [BookingStatus.CONFIRMED, BookingStatus.CANCELLED],
@@ -339,7 +339,7 @@ from app.services.event_service import log_event
 
 async def register_user(user: UserCreate) -> User:
     # ... создание пользователя
-    
+
     # Логировать событие
     await log_event(
         event_type=EventType.USER_REGISTERED.value,
@@ -422,21 +422,21 @@ class UserCreate(BaseModel):
     )
     email: str
     phone: str = Field(min_length=Limits.MIN_PHONE_LENGTH)
-    
+
     @field_validator("username")
     @classmethod
     def validate_username(cls, v: str) -> str:
         if not Patterns.USERNAME.match(v):
             raise ValueError("Username должен содержать буквы, цифры, подчеркивание и дефис")
         return v
-    
+
     @field_validator("email")
     @classmethod
     def validate_email(cls, v: str) -> str:
         if not Patterns.EMAIL.match(v):
             raise ValueError("Неверный формат email")
         return v
-    
+
     @field_validator("phone")
     @classmethod
     def validate_phone(cls, v: str) -> str:
@@ -509,14 +509,14 @@ from app.core.celery import celery_app
 
 async def create_booking(booking: BookingCreate) -> Booking:
     booking_obj = await booking_repository.create(booking)
-    
+
     # Запланировать напоминание за 1 час до времени
     celery_app.send_task(
         CeleryTasks.SEND_BOOKING_REMINDER,
         args=[booking_obj.id],
         countdown=Times.BOOKING_REMINDER_MINUTES * 60  # в секунды
     )
-    
+
     return booking_obj
 ```
 
@@ -563,21 +563,21 @@ class UserCreate(BaseModel):
         max_length=Limits.MAX_PASSWORD_LENGTH,
         description="Пароль"
     )
-    
+
     @field_validator("username")
     @classmethod
     def validate_username(cls, v: str) -> str:
         if not Patterns.USERNAME.match(v):
             raise ValueError("Неверный формат username")
         return v
-    
+
     @field_validator("email")
     @classmethod
     def validate_email(cls, v: str) -> str:
         if not Patterns.EMAIL.match(v):
             raise ValueError("Неверный email")
         return v
-    
+
     @field_validator("phone")
     @classmethod
     def validate_phone(cls, v: str) -> str:
@@ -597,17 +597,17 @@ async def register_user(user_data: UserCreate):
                 "message": Messages.error(ErrorCode.USER_ALREADY_EXISTS)
             }
         )
-    
+
     # Создать пользователя
     user = await user_service.create_user(user_data)
-    
+
     # Логировать событие
     await event_service.log_event(
         event_type=EventType.USER_REGISTERED.value,
         user_id=user.id,
         details={"username": user.username}
     )
-    
+
     return {
         "data": user,
         "message": Messages.success("user_created")
@@ -625,7 +625,7 @@ async def create_booking(booking_data: BookingCreate, current_user: User):
     # Проверить, что бронь на будущее
     now = datetime.utcnow()
     min_advance = now + timedelta(minutes=Times.MIN_BOOKING_ADVANCE_MINUTES)
-    
+
     if booking_data.booking_date < min_advance:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -634,7 +634,7 @@ async def create_booking(booking_data: BookingCreate, current_user: User):
                 "message": Messages.error(ErrorCode.BOOKING_PAST_DATE)
             }
         )
-    
+
     # Проверить, не забронирована ли уже таблица
     existing = await booking_repository.get_by_table_date(
         table_id=booking_data.table_id,
@@ -648,10 +648,10 @@ async def create_booking(booking_data: BookingCreate, current_user: User):
                 "message": Messages.error(ErrorCode.TABLE_ALREADY_BOOKED)
             }
         )
-    
+
     # Создать бронь
     booking = await booking_service.create_booking(booking_data, current_user)
-    
+
     return {
         "data": booking,
         "message": Messages.success("booking_created")

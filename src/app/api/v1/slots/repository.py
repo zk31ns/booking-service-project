@@ -1,9 +1,9 @@
-from typing import Optional
 from datetime import time
+from typing import Optional
 
+from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from loguru import logger
 
 from app.api.v1.slots.models import Slot
 
@@ -21,8 +21,7 @@ class SlotRepository:
             start_time: time,
             end_time: time,
     ) -> Slot:
-        """
-        Создание нового слота.
+        """Создание нового слота.
         TODO: Добавить проверку активности кафе когда модель Cafe будет готова.
         """
         slot = Slot(
@@ -34,8 +33,8 @@ class SlotRepository:
         await self.session.flush()
 
         logger.info(
-            f'Created slot id={slot.id} for cafe_id={cafe_id}, '
-            f'{start_time}-{end_time}'
+            f'Создан слот id={slot.id} для кафе cafe_id={cafe_id}, '
+            f'время: {start_time}-{end_time}'
         )
         return slot
 
@@ -47,9 +46,9 @@ class SlotRepository:
         slot = result.scalar_one_or_none()
 
         if slot:
-            logger.info(f"Retrieved slot id={slot_id}")
+            logger.info(f'Получен слот id={slot_id}')
         else:
-            logger.warning(f"Slot id={slot_id} not found")
+            logger.warning(f'Слот id={slot_id} не найден')
 
         return slot
 
@@ -62,15 +61,15 @@ class SlotRepository:
         query = select(Slot).where(Slot.cafe_id == cafe_id)
 
         if not show_inactive:
-            query = query.where(Slot.active is True)
+            query = query.where(Slot.active.is_(True))
 
         query = query.order_by(Slot.start_time)
         result = await self.session.execute(query)
         slots = result.scalars().all()
 
         logger.info(
-            f'Retrieved {len(slots)} slots for cafe_id={cafe_id} '
-            f'(show_inactive={show_inactive})'
+            f'Получено {len(slots)} слотов для кафе cafe_id={cafe_id} '
+            f'(показывать неактивные={show_inactive})'
         )
         return slots
 
@@ -96,8 +95,8 @@ class SlotRepository:
         await self.session.flush()
 
         logger.info(
-            f'Updated slot id={slot_id}: '
-            f'start_time={start_time}, end_time={end_time}, active={active}'
+            f'Обновлен слот id={slot_id}: '
+            f'время_начала={start_time}, время_окончания={end_time}, активен={active}'
         )
         return slot
 
@@ -110,5 +109,5 @@ class SlotRepository:
         slot.active = False
         await self.session.flush()
 
-        logger.info(f'Deleted (deactivated) slot id={slot_id}')
+        logger.info(f'Удален (деактивирован) слот id={slot_id}')
         return True

@@ -10,7 +10,10 @@ from app.schemas.table import TableCreate, TableUpdate
 class TableRepository:
     """Репозиторий для работы со столиками."""
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(
+        self,
+        session: AsyncSession,
+    ) -> None:
         """Инициализация репозитория столы."""
         self.session = session
 
@@ -29,7 +32,10 @@ class TableRepository:
         result = await self.session.execute(query)
         return result.scalars().all()
 
-    async def get_by_id(self, table_id: int) -> Optional[Table]:
+    async def get_by_id(
+        self,
+        table_id: int,
+    ) -> Optional[Table]:
         """Получить столик по ID."""
         query = select(Table).where(Table.id == table_id)
         result = await self.session.execute(query)
@@ -47,7 +53,10 @@ class TableRepository:
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
-    async def create(self, table_create: TableCreate) -> Table:
+    async def create(
+        self,
+        table_create: TableCreate,
+    ) -> Table:
         """Создать новый столик."""
         table = Table(**table_create.model_dump())
         self.session.add(table)
@@ -75,7 +84,10 @@ class TableRepository:
             await self.session.refresh(table)
         return table
 
-    async def delete(self, table_id: int) -> bool:
+    async def delete(
+        self,
+        table_id: int,
+    ) -> bool:
         """Логическое удаление столика."""
         table = await self.get_by_id(table_id)
         if not table:
@@ -86,7 +98,10 @@ class TableRepository:
         await self.session.commit()
         return True
 
-    async def count_for_cafe(self, cafe_id: int) -> int:
+    async def count_for_cafe(
+        self,
+        cafe_id: int,
+    ) -> int:
         """Количество столиков в кафе."""
         query = select(Table).where(
             and_(Table.cafe_id == cafe_id, Table.active),
@@ -94,7 +109,10 @@ class TableRepository:
         result = await self.session.execute(query)
         return len(result.scalars().all())
 
-    async def exists(self, table_id: int) -> bool:
+    async def exists(
+        self,
+        table_id: int,
+    ) -> bool:
         """Проверить существование столика."""
         query = select(Table.id).where(Table.id == table_id)
         result = await self.session.execute(query)

@@ -29,19 +29,28 @@ class CafeRepository:
         result = await self.session.execute(query)
         return result.scalars().all()
 
-    async def get_by_id(self, cafe_id: int) -> Optional[Cafe]:
+    async def get_by_id(
+        self,
+        cafe_id: int,
+    ) -> Optional[Cafe]:
         """Получить кафе по ID."""
         query = select(Cafe).where(Cafe.id == cafe_id)
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
-    async def get_by_name(self, name: str) -> Optional[Cafe]:
+    async def get_by_name(
+        self,
+        name: str,
+    ) -> Optional[Cafe]:
         """Получить кафе по названию."""
         query = select(Cafe).where(Cafe.name == name)
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
-    async def create(self, cafe_create: CafeCreate) -> Cafe:
+    async def create(
+        self,
+        cafe_create: CafeCreate,
+    ) -> Cafe:
         """Создать новое кафе."""
         cafe = Cafe(**cafe_create.model_dump())
         self.session.add(cafe)
@@ -66,7 +75,10 @@ class CafeRepository:
             await self.session.refresh(cafe)
         return cafe
 
-    async def delete(self, cafe_id: int) -> bool:
+    async def delete(
+        self,
+        cafe_id: int,
+    ) -> bool:
         """Логическое удаление кафе."""
         cafe = await self.get_by_id(cafe_id)
         if not cafe:
@@ -77,7 +89,11 @@ class CafeRepository:
         await self.session.commit()
         return True
 
-    async def set_photo(self, cafe_id: int, photo_id: UUID) -> bool:
+    async def set_photo(
+        self,
+        cafe_id: int,
+        photo_id: UUID,
+    ) -> bool:
         """Установить фото для кафе."""
         cafe = await self.get_by_id(cafe_id)
         if not cafe:
@@ -88,7 +104,10 @@ class CafeRepository:
         await self.session.commit()
         return True
 
-    async def exists(self, cafe_id: int) -> bool:
+    async def exists(
+        self,
+        cafe_id: int,
+    ) -> bool:
         """Проверить существование кафе."""
         query = select(Cafe.id).where(Cafe.id == cafe_id)
         result = await self.session.execute(query)

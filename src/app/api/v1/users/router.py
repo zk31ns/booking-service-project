@@ -68,8 +68,8 @@ async def login(
             'token_type': 'bearer',
             'user': result['user'],
         }
-    except Exception:
-        raise AuthenticationException(ErrorCode.INVALID_CREDENTIALS)
+    except (AuthenticationException, AuthorizationException) as e:
+        raise e
 
 
 @router.post(
@@ -99,8 +99,8 @@ async def refresh_tokens(
             'token_type': 'bearer',
             'user': result['user'],
         }
-    except Exception:
-        raise AuthenticationException(ErrorCode.TOKEN_REFRESH_FAILED)
+    except (AuthenticationException, AuthorizationException) as e:
+        raise e
 
 
 @router.get(
@@ -162,7 +162,7 @@ async def get_users(
             filters=filters if filters else None,
         )
 
-    except Exception:
+    except (AuthorizationException, ValidationException):
         raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
 
 
@@ -195,8 +195,8 @@ async def create_user(
             current_user=current_user,
         )
 
-    except Exception:
-        raise ConflictException(ErrorCode.DATA_CONFLICT)
+    except (ConflictException, ValidationException) as e:
+        raise e
 
 
 @router.get(
@@ -220,8 +220,8 @@ async def get_user_by_id(
             current_user=current_user,
         )
 
-    except Exception:
-        raise NotFoundException(ErrorCode.USER_NOT_FOUND)
+    except (NotFoundException, AuthorizationException) as e:
+        raise e
 
 
 @router.patch(
@@ -247,8 +247,13 @@ async def update_user(
             current_user=current_user,
         )
 
-    except Exception:
-        raise NotFoundException(ErrorCode.USER_NOT_FOUND)
+    except (
+        NotFoundException,
+        AuthorizationException,
+        ValidationException,
+        ConflictException,
+    ) as e:
+        raise e
 
 
 @router.get(
@@ -287,8 +292,12 @@ async def update_current_user(
             current_user=current_user,
         )
 
-    except Exception:
-        raise NotFoundException(ErrorCode.USER_NOT_FOUND)
+    except (
+        AuthorizationException,
+        ValidationException,
+        ConflictException,
+    ) as e:
+        raise e
 
 
 @router.post(
@@ -314,8 +323,13 @@ async def change_password(
             current_user=current_user,
         )
 
-    except Exception:
-        raise AuthenticationException(ErrorCode.PASSWORD_CHANGE_FAILED)
+    except (
+        NotFoundException,
+        AuthenticationException,
+        AuthorizationException,
+        ValidationException,
+    ) as e:
+        raise e
 
 
 @router.delete(
@@ -338,8 +352,12 @@ async def delete_user(
             user_id=user_id,
             current_user=current_user,
         )
-    except Exception:
-        raise NotFoundException(ErrorCode.USER_NOT_FOUND)
+    except (
+        NotFoundException,
+        AuthorizationException,
+        ValidationException,
+    ) as e:
+        raise e
 
 
 @router.delete(
@@ -404,8 +422,8 @@ async def search_users(
             current_user=current_user,
         )
 
-    except Exception:
-        raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
+    except AuthorizationException as e:
+        raise e
 
 
 @router.get(

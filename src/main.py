@@ -69,8 +69,6 @@ app.add_middleware(
 # Health check
 app.include_router(health.router, prefix=API_V1_PREFIX, tags=TAGS_HEALTH)
 
-# Users/Auth (TODO: Александр)
-app.include_router(users_router, prefix=API_V1_PREFIX, tags=TAGS_USERS)
 
 # TODO: Cafes router (Павел)
 # app.include_router(cafes_router, prefix=API_V1_PREFIX, tags=TAGS_CAFES)

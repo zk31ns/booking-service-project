@@ -5,7 +5,7 @@
 лучшей структурации и типизации.
 
 Использование:
-    from app.core.constants import (
+    from src.app.core.constants import (
         API, Limits, Times, Messages, ErrorCode
     )
 
@@ -14,7 +14,7 @@
     print(Times.ACCESS_TOKEN_MINUTES)  # 60
 
 Обратная совместимость:
-    from app.core.constants import (
+    from src.app.core.constants import (
         API_V1_PREFIX, TAGS_HEALTH
     )  # Старые имена всё ещё работают
 """

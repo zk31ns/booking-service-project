@@ -1,4 +1,3 @@
-# src/app/api/v1/slots/schemas.py
 from datetime import datetime, time
 
 from pydantic import BaseModel, Field
@@ -7,16 +6,16 @@ from pydantic import BaseModel, Field
 class SlotCreate(BaseModel):
     """Входные данные для создания слота."""
 
-    start_time: time = Field(..., description="Время начала слота")
-    end_time: time = Field(..., description="Время окончания слота")
+    start_time: time = Field(..., description='Время начала слота')
+    end_time: time = Field(..., description='Время окончания слота')
 
 
 class SlotUpdate(BaseModel):
     """Входные данные для обновления слота."""
 
-    start_time: time | None = Field(None, description="Время начала слота")
-    end_time: time | None = Field(None, description="Время окончания слота")
-    active: bool | None = Field(None, description="Активен ли слот")
+    start_time: time | None = Field(None, description='Время начала слота')
+    end_time: time | None = Field(None, description='Время окончания слота')
+    active: bool | None = Field(None, description='Активен ли слот')
 
 
 class SlotInfo(BaseModel):

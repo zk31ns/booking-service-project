@@ -5,7 +5,7 @@ from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.slots.models import Slot
+from app.models.slot import Slot
 
 
 class SlotRepository:
@@ -15,7 +15,6 @@ class SlotRepository:
         """Инициализация репозитория."""
         self.session = session
 
-    # ========== CREATE ==========
     async def create(
             self,
             cafe_id: int,
@@ -40,7 +39,6 @@ class SlotRepository:
         )
         return slot
 
-    # ========== READ ==========
     async def get_by_id(self, slot_id: int) -> Optional[Slot]:
         """Получение слота по ID."""
         query = select(Slot).where(Slot.id == slot_id)

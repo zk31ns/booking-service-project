@@ -31,4 +31,6 @@ class SlotInfo(BaseModel):
     updated_at: datetime
 
     class Config:
+        """Конфигурация Pydantic."""
+
         from_attributes = True

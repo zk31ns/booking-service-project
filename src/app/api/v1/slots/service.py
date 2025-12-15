@@ -1,5 +1,5 @@
 from datetime import time
-from typing import List, Optional
+from typing import Optional
 
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,7 +13,8 @@ from app.core.exceptions import ConflictException, ValidationException
 class SlotService:
     """Бизнес-логика для слотов."""
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession) -> None:
+        """Инициализация сервиса слотов."""
         self.repo = SlotRepository(session)
 
     async def create_slot(
@@ -29,12 +30,18 @@ class SlotService:
                 detail='Время начала должно быть раньше времени окончания'
             )
 
-        existing_slots = await self.repo.get_all_by_cafe(cafe_id, show_inactive=True)
+        existing_slots = await self.repo.get_all_by_cafe(
+            cafe_id, show_inactive=True
+        )
         for slot in existing_slots:
-            if self._slots_overlap(slot.start_time, slot.end_time, start_time, end_time):
+            if self._slots_overlap(
+                    slot.start_time, slot.end_time, start_time, end_time
+            ):
                 raise ConflictException(
                     error_code=ErrorCode.SLOT_OVERLAP,
-                    detail='Интервал времени пересекается с существующим слотом'
+                    detail=(
+                        'Интервал времени пересекается с существующим слотом'
+                    )
                 )
 
         slot = await self.repo.create(cafe_id, start_time, end_time)
@@ -44,7 +51,10 @@ class SlotService:
         )
         return slot
 
-    def _slots_overlap(self, s1_start: time, s1_end: time, s2_start: time, s2_end: time) -> bool:
+    def _slots_overlap(
+            self, s1_start: time, s1_end: time,
+            s2_start: time, s2_end: time
+    ) -> bool:
         """Проверка пересечения двух временных интервалов."""
         t1_start = s1_start.replace(tzinfo=None)
         t1_end = s1_end.replace(tzinfo=None)
@@ -57,7 +67,9 @@ class SlotService:
         """Получение слота."""
         return await self.repo.get_by_id(slot_id)
 
-    async def get_cafe_slots(self, cafe_id: int, show_inactive: bool = False) -> List[Slot]:
+    async def get_cafe_slots(
+            self, cafe_id: int, show_inactive: bool = False
+    ) -> list[Slot]:
         """Получение слотов кафе."""
         return await self.repo.get_all_by_cafe(cafe_id, show_inactive)
 
@@ -69,7 +81,11 @@ class SlotService:
             active: Optional[bool] = None,
     ) -> Optional[Slot]:
         """Обновление слота."""
-        if start_time is not None and end_time is not None and start_time >= end_time:
+        if (
+            start_time is not None
+            and end_time is not None
+            and start_time >= end_time
+        ):
             raise ValidationException(
                 error_code=ErrorCode.VALIDATION_ERROR,
                 detail='Время начала должно быть раньше времени окончания'

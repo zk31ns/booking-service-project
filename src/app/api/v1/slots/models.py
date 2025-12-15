@@ -7,6 +7,8 @@ from app.db.base import Base
 
 
 class Slot(Base):
+    """Модель слота для временных интервалов кафе."""
+
     __tablename__ = 'slots'
 
     id: Mapped[int] = mapped_column(primary_key=True)

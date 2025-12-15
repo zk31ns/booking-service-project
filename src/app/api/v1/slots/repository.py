@@ -11,7 +11,8 @@ from app.api.v1.slots.models import Slot
 class SlotRepository:
     """Repository для CRUD операций со слотами."""
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession) -> None:
+        """Инициализация репозитория."""
         self.session = session
 
     # ========== CREATE ==========
@@ -22,6 +23,7 @@ class SlotRepository:
             end_time: time,
     ) -> Slot:
         """Создание нового слота.
+
         TODO: Добавить проверку активности кафе когда модель Cafe будет готова.
         """
         slot = Slot(
@@ -96,7 +98,8 @@ class SlotRepository:
 
         logger.info(
             f'Обновлен слот id={slot_id}: '
-            f'время_начала={start_time}, время_окончания={end_time}, активен={active}'
+            f'время_начала={start_time}, '
+            f'время_окончания={end_time}, активен={active}'
         )
         return slot
 

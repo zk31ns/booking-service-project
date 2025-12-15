@@ -16,7 +16,7 @@ from fastapi.security import (
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.app.api.v1.cafes.models import cafe_managers
+# from src.app.api.v1.cafes.models import cafe_managers  # Модуль отсутствует, импорт закомментирован для устранения ошибки
 from src.app.api.v1.users.repository import UserRepository
 from src.app.core.constants import ErrorCode
 from src.app.core.exceptions import (

@@ -122,8 +122,8 @@ class UserUpdate(BaseModel):
 
     username: Optional[str] = Field(
         None,
-        min_length=3,
-        max_length=50,
+        min_length=Limits.MIN_USERNAME_LENGTH,
+        max_length=Limits.MAX_USERNAME_LENGTH,
         description='Уникальное имя пользователя',
     )
     email: Optional[EmailStr] = Field(
@@ -136,13 +136,13 @@ class UserUpdate(BaseModel):
     )
     tg_id: Optional[str] = Field(
         None,
-        max_length=100,
+        max_length=Limits.MAX_TG_ID_LENGTH,
         description='Идентификатор Telegram для уведомлений',
     )
     password: Optional[str] = Field(
         None,
-        min_length=8,
-        max_length=100,
+        min_length=Limits.MIN_PASSWORD_LENGTH,
+        max_length=Limits.MAX_PASSWORD_LENGTH,
         description='Новый пароль пользователя',
     )
     is_blocked: Optional[bool] = Field(

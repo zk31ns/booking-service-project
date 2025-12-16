@@ -3,47 +3,19 @@
 Main entry point приложения.
 """
 
-from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.app.api.v1 import health
 from src.app.core.config import settings
 from src.app.core.constants import API_V1_PREFIX, TAGS_HEALTH
-from src.app.core.logging import logger, setup_logging
+from src.app.core.lifespan import lifespan
+from src.app.core.logging import setup_logging
 
 # Инициализировать логирование
 setup_logging()
 
-# Lifespan-менеджер для старта и завершения приложения
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Lifespan-менеджер для старта и завершения приложения FastAPI."""
-    # Startup
-    startup_msg = (
-        f'Application startup | Title: {settings.app_title} '
-        f'v{settings.app_version}'
-    )
-    logger.info(startup_msg)
-    logger.info(
-        f'Environment: {settings.environment} | Debug: {settings.debug}',
-    )
-    db_url = (
-        settings.database_url.split('@')[1]
-        if '@' in settings.database_url
-        else 'configured'
-    )
-    logger.info(f'Database: {db_url}')
-    logger.info(f'Frontend URL: {settings.frontend_url}')
-    yield
-    # Shutdown
-    logger.info('Application shutdown')
-
-
+# Создать приложение
 app = FastAPI(
     title=settings.app_title,
     version=settings.app_version,

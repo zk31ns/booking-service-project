@@ -98,12 +98,18 @@ class Settings(BaseSettings):
         default='', env='SMTP_PASSWORD', description='SMTP пароль'
     )
 
+    # ========== Telegram bot ID ==========
+    TELEGRAM_BOT_TOKEN: str = Field(
+        default='', description='Telegram bot token'
+    )
+    TELEGRAM_API_URL: str = 'https://api.telegram.org'
+
     class Config:
         """Pydantic конфигурация."""
 
         env_file = '.env'
         env_file_encoding = 'utf-8'
-        case_sensitive = True
+        case_sensitive = False
 
     @property
     def celery_broker(self) -> str:

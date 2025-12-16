@@ -389,10 +389,10 @@ dishes      │      │ seats     │   │start_ │  │price  │
             │                      └───────┘  │active │
             │                                 └───────┘
             └─────────────────────────────────────────┘
-            
-            
+
+
             Дополнительно:
-            
+
             Cafes ◄─────────► Dishes    (через cafe_dishes)
             Cafes ◄─────────► Actions   (через cafe_actions)
 ```
@@ -418,7 +418,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 class User(Base):
     __tablename__ = "users"
-    
+
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(String(255), unique=True)
     email: Mapped[str | None]
@@ -448,7 +448,7 @@ from sqlalchemy import UUID as UUID_Type
 
 class Media(Base):
     __tablename__ = "media"
-    
+
     id: Mapped[UUID] = mapped_column(
         UUID_Type(as_uuid=True),
         primary_key=True,
@@ -463,13 +463,13 @@ from sqlalchemy.orm import Relationship
 
 class User(Base):
     __tablename__ = "users"
-    
+
     id: Mapped[int] = mapped_column(primary_key=True)
     bookings: Mapped[List["Booking"]] = relationship(back_populates="user")
 
 class Booking(Base):
     __tablename__ = "booking"
-    
+
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     user: Mapped["User"] = relationship(back_populates="bookings")
@@ -489,7 +489,7 @@ cafe_managers = Table(
 
 class Cafe(Base):
     __tablename__ = "cafes"
-    
+
     managers: Mapped[List["User"]] = relationship(
         secondary=cafe_managers,
         back_populates="managed_cafes"
@@ -497,7 +497,7 @@ class Cafe(Base):
 
 class User(Base):
     __tablename__ = "users"
-    
+
     managed_cafes: Mapped[List["Cafe"]] = relationship(
         secondary=cafe_managers,
         back_populates="managers"
@@ -512,7 +512,7 @@ from sqlalchemy import func, Boolean
 
 class User(Base):
     __tablename__ = "users"
-    
+
     is_blocked: Mapped[bool] = mapped_column(Boolean, default=False)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
 ```
@@ -526,9 +526,9 @@ class User(Base):
 ```python
 class Booking(Base):
     __tablename__ = "booking"
-    
+
     # ... поля модели ...
-    
+
     __table_args__ = (
         Index("ix_booking_user_id", "user_id"),
         Index("ix_booking_cafe_id", "cafe_id"),

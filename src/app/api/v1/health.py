@@ -40,8 +40,8 @@ async def health_check() -> HealthResponse:
     return HealthResponse(
         status='ok',
         timestamp=datetime.utcnow(),
-        version=settings.APP_VERSION,
-        environment=settings.ENVIRONMENT,
+        version=settings.app_version,
+        environment=settings.environment,
     )
 
 

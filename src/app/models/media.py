@@ -11,6 +11,7 @@ from app.db.base import Base
 
 class Media(Base):
     """Модель для хранения метаданных загруженных файлов."""
+
     __tablename__ = 'media'
 
     id: Mapped[UUID] = mapped_column(

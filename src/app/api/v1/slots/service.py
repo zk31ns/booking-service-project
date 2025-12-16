@@ -4,10 +4,10 @@ from typing import Optional
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.slots.repository import SlotRepository
-from app.core.constants import ErrorCode
-from app.core.exceptions import ConflictException, ValidationException
-from app.models.slot import Slot
+from src.app.api.v1.slots.repository import SlotRepository
+from src.app.core.constants import ErrorCode
+from src.app.core.exceptions import ConflictException, ValidationException
+from src.app.models.slot import Slot
 
 
 class SlotService:
@@ -15,6 +15,7 @@ class SlotService:
 
     def __init__(self, session: AsyncSession) -> None:
         """Инициализация сервиса слотов."""
+        self.session = session
         self.repo = SlotRepository(session)
 
     async def create_slot(
@@ -30,20 +31,7 @@ class SlotService:
                 detail='Время начала должно быть раньше времени окончания'
             )
 
-        existing_slots = await self.repo.get_all_by_cafe(
-            cafe_id, show_inactive=True
-        )
-        for slot in existing_slots:
-            if self._slots_overlap(
-                    slot.start_time, slot.end_time, start_time, end_time
-            ):
-                raise ConflictException(
-                    error_code=ErrorCode.SLOT_OVERLAP,
-                    detail=(
-                        'Интервал времени пересекается с существующим слотом'
-                    )
-                )
-
+        await self._validate_slot_overlap(cafe_id, start_time, end_time)
         slot = await self.repo.create(cafe_id, start_time, end_time)
         logger.info(
             f'Создан слот id={slot.id} для кафе cafe_id={cafe_id}, '
@@ -76,29 +64,74 @@ class SlotService:
     async def update_slot(
             self,
             slot_id: int,
+            cafe_id: int,
             start_time: Optional[time] = None,
             end_time: Optional[time] = None,
             active: Optional[bool] = None,
     ) -> Optional[Slot]:
         """Обновление слота."""
-        if (
-            start_time is not None
-            and end_time is not None
-            and start_time >= end_time
-        ):
+        slot = await self.repo.get_by_id(slot_id)
+
+        if not slot or slot.cafe_id != cafe_id:
+            return None
+        final_start = start_time if start_time is not None else slot.start_time
+        final_end = end_time if end_time is not None else slot.end_time
+        if final_start >= final_end:
             raise ValidationException(
                 error_code=ErrorCode.VALIDATION_ERROR,
                 detail='Время начала должно быть раньше времени окончания'
             )
 
-        slot = await self.repo.update(slot_id, start_time, end_time, active)
-        if slot:
-            logger.info(f'Обновлен слот id={slot_id}')
+        if start_time is not None or end_time is not None:
+            await self._validate_slot_overlap(
+                cafe_id, final_start, final_end, exclude_slot_id=slot_id
+            )
+
+        if start_time is not None:
+            slot.start_time = start_time
+        if end_time is not None:
+            slot.end_time = end_time
+        if active is not None:
+            slot.active = active
+
+        await self.session.flush()
+        logger.info(f'Обновлен слот id={slot_id}')
         return slot
 
-    async def delete_slot(self, slot_id: int) -> bool:
+    async def delete_slot(self, slot_id: int, cafe_id: int) -> bool:
         """Удаление слота."""
-        result = await self.repo.delete(slot_id)
-        if result:
-            logger.info(f'Удален слот id={slot_id}')
-        return result
+        slot = await self.repo.get_by_id(slot_id)
+        if not slot or slot.cafe_id != cafe_id:
+            return False
+
+        slot.active = False
+        await self.session.flush()
+        logger.info(f'Удален (деактивирован) слот id={slot_id}')
+        return True
+
+    async def _validate_slot_overlap(
+            self,
+            cafe_id: int,
+            start_time: time,
+            end_time: time,
+            exclude_slot_id: Optional[int] = None,
+    ) -> None:
+        """Проверка пересечения с существующими слотами."""
+        existing_slots = await self.repo.get_all_by_cafe(
+            cafe_id, show_inactive=False
+        )
+
+        for slot in existing_slots:
+            if exclude_slot_id and slot.id == exclude_slot_id:
+                continue
+
+            if self._slots_overlap(
+                    slot.start_time, slot.end_time, start_time, end_time
+            ):
+                raise ConflictException(
+                    error_code=ErrorCode.SLOT_OVERLAP,
+                    detail=(
+                        f'Интервал времени пересекается с существующим слотом '
+                        f'(id={slot.id}, {slot.start_time}-{slot.end_time})'
+                    )
+                )

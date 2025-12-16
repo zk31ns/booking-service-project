@@ -5,7 +5,7 @@ from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.slot import Slot
+from src.app.models.slot import Slot
 
 
 class SlotRepository:
@@ -76,13 +76,14 @@ class SlotRepository:
     async def update(
             self,
             slot_id: int,
+            cafe_id: int,
             start_time: Optional[time] = None,
             end_time: Optional[time] = None,
             active: Optional[bool] = None,
     ) -> Optional[Slot]:
         """Обновление слота."""
         slot = await self.get_by_id(slot_id)
-        if not slot:
+        if not slot or slot.cafe_id != cafe_id:
             return None
 
         if start_time is not None:
@@ -93,22 +94,14 @@ class SlotRepository:
             slot.active = active
 
         await self.session.flush()
-
-        logger.info(
-            f'Обновлен слот id={slot_id}: '
-            f'время_начала={start_time}, '
-            f'время_окончания={end_time}, активен={active}'
-        )
         return slot
 
-    async def delete(self, slot_id: int) -> bool:
+    async def delete(self, slot_id: int, cafe_id: int) -> bool:
         """Логическое удаление слота (установка active=False)."""
         slot = await self.get_by_id(slot_id)
-        if not slot:
+        if not slot or slot.cafe_id != cafe_id:
             return False
 
         slot.active = False
         await self.session.flush()
-
-        logger.info(f'Удален (деактивирован) слот id={slot_id}')
         return True

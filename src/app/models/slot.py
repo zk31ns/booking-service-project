@@ -1,9 +1,9 @@
-from datetime import datetime, time
+from datetime import UTC, datetime, time
 
-from sqlalchemy import CheckConstraint, Time, UniqueConstraint
+from sqlalchemy import Time
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import Base
+from src.app.db.base import Base
 
 
 class Slot(Base):
@@ -12,21 +12,15 @@ class Slot(Base):
     __tablename__ = 'slots'
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    # Нужно будет заменить на ForeignKey когда будет таблица Cafe
-    cafe_id: Mapped[int] = mapped_column(nullable=False)
+    # TODO Нужно будет заменить на ForeignKey когда будет таблица Cafe
+    cafe_id: Mapped[int] = mapped_column(nullable=False, index=True)
     start_time: Mapped[time] = mapped_column(Time, nullable=False)
     end_time: Mapped[time] = mapped_column(Time, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        default=lambda: datetime.now(UTC)
+    )
     updated_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC)
     )
     active: Mapped[bool] = mapped_column(default=True)
-
-    __table_args__ = (
-        UniqueConstraint(
-            'cafe_id', 'start_time', 'end_time',
-            name='uq_cafe_slots'
-        ),
-        CheckConstraint('start_time < end_time', name='ck_slot_time_order'),
-    )

@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.slots.schemas import SlotCreate, SlotInfo, SlotUpdate
-from app.api.v1.slots.service import SlotService
-from app.db.session import get_session
+from src.app.api.v1.slots.schemas import SlotCreate, SlotInfo, SlotUpdate
+from src.app.api.v1.slots.service import SlotService
+from src.app.db.session import get_session
 
 router = APIRouter(prefix='/cafes/{cafe_id}/slots')
 
@@ -51,13 +51,12 @@ async def update_slot(
     service = SlotService(session)
     slot = await service.update_slot(
         slot_id,
+        cafe_id,
         data.start_time,
         data.end_time,
         data.active,
     )
     if not slot:
-        logger.warning(f'Слот slot_id={slot_id} не найден')
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail='Слот не найден')
     await session.commit()
     logger.info(f'Обновлен слот slot_id={slot_id}')
@@ -72,10 +71,8 @@ async def delete_slot(
 ) -> None:
     """Удаление слота."""
     service = SlotService(session)
-    result = await service.delete_slot(slot_id)
+    result = await service.delete_slot(slot_id, cafe_id)
     if not result:
-        logger.warning(f'Слот slot_id={slot_id} не найден')
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail='Слот не найден')
     await session.commit()
     logger.info(f'Удален слот slot_id={slot_id}')

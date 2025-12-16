@@ -11,8 +11,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.app.api.v1 import health
 from src.app.core.config import settings
-from src.app.core.lifespan import lifespan
 from src.app.core.constants import API_V1_PREFIX, TAGS_HEALTH
+from src.app.core.lifespan import lifespan
 from src.app.core.logging import logger, setup_logging
 
 # Инициализировать логирование

@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import Index, Integer, String
@@ -34,7 +34,6 @@ class Media(Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         default=datetime.now,
-        onupdate=datetime.now,
         nullable=False,
     )
     updated_at: Mapped[datetime] = mapped_column(

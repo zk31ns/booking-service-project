@@ -1,9 +1,7 @@
-"""Pydantic схемы для медиа-файлов."""
-
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class MediaResponse(BaseModel):
@@ -14,8 +12,7 @@ class MediaResponse(BaseModel):
     mime_type: str
     file_size: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MediaInfo(BaseModel):
@@ -26,5 +23,4 @@ class MediaInfo(BaseModel):
     file_size: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

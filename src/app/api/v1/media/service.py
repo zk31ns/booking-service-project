@@ -6,8 +6,12 @@ from pathlib import Path
 from PIL import Image
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.app.core.constants import ErrorCode, Limits
+from src.app.core.exceptions import (
+    InternalServerException,
+    ValidationException,
+)
 from src.app.models.media import Media
-from src.app.core.constants import Limits
 
 
 class MediaService:
@@ -26,32 +30,44 @@ class MediaService:
     ) -> Media:
         """Загрузить и сохранить файл."""
         if content_type not in cls.ALLOWED_MIMETYPES:
-            raise ValueError(
-                f'Недопустимый тип файла. '
-                f'Разрешены: {", ".join(cls.ALLOWED_MIMETYPES)}'
-            )
+            raise ValidationException(
+                ErrorCode.INVALID_FILE_TYPE,
+                detail='Недопустимый тип файла (разрешены JPG, PNG)'
+        )
 
         if len(file_bytes) > cls.MAX_SIZE_BYTES:
-            raise ValueError(
-                f'Размер файла превышает максимум '
-                f'({Limits.MAX_UPLOAD_SIZE_MB}МБ)'
+            raise ValidationException(
+                ErrorCode.FILE_TOO_LARGE,
+                detail='Файл слишком большой (макс. 5MB)'
+
+            )
+        try:
+
+            image = Image.open(io.BytesIO(file_bytes))
+
+            if image.mode in ('RGBA', 'LA', 'P'):
+                background = Image.new('RGB', image.size, (255, 255, 255))
+                if image.mode == 'P':
+                    image = image.convert('RGBA')
+                background.paste(image, mask=image.split()[-1])
+                image = background
+
+            cls.MEDIA_DIR.mkdir(parents=True, exist_ok=True)
+            file_id = uuid.uuid4()
+            file_path = cls.MEDIA_DIR / f'{file_id}.jpg'
+
+            image.save(file_path, format='JPEG', quality=85, optimize=True)
+            file_size = os.path.getsize(file_path)
+
+        except (IOError, OSError) as e:
+            raise InternalServerException(
+                detail=f'Ошибка сохранения файла: {str(e)}'
             )
 
-        image = Image.open(io.BytesIO(file_bytes))
-
-        if image.mode in ('RGBA', 'LA', 'P'):
-            background = Image.new('RGB', image.size, (255, 255, 255))
-            if image.mode == 'P':
-                image = image.convert('RGBA')
-            background.paste(image, mask=image.split()[-1])
-            image = background
-
-        cls.MEDIA_DIR.mkdir(parents=True, exist_ok=True)
-        file_id = uuid.uuid4()
-        file_path = cls.MEDIA_DIR / f'{file_id}.jpg'
-
-        image.save(file_path, format='JPEG', quality=85, optimize=True)
-        file_size = os.path.getsize(file_path)
+        except Exception as e:
+            raise InternalServerException(
+                detail=f'Ошибка обработки изображения: {str(e)}'
+            )
 
         media = Media(
             id=file_id,

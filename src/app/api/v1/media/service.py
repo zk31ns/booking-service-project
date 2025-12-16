@@ -6,14 +6,14 @@ from pathlib import Path
 from PIL import Image
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.media import Media
-from app.core.constants import Limits
+from src.app.models.media import Media
+from src.app.core.constants import Limits
 
 
 class MediaService:
     """Сервис для загрузки и обработки медиа-файлов."""
 
-    MEDIA_DIR = Path('/app/media')
+    MEDIA_DIR = Path('media')
     ALLOWED_MIMETYPES = Limits.ALLOWED_IMAGE_MIMETYPES
     MAX_SIZE_BYTES = Limits.MAX_UPLOAD_SIZE_BYTES
 

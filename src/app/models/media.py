@@ -6,7 +6,7 @@ from sqlalchemy import Index, Integer, String
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import Base
+from src.app.db.base import Base
 
 
 class Media(Base):
@@ -33,13 +33,13 @@ class Media(Base):
         nullable=False
     )
     created_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
+        default=datetime.now,
+        onupdate=datetime.now,
         nullable=False,
     )
     updated_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
+        default=datetime.now,
+        onupdate=datetime.now,
         nullable=False,
     )
     active: Mapped[bool] = mapped_column(

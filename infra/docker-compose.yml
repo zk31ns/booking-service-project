@@ -62,7 +62,7 @@ services:
 
   worker:
     container_name: booking_worker
-    env_file: ../.env 
+    env_file: ../.env
     build:
       context: ..
       dockerfile: infra/Dockerfile
@@ -76,7 +76,7 @@ services:
 
   beat:
     container_name: booking_beat
-    env_file: ../.env 
+    env_file: ../.env
     build:
       context: ..
       dockerfile: infra/Dockerfile

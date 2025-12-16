@@ -24,7 +24,7 @@ def setup_logging() -> None:
     )
     _logger.add(
         sys.stdout,
-        level=settings.LOG_LEVEL,
+        level=settings.log_level,
         format=console_format,
         colorize=True,
         backtrace=True,
@@ -37,19 +37,19 @@ def setup_logging() -> None:
         '{name}:{function}:{line} - {message}'
     )
     _logger.add(
-        settings.LOG_FILE,
-        level=settings.LOG_LEVEL,
+        settings.log_file,
+        level=settings.log_level,
         format=file_format,
-        rotation=settings.LOG_ROTATION,
-        retention=settings.LOG_RETENTION,
+        rotation=settings.log_rotation,
+        retention=settings.log_retention,
         compression='zip',
         backtrace=True,
         diagnose=False,  # Без диагностики в файлах для экономии места
     )
 
     log_msg = (
-        f'Logging initialized | Level: {settings.LOG_LEVEL} | '
-        f'File: {settings.LOG_FILE}'
+        f'Logging initialized | Level: {settings.log_level} | '
+        f'File: {settings.log_file}'
     )
     _logger.info(log_msg)
 

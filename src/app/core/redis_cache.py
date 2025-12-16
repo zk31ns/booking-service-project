@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from redis.asyncio import Redis
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
-from app.core.constants import Times
+from src.app.core.constants import Times
 
 
 class RedisCache:
@@ -62,8 +62,9 @@ class RedisCache:
                 return json.dumps([item.model_dump() for item in value])
             # Список моделей SQLAlchemy
             if isinstance(first_item.__class__, DeclarativeMeta):
-                return json.dumps(
-                    [cls._sqlalchemy_to_dict(item) for item in value])
+                return json.dumps([
+                    cls._sqlalchemy_to_dict(item) for item in value
+                ])
             # Простой список
             return json.dumps(value)
         # Одиночная модель Pydantic
@@ -97,10 +98,9 @@ class RedisCache:
         return result
 
     @classmethod
-    async def set(cls,
-                  key: str,
-                  value: Any,
-                  expire: int = Times.REDIS_CACHE_EXPIRE_TIME) -> None:
+    async def set(
+        cls, key: str, value: Any, expire: int = Times.REDIS_CACHE_EXPIRE_TIME
+    ) -> None:
         """Сохраняет данные в кэш.
 
         Args:

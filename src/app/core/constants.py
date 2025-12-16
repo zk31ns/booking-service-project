@@ -125,6 +125,7 @@ class Times:
     # Telegram request timeout
     TELEGRAM_REQUEST_TIMEOUT = 30
 
+
 # ========== Enum классы ==========
 
 

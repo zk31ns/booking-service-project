@@ -99,7 +99,9 @@ class Settings(BaseSettings):
     )
 
     # ========== Telegram bot ID ==========
-    TELEGRAM_BOT_TOKEN: str = Field(default='', description='Telegram bot token')
+    TELEGRAM_BOT_TOKEN: str = Field(
+        default='', description='Telegram bot token'
+    )
     TELEGRAM_API_URL: str = 'https://api.telegram.org'
 
     class Config:

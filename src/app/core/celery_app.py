@@ -2,13 +2,13 @@
 
 from celery import Celery
 
-from app.core.config import settings
-from app.core.constants import Times
+from src.app.core.config import settings
+from src.app.core.constants import Times
 
 celery_app = Celery(
     'booking',
-    broker=settings.RABBITMQ_URL,
-    backend=settings.CELERY_RESULT_BACKEND,
+    broker=settings.rabbitmq_url,
+    backend=settings.celery_result_backend,
 )
 
 # Настройка Celery

@@ -97,7 +97,7 @@ class Settings(BaseSettings):
 
         env_file = '.env'
         env_file_encoding = 'utf-8'
-        case_sensitive = True
+        case_sensitive = False
 
     @property
     def celery_broker(self) -> str:

@@ -1,14 +1,20 @@
 """Alembic environment for async SQLAlchemy migrations."""
 
 import asyncio
+import sys
 from logging.config import fileConfig
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from alembic import context
-from app.db.base import Base
+
+# Добавить src в путь для импорта (исправляет проблему с абсолютными импортами)
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
+from src.app.db.base import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

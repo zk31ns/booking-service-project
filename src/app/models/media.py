@@ -1,0 +1,53 @@
+import uuid
+from datetime import UTC, datetime
+from uuid import UUID
+
+from sqlalchemy import Index, Integer, String
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.db.base import Base
+
+
+class Media(Base):
+    """Модель для хранения метаданных загруженных файлов."""
+    __tablename__ = 'media'
+
+    id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    file_path: Mapped[str] = mapped_column(
+        String(512),
+        unique=True,
+        nullable=False
+    )
+    mime_type: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+    )
+    file_size: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+    active: Mapped[bool] = mapped_column(
+        default=True,
+        nullable=False,
+    )
+
+    __table_args__ = (
+        Index('ix_media_file_path', 'file_path'),
+        Index('ix_media_created_at', 'created_at'),
+        Index('ix_media_active', 'active'),
+    )

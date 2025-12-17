@@ -17,10 +17,10 @@ class Slot(Base):
     start_time: Mapped[time] = mapped_column(Time, nullable=False)
     end_time: Mapped[time] = mapped_column(Time, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(UTC)
+        default=datetime.utcnow
     )
     updated_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC)
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow
     )
     active: Mapped[bool] = mapped_column(default=True)

@@ -3,8 +3,6 @@ name: Notify Changes Requested in Telegram
 on:
   pull_request_review:
     types: [submitted]
-    branches:
-      - develop
 
 jobs:
   notify:

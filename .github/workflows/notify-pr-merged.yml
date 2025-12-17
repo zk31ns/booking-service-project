@@ -3,8 +3,6 @@ name: Notify PR Merged in Telegram
 on:
   pull_request:
     types: [closed]
-    branches:
-      - develop
 
 jobs:
   notify:

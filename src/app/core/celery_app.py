@@ -1,9 +1,15 @@
 """Инициализация и настройка очереди задач Celery."""
 
-from celery import Celery
+from typing import Any, Dict, Optional
+
+from celery import Celery, Task
+from celery.schedules import crontab
+from celery.signals import setup_logging as celery_setup_logging
+from celery.signals import task_postrun, task_prerun
 
 from src.app.core.config import settings
-from src.app.core.constants import Times
+from src.app.core.constants import EventType, Times
+from src.app.core.logging import logger, setup_logging
 
 celery_app = Celery(
     'booking',
@@ -34,6 +40,72 @@ celery_app.conf.update(
     },
     task_ignore_result=False,
     result_expires=Times.RABBITMQ_RESULT_EXPIRE,
+    # Отключение перехвата логирования
+    worker_hijack_root_logger=False,
 )
 
-celery_app.autodiscover_tasks(['app.core.celery_tasks'])
+# Настройка расписания для Celery Beat
+celery_app.conf.beat_schedule = {
+    'periodically_cleanup_expired_bookings': {
+        'task': 'cleanup_expired_bookings',
+        'schedule': crontab(hour=Times.CLEANUP_EXPIRED_BOOKINGS_START,
+                            minute=0),
+        'options': {
+            'expires': 3600,
+        }
+    },
+}
+
+
+@celery_setup_logging.connect
+def configure_loguru_for_celery(**kwargs: Any) -> None:
+    """Настройка Loguru при запуске Celery worker."""
+    setup_logging()
+    logger.info('Loguru was configured for Celery worker.')
+
+
+@task_prerun.connect
+def task_prerun_handler(
+    sender: Optional[Celery] = None,
+    task_id: Optional[str] = None,
+    task: Optional[Task] = None,
+    args: Optional[tuple[Any, ...]] = None,
+    kwargs: Optional[Dict[str, Any]] = None,
+    **extra: Any,
+) -> None:
+    """Логирование старта задачи."""
+    logger.info(
+        f'SYSTEM: {EventType.TASK_STARTED} '
+        f'Task {task.name} (id: {task_id})',
+        extra={
+            'task_id': task_id,
+            'task_name': task.name,
+            'args': args,
+            'kwargs': kwargs,
+        }
+    )
+
+
+@task_postrun.connect
+def task_postrun_handler(
+    sender: Optional[Celery] = None,
+    task_id: Optional[str] = None,
+    task: Optional[Task] = None,
+    retval: Any = None,
+    state: Optional[str] = None,
+    **extra: Any,
+) -> None:
+    """Логирование завершения задачи."""
+    logger.info(
+        f'SYSTEM: {EventType.TASK_FINISHED} '
+        f'Task {task.name} (id: {task_id})',
+        extra={
+            'task_id': task_id,
+            'task_name': task.name,
+            'state': state,
+            'result': retval,
+        }
+    )
+
+
+celery_app.autodiscover_tasks(['src.app.core.celery_tasks'])

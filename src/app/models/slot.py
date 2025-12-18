@@ -1,6 +1,6 @@
 from datetime import datetime, time
 
-from sqlalchemy import Time
+from sqlalchemy import ForeignKey, Time
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.app.db.base import Base
@@ -12,8 +12,11 @@ class Slot(Base):
     __tablename__ = 'slots'
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    # TODO Нужно будет заменить на ForeignKey когда будет таблица Cafe
-    cafe_id: Mapped[int] = mapped_column(nullable=False, index=True)
+    cafe_id: Mapped[int] = mapped_column(
+        ForeignKey('cafes.id', ondelete='CASCADE'),
+        nullable=False,
+        index=True
+    )
     start_time: Mapped[time] = mapped_column(Time, nullable=False)
     end_time: Mapped[time] = mapped_column(Time, nullable=False)
     created_at: Mapped[datetime] = mapped_column(

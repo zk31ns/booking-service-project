@@ -1,5 +1,5 @@
 from datetime import time
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,6 +8,9 @@ from src.app.api.v1.slots.repository import SlotRepository
 from src.app.core.constants import ErrorCode
 from src.app.core.exceptions import ConflictException, ValidationException
 from src.app.models.slot import Slot
+
+if TYPE_CHECKING:
+    from src.app.api.v1.cafes.repository import CafeRepository
 
 
 class SlotService:
@@ -18,6 +21,17 @@ class SlotService:
         self.session = session
         self.repo = SlotRepository(session)
 
+    async def _validate_cafe_exists(self, cafe_id: int) -> None:
+        """Проверка существования кафе."""
+        cafe_repo = CafeRepository(self.session)
+        cafe = await cafe_repo.get_by_id(cafe_id)
+
+        if not cafe:
+            raise ValidationException(
+                error_code=ErrorCode.CAFE_NOT_FOUND,
+                detail=f'Кафе с ID {cafe_id} не найдено'
+            )
+
     async def create_slot(
             self,
             cafe_id: int,
@@ -25,6 +39,7 @@ class SlotService:
             end_time: time,
     ) -> Slot:
         """Создание слота с проверками."""
+        await self._validate_cafe_exists(cafe_id)
         if start_time >= end_time:
             raise ValidationException(
                 error_code=ErrorCode.INVALID_TIME_RANGE,
@@ -44,12 +59,7 @@ class SlotService:
             s2_start: time, s2_end: time
     ) -> bool:
         """Проверка пересечения двух временных интервалов."""
-        t1_start = s1_start.replace(tzinfo=None)
-        t1_end = s1_end.replace(tzinfo=None)
-        t2_start = s2_start.replace(tzinfo=None)
-        t2_end = s2_end.replace(tzinfo=None)
-
-        return t1_start < t2_end and t2_start < t1_end
+        return s1_start < s2_end and s2_start < s1_end
 
     async def get_slot(self, slot_id: int) -> Optional[Slot]:
         """Получение слота."""

@@ -2,6 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, UploadFile, status
 from fastapi.responses import FileResponse
+from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,6 +35,9 @@ async def upload_media(
     # TODO: if current_user.role not in ["admin", "manager"]:
     # TODO:    raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
 
+    logger.info(f'Начало загрузки файла: '
+                f'{file.filename}, тип: {file.content_type}')
+
     file_bytes = await file.read()
 
     media = await MediaService.upload(
@@ -43,6 +47,8 @@ async def upload_media(
     )
 
     await session.commit()
+    logger.info(f'Файл успешно загружен: '
+                f'id={media.id}, размер={media.file_size} байт')
     return media
 
 
@@ -52,17 +58,20 @@ async def get_media_info(
     session: AsyncSession = Depends(get_session),
 ) -> None:
     """Получить информацию о медиа-файле."""
+    logger.info(f'Запрос информации о медиа: id={media_id}')
     result = await session.execute(
         select(Media).where(Media.id == media_id, Media.active)
     )
     media = result.scalar_one_or_none()
 
     if not media:
+        logger.warning(f'Медиа не найдено: id={media_id}')
         raise NotFoundException(
             ErrorCode.MEDIA_NOT_FOUND,
             detail='Изображение не найдено'
         )
 
+    logger.info(f'Информация о медиа получена: id={media_id}')
     return media
 
 
@@ -72,17 +81,21 @@ async def download_media(
     session: AsyncSession = Depends(get_session),
 ) -> None:
     """Скачать медиа-файл."""
+    logger.info(f'Запрос на скачивание медиа: id={media_id}')
     result = await session.execute(
         select(Media).where(Media.id == media_id, Media.active)
     )
     media = result.scalar_one_or_none()
 
     if not media:
+        logger.warning(f'Медиа для скачивания не найдено: id={media_id}')
         raise NotFoundException(
             ErrorCode.MEDIA_NOT_FOUND,
             detail='Изображение не найдено'
         )
 
+    logger.info(f'Медиа успешно отправлено: '
+                f'id={media_id}, путь={media.file_path}')
     return FileResponse(media.file_path, media_type=media.mime_type)
 
 
@@ -97,12 +110,14 @@ async def delete_media(
     # TODO: if current_user.role not in ["admin", "manager"]:
     # TODO:    raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
 
+    logger.info(f'Запрос на удаление медиа: id={media_id}')
     result = await session.execute(
         select(Media).where(Media.id == media_id, Media.active)
     )
     media = result.scalar_one_or_none()
 
     if not media:
+        logger.warning(f'Медиа для удаления не найдено: id={media_id}')
         raise NotFoundException(
             ErrorCode.MEDIA_NOT_FOUND,
             detail='Изображение не найдено'
@@ -110,3 +125,4 @@ async def delete_media(
 
     media.active = False
     await session.commit()
+    logger.info(f'Медиа успешно удалено: id={media_id}')

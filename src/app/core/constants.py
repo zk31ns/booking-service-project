@@ -184,7 +184,6 @@ class ErrorCode(str, Enum):
     SLOT_INACTIVE = 'slot_inactive'
     SLOT_OVERLAP = 'slot_overlap'
     INVALID_TIME_RANGE = 'invalid_time_range'
-    CONFLICT = 409
 
     # Booking
     BOOKING_NOT_FOUND = 'booking_not_found'

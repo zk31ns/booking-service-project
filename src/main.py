@@ -7,8 +7,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.app.api.v1 import health
+from src.app.api.v1.slots.router import router as slots_router
 from src.app.core.config import settings
-from src.app.core.constants import API_V1_PREFIX, TAGS_HEALTH
+from src.app.core.constants import API_V1_PREFIX, TAGS_HEALTH, TAGS_SLOTS
 from src.app.core.lifespan import lifespan
 from src.app.core.logging import setup_logging
 
@@ -47,8 +48,7 @@ app.include_router(health.router, prefix=API_V1_PREFIX, tags=TAGS_HEALTH)
 # TODO: Tables router (Павел)
 # app.include_router(tables_router, prefix=API_V1_PREFIX, tags=TAGS_TABLES)
 
-# TODO: Slots router (Лев)
-# app.include_router(slots_router, prefix=API_V1_PREFIX, tags=TAGS_SLOTS)
+app.include_router(slots_router, prefix=API_V1_PREFIX, tags=TAGS_SLOTS)
 
 # TODO: Booking router (Анастасия)
 # app.include_router(booking_router, prefix=API_V1_PREFIX, tags=TAGS_BOOKING)

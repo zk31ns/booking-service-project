@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
 
 # Добавить src в путь для импорта (исправляет проблему с абсолютными импортами)
+# env.py находится в src/app/alembic/, поэтому нужно подняться на 3 уровня до корня
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from src.app.db.base import Base

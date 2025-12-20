@@ -7,7 +7,7 @@ on:
 jobs:
   notify:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Check review action
         id: check_review
@@ -15,7 +15,7 @@ jobs:
           if [ "${{ github.event.review.state }}" == "approved" ]; then
             echo "approved=true" >> $GITHUB_OUTPUT
           fi
-      
+
       - name: Send Telegram notification
         if: steps.check_review.outputs.approved == 'true'
         uses: appleboy/telegram-action@master
@@ -24,13 +24,13 @@ jobs:
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           message: |
             ✨ **PR одобрен!**
-            
+
             📌 PR: #${{ github.event.pull_request.number }}
             📝 Название: ${{ github.event.pull_request.title }}
             👤 Автор: @${{ github.event.pull_request.user.login }}
             👀 Рецензент: @${{ github.event.review.user.login }}
-            
+
             🔗 Ссылка: ${{ github.event.pull_request.html_url }}
-            
+
             ✅ Код готов к мержу!
           format: html

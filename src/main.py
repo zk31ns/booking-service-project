@@ -7,6 +7,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.app.api.v1 import health
+from src.app.api.v1.actions import router as actions_router
+from src.app.api.v1.dishes import router as dishes_router
 from src.app.api.v1.slots import router as slots_router
 from src.app.api.v1.users import router as users_router
 from src.app.core.config import settings
@@ -47,6 +49,12 @@ app.include_router(users_router, prefix=API.V1_PREFIX)
 
 # Slots
 app.include_router(slots_router, prefix=API.V1_PREFIX, tags=API.SLOTS)
+
+# Dishes
+app.include_router(dishes_router, prefix=API.V1_PREFIX)
+
+# Actions
+app.include_router(actions_router, prefix=API.V1_PREFIX)
 
 
 # TODO: Cafes router (Павел)

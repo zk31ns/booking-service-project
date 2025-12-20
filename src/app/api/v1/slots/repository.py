@@ -16,10 +16,10 @@ class SlotRepository:
         self.session = session
 
     async def create(
-            self,
-            cafe_id: int,
-            start_time: time,
-            end_time: time,
+        self,
+        cafe_id: int,
+        start_time: time,
+        end_time: time,
     ) -> Slot:
         """Создание нового слота.
 
@@ -53,9 +53,9 @@ class SlotRepository:
         return slot
 
     async def get_all_by_cafe(
-            self,
-            cafe_id: int,
-            show_inactive: bool = False,
+        self,
+        cafe_id: int,
+        show_inactive: bool = False,
     ) -> list[Slot]:
         """Получение всех слотов кафе."""
         query = select(Slot).where(Slot.cafe_id == cafe_id)
@@ -74,12 +74,12 @@ class SlotRepository:
         return slots
 
     async def update(
-            self,
-            slot_id: int,
-            cafe_id: int,
-            start_time: Optional[time] = None,
-            end_time: Optional[time] = None,
-            active: Optional[bool] = None,
+        self,
+        slot_id: int,
+        cafe_id: int,
+        start_time: Optional[time] = None,
+        end_time: Optional[time] = None,
+        active: Optional[bool] = None,
     ) -> Optional[Slot]:
         """Обновление слота."""
         slot = await self.get_by_id(slot_id)

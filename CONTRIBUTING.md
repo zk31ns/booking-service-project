@@ -182,11 +182,11 @@ def create_user(name, email):
 # ✅ Правильно
 def create_user(name: str, email: str) -> User:
     '''Создать пользователя.
-    
+
     Args:
         name: Имя пользователя
         email: Email пользователя
-        
+
     Returns:
         Объект User
     '''

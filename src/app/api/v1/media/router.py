@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, UploadFile, status
+from fastapi import APIRouter, Depends, File, Path, UploadFile, status
 from fastapi.responses import FileResponse
 from loguru import logger
 from sqlalchemy import select
@@ -8,32 +8,29 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app.api.v1.media.schemas import MediaInfo, MediaResponse
 from src.app.api.v1.media.service import MediaService
+from src.app.api.v1.users.dependencies import get_current_user
 from src.app.core.constants import ErrorCode
-from src.app.core.exceptions import NotFoundException
+from src.app.core.exceptions import AuthorizationException, NotFoundException
 from src.app.db.session import get_session
+from src.app.models import User
 from src.app.models.media import Media
-
-# from src.app.api.v1.users.dependencies import get_current_user, get_db
-# from src.app.models import User
-
 
 router = APIRouter(prefix='/media')
 
 
 @router.post(
-    "/upload",
-    status_code=status.HTTP_201_CREATED,
+    '/upload',
+    status_code=status.HTTP_200_OK,
     response_model=MediaResponse,
 )
 async def upload_media(
     file: UploadFile = File(...),
     session: AsyncSession = Depends(get_session),
-) -> None:
+    current_user: User = Depends(get_current_user),
+) -> MediaResponse:
     """Загрузить медиа-файл."""
-    # TODO: Добавить проверку прав доступа (только Admin/Manager)
-    # TODO: from src.app.api.v1.users.dependencies import get_current_user
-    # TODO: if current_user.role not in ["admin", "manager"]:
-    # TODO:    raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
+    if current_user.role not in ['admin', 'manager']:
+        raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
 
     logger.info(f'Начало загрузки файла: '
                 f'{file.filename}, тип: {file.content_type}')
@@ -52,11 +49,11 @@ async def upload_media(
     return media
 
 
-@router.get("/{media_id}", response_model=MediaInfo)
+@router.get('/{media_id}', response_model=MediaInfo)
 async def get_media_info(
     media_id: UUID,
     session: AsyncSession = Depends(get_session),
-) -> None:
+) -> MediaInfo:
     """Получить информацию о медиа-файле."""
     logger.info(f'Запрос информации о медиа: id={media_id}')
     result = await session.execute(
@@ -75,11 +72,11 @@ async def get_media_info(
     return media
 
 
-@router.get("/{media_id}/file")
+@router.get('/{media_id}/file')
 async def download_media(
     media_id: UUID,
     session: AsyncSession = Depends(get_session),
-) -> None:
+) -> FileResponse:
     """Скачать медиа-файл."""
     logger.info(f'Запрос на скачивание медиа: id={media_id}')
     result = await session.execute(
@@ -99,16 +96,15 @@ async def download_media(
     return FileResponse(media.file_path, media_type=media.mime_type)
 
 
-@router.delete("/{media_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete('/{media_id}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_media(
-    media_id: UUID,
-    session: AsyncSession = Depends(get_session)
+    media_id: UUID = Path(...),
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ) -> None:
     """Удалить медиа-файл."""
-    # TODO: Добавить проверку прав доступа (только Admin/Manager)
-    # TODO: from src.app.api.v1.users.dependencies import get_current_user
-    # TODO: if current_user.role not in ["admin", "manager"]:
-    # TODO:    raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
+    if current_user.role not in ['admin', 'manager']:
+        raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
 
     logger.info(f'Запрос на удаление медиа: id={media_id}')
     result = await session.execute(

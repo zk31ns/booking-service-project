@@ -50,6 +50,10 @@ class Limits:
     # Загрузка файлов
     MAX_UPLOAD_SIZE_MB = 5
     MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024  # 5MB
+    MIN_IMAGE_WIDTH = 100
+    MIN_IMAGE_HEIGHT = 100
+    MAX_IMAGE_WIDTH = 4000
+    MAX_IMAGE_HEIGHT = 4000
     ALLOWED_IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png'}
     ALLOWED_IMAGE_MIMETYPES = {'image/jpeg', 'image/png'}
 
@@ -197,6 +201,8 @@ class ErrorCode(str, Enum):
     FILE_TOO_LARGE = 'file_too_large'
     INVALID_FILE_TYPE = 'invalid_file_type'
     MEDIA_NOT_FOUND = 'media_not_found'
+    IMAGE_TOO_SMALL = 'image_too_small'
+    IMAGE_TOO_LARGE_DIMENSIONS = 'image_too_large_dimensions'
 
     # General
     VALIDATION_ERROR = 'validation_error'

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Index, Integer, String
+from sqlalchemy import Index, Integer, String, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -33,12 +33,12 @@ class Media(Base):
         nullable=False
     )
     created_at: Mapped[datetime] = mapped_column(
-        default=datetime.now,
+        default=func.now(),
         nullable=False,
     )
     updated_at: Mapped[datetime] = mapped_column(
-        default=datetime.now,
-        onupdate=datetime.now,
+        default=func.now(),
+        onupdate=func.now(),
         nullable=False,
     )
     active: Mapped[bool] = mapped_column(

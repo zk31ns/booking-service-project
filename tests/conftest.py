@@ -1,7 +1,9 @@
 """Pytest configuration and fixtures for tests."""
 
 import asyncio
-from typing import AsyncGenerator, Generator
+from datetime import time
+from typing import AsyncGenerator, Callable, Generator
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -56,6 +58,27 @@ def client() -> TestClient:
     """Get TestClient for FastAPI app."""
     return TestClient(app)
 
+
+@pytest.fixture
+def mock_slot_factory() -> Callable:
+    """Создание макета объекта slot."""
+
+    def _make_slot(
+        id_: int = 1,
+        cafe_id: int = 1,
+        start: time = time(9, 0),
+        end: time = time(10, 0),
+        active: bool = True,
+    ) -> MagicMock:
+        """Создание макета объекта slot."""
+        slot = MagicMock()
+        slot.id = id_
+        slot.cafe_id = cafe_id
+        slot.start_time = start
+        slot.end_time = end
+        slot.active = active
+        return slot
+    return _make_slot
 
 # Optional: Override database dependency for tests
 # @pytest.fixture

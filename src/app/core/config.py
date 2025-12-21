@@ -3,6 +3,8 @@
 Читает переменные из .env файла и окружения.
 """
 
+from pathlib import Path
+
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
@@ -107,7 +109,10 @@ class Settings(BaseSettings):
     class Config:
         """Pydantic конфигурация."""
 
-        env_file = '.env'
+        # Ищет .env в корне проекта
+        # (src/app/core/config.py -> ../../../../.env)
+        env_path = Path(__file__).resolve().parent.parent.parent.parent
+        env_file = str(env_path / '.env')
         env_file_encoding = 'utf-8'
         case_sensitive = False
 

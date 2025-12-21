@@ -116,6 +116,7 @@ class Times:
     BOOKING_REMINDER_MINUTES = 60  # Напомнить за 1 час до бронирования
     MIN_BOOKING_ADVANCE_MINUTES = 30  # Минимум за 30 минут до слота
     MAX_BOOKING_DAYS_AHEAD = 90  # Максимум на 90 дней вперёд
+    CLEANUP_EXPIRED_BOOKINGS_START = 22  # время запуска задачи в часах
 
     # Celery задачи
     CELERY_TASK_TIMEOUT = 300  # 5 минут
@@ -237,6 +238,7 @@ class EventType(str, Enum):
 
     # Celery tasks
     TASK_STARTED = 'task_started'
+    TASK_FAILED = 'task_failed'
     TASK_FINISHED = 'task_finished'
     REMINDER_SENT = 'reminder_sent'
 

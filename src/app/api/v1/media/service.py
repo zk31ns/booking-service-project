@@ -27,11 +27,13 @@ class MediaService:
     def _validate_file(cls, file_bytes: bytes, content_type: str) -> None:
         """Валидация типа и размера файла."""
         if content_type not in cls.ALLOWED_MIMETYPES:
-            logger.error(f'Недопустимый тип файла: получен={content_type}, '
-                         f'разрешены={cls.ALLOWED_MIMETYPES}')
+            logger.error(
+                f'Недопустимый тип файла: получен={content_type}, '
+                f'разрешены={cls.ALLOWED_MIMETYPES}'
+            )
             raise ValidationException(
                 ErrorCode.INVALID_FILE_TYPE,
-                detail='Недопустимый тип файла (разрешены JPG, PNG)'
+                detail='Недопустимый тип файла (разрешены JPG, PNG)',
             )
 
         file_size_mb = len(file_bytes) / (1024 * 1024)
@@ -43,16 +45,19 @@ class MediaService:
             )
             raise ValidationException(
                 ErrorCode.FILE_TOO_LARGE,
-                detail='Файл слишком большой (макс. 5MB)'
+                detail='Файл слишком большой (макс. 5MB)',
             )
-        logger.info(f'Начало обработки изображения: '
-                    f'размер={file_size_mb:.2f}MB')
+        logger.info(
+            f'Начало обработки изображения: размер={file_size_mb:.2f}MB'
+        )
 
     @classmethod
     def _validate_image_dimensions(cls, image: Image.Image) -> None:
         """Валидация размеров изображения."""
-        if (image.width < Limits.MIN_IMAGE_WIDTH
-                or image.height < Limits.MIN_IMAGE_HEIGHT):
+        if (
+            image.width < Limits.MIN_IMAGE_WIDTH
+            or image.height < Limits.MIN_IMAGE_HEIGHT
+        ):
             logger.warning(
                 f'Изображение слишком маленькое: '
                 f'{image.width}x{image.height}px, минимум: '
@@ -61,12 +66,14 @@ class MediaService:
             raise ValidationException(
                 ErrorCode.IMAGE_TOO_SMALL,
                 detail=f'Изображение слишком маленькое. '
-                       f'Минимальный размер: {Limits.MIN_IMAGE_WIDTH}'
-                       f'x{Limits.MIN_IMAGE_HEIGHT}px'
+                f'Минимальный размер: {Limits.MIN_IMAGE_WIDTH}'
+                f'x{Limits.MIN_IMAGE_HEIGHT}px',
             )
 
-        if (image.width > Limits.MAX_IMAGE_WIDTH
-                or image.height > Limits.MAX_IMAGE_HEIGHT):
+        if (
+            image.width > Limits.MAX_IMAGE_WIDTH
+            or image.height > Limits.MAX_IMAGE_HEIGHT
+        ):
             logger.warning(
                 f'Изображение слишком большое: '
                 f'{image.width}x{image.height}px, '
@@ -76,23 +83,25 @@ class MediaService:
             raise ValidationException(
                 ErrorCode.IMAGE_TOO_LARGE_DIMENSIONS,
                 detail=f'Изображение слишком большое. '
-                       f'Максимальный размер: {Limits.MAX_IMAGE_WIDTH}'
-                       f'x{Limits.MAX_IMAGE_HEIGHT}px'
+                f'Максимальный размер: {Limits.MAX_IMAGE_WIDTH}'
+                f'x{Limits.MAX_IMAGE_HEIGHT}px',
             )
-        logger.info(f'Размеры изображения валидны: '
-                    f'{image.width}x{image.height}px')
+        logger.info(
+            f'Размеры изображения валидны: {image.width}x{image.height}px'
+        )
 
     @classmethod
     def _process_and_save_image(
-            cls, image: Image.Image, file_id: uuid.UUID
+        cls, image: Image.Image, file_id: uuid.UUID
     ) -> tuple[Path, int]:
         """Обработка и сохранение изображения."""
         try:
             original_mode = image.mode
 
             if image.mode in ('RGBA', 'LA', 'P'):
-                logger.info(f'Конвертация изображения '
-                            f'из режима {original_mode} в RGB')
+                logger.info(
+                    f'Конвертация изображения из режима {original_mode} в RGB'
+                )
                 background = Image.new('RGB', image.size, (255, 255, 255))
                 if image.mode == 'P':
                     image = image.convert('RGBA')
@@ -124,10 +133,10 @@ class MediaService:
 
     @classmethod
     async def upload(
-            cls,
-            session: AsyncSession,
-            file_bytes: bytes,
-            content_type: str,
+        cls,
+        session: AsyncSession,
+        file_bytes: bytes,
+        content_type: str,
     ) -> Media:
         """Загрузить и сохранить файл."""
         cls._validate_file(file_bytes, content_type)
@@ -138,7 +147,7 @@ class MediaService:
             logger.error(f'Ошибка открытия изображения: {str(e)}')
             raise ValidationException(
                 ErrorCode.INVALID_FILE_TYPE,
-                detail='Не удалось открыть изображение'
+                detail='Не удалось открыть изображение',
             )
 
         cls._validate_image_dimensions(image)
@@ -163,7 +172,8 @@ class MediaService:
                 file_path.unlink()
                 logger.warning(f'Файл удален после ошибки БД: {file_path}')
             except Exception as cleanup_error:
-                logger.error(f'Ошибка удаления файла при откате: '
-                             f'{cleanup_error}')
+                logger.error(
+                    f'Ошибка удаления файла при откате: {cleanup_error}'
+                )
             logger.error(f'Ошибка при сохранении в БД: {str(e)}')
             raise

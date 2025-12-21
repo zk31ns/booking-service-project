@@ -20,18 +20,13 @@ class Media(Base):
         default=uuid.uuid4,
     )
     file_path: Mapped[str] = mapped_column(
-        String(512),
-        unique=True,
-        nullable=False
+        String(512), unique=True, nullable=False
     )
     mime_type: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
     )
-    file_size: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False
-    )
+    file_size: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         default=func.now(),
         nullable=False,

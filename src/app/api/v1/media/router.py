@@ -32,8 +32,9 @@ async def upload_media(
     if current_user.role not in ['admin', 'manager']:
         raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
 
-    logger.info(f'Начало загрузки файла: '
-                f'{file.filename}, тип: {file.content_type}')
+    logger.info(
+        f'Начало загрузки файла: {file.filename}, тип: {file.content_type}'
+    )
 
     file_bytes = await file.read()
 
@@ -44,8 +45,9 @@ async def upload_media(
     )
 
     await session.commit()
-    logger.info(f'Файл успешно загружен: '
-                f'id={media.id}, размер={media.file_size} байт')
+    logger.info(
+        f'Файл успешно загружен: id={media.id}, размер={media.file_size} байт'
+    )
     return media
 
 
@@ -64,8 +66,7 @@ async def get_media_info(
     if not media:
         logger.warning(f'Медиа не найдено: id={media_id}')
         raise NotFoundException(
-            ErrorCode.MEDIA_NOT_FOUND,
-            detail='Изображение не найдено'
+            ErrorCode.MEDIA_NOT_FOUND, detail='Изображение не найдено'
         )
 
     logger.info(f'Информация о медиа получена: id={media_id}')
@@ -87,12 +88,12 @@ async def download_media(
     if not media:
         logger.warning(f'Медиа для скачивания не найдено: id={media_id}')
         raise NotFoundException(
-            ErrorCode.MEDIA_NOT_FOUND,
-            detail='Изображение не найдено'
+            ErrorCode.MEDIA_NOT_FOUND, detail='Изображение не найдено'
         )
 
-    logger.info(f'Медиа успешно отправлено: '
-                f'id={media_id}, путь={media.file_path}')
+    logger.info(
+        f'Медиа успешно отправлено: id={media_id}, путь={media.file_path}'
+    )
     return FileResponse(media.file_path, media_type=media.mime_type)
 
 
@@ -115,8 +116,7 @@ async def delete_media(
     if not media:
         logger.warning(f'Медиа для удаления не найдено: id={media_id}')
         raise NotFoundException(
-            ErrorCode.MEDIA_NOT_FOUND,
-            detail='Изображение не найдено'
+            ErrorCode.MEDIA_NOT_FOUND, detail='Изображение не найдено'
         )
 
     media.active = False

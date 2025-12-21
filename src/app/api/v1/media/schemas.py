@@ -15,13 +15,13 @@ class MediaResponse(BaseModel):
     model_config = ConfigDict(
         from_attributes=True,
         json_schema_extra={
-            "example": {
-                "id": "550e8400-e29b-41d4-a716-446655440000",
-                "file_path": "media/550e8400-e29b-41d4-a716-446655440000.jpg",
-                "mime_type": "image/jpeg",
-                "file_size": 102400
+            'example': {
+                'id': '550e8400-e29b-41d4-a716-446655440000',
+                'file_path': 'media/550e8400-e29b-41d4-a716-446655440000.jpg',
+                'mime_type': 'image/jpeg',
+                'file_size': 102400,
             }
-        }
+        },
     )
 
 
@@ -36,11 +36,11 @@ class MediaInfo(BaseModel):
     model_config = ConfigDict(
         from_attributes=True,
         json_schema_extra={
-            "example": {
-                "id": "550e8400-e29b-41d4-a716-446655440000",
-                "mime_type": "image/jpeg",
-                "file_size": 102400,
-                "created_at": "2025-12-21T00:07:00Z"
+            'example': {
+                'id': '550e8400-e29b-41d4-a716-446655440000',
+                'mime_type': 'image/jpeg',
+                'file_size': 102400,
+                'created_at': '2025-12-21T00:07:00Z',
             }
-        }
+        },
     )

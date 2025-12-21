@@ -6,9 +6,9 @@ from sqlalchemy import ForeignKey, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
-from app.core.constants import Limits
-from app.db.base import Base
-from app.models.table import Table
+from src.app.core.constants import Limits
+from src.app.db.base import Base
+from src.app.models.table import Table
 
 if TYPE_CHECKING:
     from app.api.v1.media.models import Media

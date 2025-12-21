@@ -1,0 +1,39 @@
+name: Notify Changes Requested in Telegram
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check review action
+        id: check_review
+        run: |
+          if [ "${{ github.event.review.state }}" == "changes_requested" ]; then
+            echo "changes_requested=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send Telegram notification
+        if: steps.check_review.outputs.changes_requested == 'true'
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            ⚠️ **Запрос на доработку PR!**
+
+            📌 PR: #${{ github.event.pull_request.number }}
+            📝 Название: ${{ github.event.pull_request.title }}
+            👤 Автор: @${{ github.event.pull_request.user.login }}
+            👀 Рецензент: @${{ github.event.review.user.login }}
+
+            💬 Комментарий:
+            ${{ github.event.review.body }}
+
+            🔗 Ссылка: ${{ github.event.pull_request.html_url }}
+
+            ⏰ Пожалуйста, внесите необходимые изменения
+          format: html

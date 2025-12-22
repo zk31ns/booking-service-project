@@ -48,11 +48,12 @@ celery_app.conf.update(
 celery_app.conf.beat_schedule = {
     'periodically_cleanup_expired_bookings': {
         'task': 'cleanup_expired_bookings',
-        'schedule': crontab(hour=Times.CLEANUP_EXPIRED_BOOKINGS_START,
-                            minute=0),
+        'schedule': crontab(
+            hour=Times.CLEANUP_EXPIRED_BOOKINGS_START, minute=0
+        ),
         'options': {
             'expires': 3600,
-        }
+        },
     },
 }
 
@@ -75,14 +76,13 @@ def task_prerun_handler(
 ) -> None:
     """Логирование старта задачи."""
     logger.info(
-        f'SYSTEM: {EventType.TASK_STARTED} '
-        f'Task {task.name} (id: {task_id})',
+        f'SYSTEM: {EventType.TASK_STARTED} Task {task.name} (id: {task_id})',
         extra={
             'task_id': task_id,
             'task_name': task.name,
             'args': args,
             'kwargs': kwargs,
-        }
+        },
     )
 
 
@@ -97,14 +97,13 @@ def task_postrun_handler(
 ) -> None:
     """Логирование завершения задачи."""
     logger.info(
-        f'SYSTEM: {EventType.TASK_FINISHED} '
-        f'Task {task.name} (id: {task_id})',
+        f'SYSTEM: {EventType.TASK_FINISHED} Task {task.name} (id: {task_id})',
         extra={
             'task_id': task_id,
             'task_name': task.name,
             'state': state,
             'result': retval,
-        }
+        },
     )
 
 

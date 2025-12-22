@@ -96,7 +96,7 @@ def notify_manager(
     table_description: str,
     start_time: str,
     end_time: str,
-    cancellation: bool
+    cancellation: bool,
 ) -> None:
     """Отправка напоминания о бронировании столика менеджеру в Telegram.
 
@@ -127,7 +127,7 @@ def notify_manager(
             table_description,
             start_time,
             end_time,
-            cancellation
+            cancellation,
         )
     )
 
@@ -141,7 +141,7 @@ async def _notify_manager_async(
     table_description: str,
     start_time: str,
     end_time: str,
-    cancellation: bool
+    cancellation: bool,
 ) -> None:
     """Асинхронная отправка уведомления менеджеру.
 
@@ -214,10 +214,7 @@ async def _cleanup_expired_bookings_async() -> Dict[str, Any]:
     now = datetime.now(timezone.utc)
     expired_count = 0
 
-    return {
-        'expired_count': expired_count,
-        'timestamp': now.isoformat()
-    }
+    return {'expired_count': expired_count, 'timestamp': now.isoformat()}
 
 
 async def _send_telegram_message(

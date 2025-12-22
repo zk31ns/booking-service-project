@@ -7,13 +7,13 @@
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, select, exists
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from src.app.core.constants import Limits
 from src.app.core.security import get_password_hash, verify_password
-from src.app.models.models import User
+from src.app.models.models import User, cafe_managers
 
 
 class UserRepository:
@@ -438,3 +438,16 @@ class UserRepository:
 
         result = await session.execute(search_query)
         return list(result.scalars().all())
+
+    async def is_manager(
+        self,
+        session: AsyncSession,
+        user_id: int,
+    ) -> bool | None:
+        """Искать пользователя среди менеджеров."""
+        stmt = select(
+            exists().where(
+                cafe_managers.c.user_id == user_id
+            )
+        )
+        return await session.scalar(stmt)

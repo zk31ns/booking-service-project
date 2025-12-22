@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.app.api.v1 import health
 from src.app.api.v1.actions import router as actions_router
+from src.app.api.v1.booking import router as booking_router
 from src.app.api.v1.dishes import router as dishes_router
 from src.app.api.v1.media import router as media_router
 from src.app.api.v1.slots import router as slots_router
@@ -60,13 +61,12 @@ app.include_router(actions_router, prefix=API.V1_PREFIX)
 # Media
 app.include_router(media_router, prefix=API.V1_PREFIX, tags=API.MEDIA)
 
+# Booking
+app.include_router(booking_router, prefix=API.V1_PREFIX, tags=API.BOOKING)
 
 # TODO: Cafes router (Павел)
 # app.include_router(cafes_router, prefix=API.V1_PREFIX, tags=API.CAFES)
 
 # TODO: Tables router (Павел)
 # app.include_router(tables_router, prefix=API.V1_PREFIX, tags=API.TABLES)
-
-# TODO: Booking router (Анастасия)
-# app.include_router(booking_router, prefix=API.V1_PREFIX, tags=API.BOOKING)
 # ============================

@@ -1,5 +1,5 @@
 from datetime import time
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,9 +8,7 @@ from src.app.api.v1.slots.repository import SlotRepository
 from src.app.core.constants import ErrorCode
 from src.app.core.exceptions import ConflictException, ValidationException
 from src.app.models.slot import Slot
-
-if TYPE_CHECKING:
-    from src.app.api.v1.cafes.repository import CafeRepository
+from src.app.repositories import CafeRepository
 
 
 class SlotService:

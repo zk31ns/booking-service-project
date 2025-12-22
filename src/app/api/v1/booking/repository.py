@@ -1,7 +1,6 @@
-from datetime import datetime, time, date
-from typing import Any, Dict, List, Optional, Union
+from datetime import time, date
+from typing import Dict, List, Optional, Union
 
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy import select, delete
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -145,21 +144,19 @@ class BookingRepository:
         changes: dict,
     ) -> Booking:
         """Обновить бронирование."""
-        
-        # Обработать table_slots отдельно
+
         if 'table_slots' in changes:
             await self._bulk_replace_table_slots(
                 session=session,
                 booking=booking,
                 new_slots=changes.pop('table_slots')
             )
-        
-        # Обновить остальные поля
+
         for field, value in changes.items():
             setattr(booking, field, value)
-        
+
         await session.commit()
-        await session.refresh(booking, ['table_slots'])  # Обновить relationship
+        await session.refresh(booking, ['table_slots'])
         return booking
 
     async def _bulk_replace_table_slots(
@@ -169,13 +166,11 @@ class BookingRepository:
         new_slots: List[Dict[str, int]]
     ) -> None:
         """Замена table_slots через bulk operations."""
-        
-        # 1. Удалить все старые
+
         await session.execute(
             delete(TableSlot).where(TableSlot.booking_id == booking.id)
         )
-        
-        # 2. Вставить новые (если есть)
+
         if new_slots:
             await session.execute(
                 TableSlot.__table__.insert(),
@@ -189,41 +184,6 @@ class BookingRepository:
                 ]
             )
         session.expire(booking, ['table_slots'])
-
-#     async def update(
-#         self,
-#         session,
-#         booking: Booking,
-#         changes: Dict[str, Any]
-#     ) -> Booking:
-#         """
-#         Обновить поля бронирования.
-#         """
-#         if not changes:
-#             return booking
-# # == 'table_slots':
-#         for field, value in changes.items():
-#             if field == 'table_slots':
-#             # 1. Удалить старые связи
-#                 await session.execute(
-#                     delete(TableSlot).where(TableSlot.booking_id == booking.id)
-#                 )
-                
-#                 # 2. Создать новые связи
-#                 for slot_data in value:  # value = [{"table_id": 1, "slot_id": 2}, ...]
-#                     table_slot = TableSlot(
-#                         booking_id=booking.id,
-#                         table_id=slot_data['table_id'],
-#                         slot_id=slot_data['slot_id']
-#                     )
-#                     session.add(table_slot)
-#                 continue
-#             setattr(booking, field, value)
-
-#         session.add(booking)
-#         await session.commit()
-#         await session.refresh(booking)
-#         return booking
 
     async def remove(
             self,

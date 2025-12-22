@@ -123,38 +123,6 @@ class BookingService:
         )
         return booking
 
-    async def update_booking(
-        self,
-        session: AsyncSession,
-        booking_id: int,
-        user:User,
-        update_data: BookingUpdate,
-        user_id: int,
-    ) -> Booking:
-
-        data = update_data.model_dump(
-            exclude_unset=True,
-            exclude_none=True
-        )
-
-        # 2️⃣ Отдельная логика is_active (отмена)
-        if 'is_active' in data and data['is_active'] is False:
-            booking.is_active = False
-            booking.status = BookingStatus.CANCELED
-            return await self.booking_repo.update(
-                session=session,
-                booking=booking,
-                data={},
-            )
-
-        # 4️⃣
-        # 5️⃣ Проверка статуса
-        # if 'status' in data:
-        #     self._validate_status_transition(
-        #         current=booking.status,
-        #         new=data['status'],
-            # )
-
     async def modify_booking(
         self,
         booking_update: BookingUpdate,
@@ -264,15 +232,6 @@ class BookingService:
                 guest_number=guest_number,
                 exclude_booking_id=booking.id
             )
-
-        # 4. Проверка изменения статуса
-        # if 'status' in update_dict:
-        #     new_status = update_dict['status']
-        #     await self._validate_status_transition(
-        #         booking.status,
-        #         new_status,
-        #         current_user
-        #     )
 
     async def _validate_new_table_slots(
         self,

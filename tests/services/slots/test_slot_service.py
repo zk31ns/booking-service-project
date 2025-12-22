@@ -1,13 +1,14 @@
 # tests/services/slots/test_slot_service.py
 """Unit-тесты для SlotService."""
+
 from datetime import time
 from typing import Callable
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from src.app.api.v1.slots.service import SlotService
-from src.app.core.exceptions import ConflictException, ValidationException
+from app.api.v1.slots.service import SlotService
+from app.core.exceptions import ConflictException, ValidationException
 
 
 class TestSlotsOverlap:
@@ -19,8 +20,7 @@ class TestSlotsOverlap:
         service = SlotService(session=None)
 
         result = service._slots_overlap(
-            time(9, 0), time(10, 0),
-            time(9, 30), time(10, 30)
+            time(9, 0), time(10, 0), time(9, 30), time(10, 30)
         )
 
         assert result is True
@@ -31,8 +31,7 @@ class TestSlotsOverlap:
         service = SlotService(session=None)
 
         result = service._slots_overlap(
-            time(9, 0), time(10, 0),
-            time(10, 0), time(11, 0)
+            time(9, 0), time(10, 0), time(10, 0), time(11, 0)
         )
 
         assert result is False
@@ -43,8 +42,7 @@ class TestSlotsOverlap:
         service = SlotService(session=None)
 
         result = service._slots_overlap(
-            time(10, 0), time(11, 0),
-            time(9, 0), time(10, 0)
+            time(10, 0), time(11, 0), time(9, 0), time(10, 0)
         )
 
         assert result is False
@@ -55,8 +53,7 @@ class TestSlotsOverlap:
         service = SlotService(session=None)
 
         result = service._slots_overlap(
-            time(8, 0), time(12, 0),
-            time(9, 0), time(10, 0)
+            time(8, 0), time(12, 0), time(9, 0), time(10, 0)
         )
 
         assert result is True
@@ -76,9 +73,7 @@ class TestCreateSlot:
 
         with pytest.raises(ValidationException) as exc:
             await service.create_slot(
-                cafe_id=1,
-                start_time=time(10, 0),
-                end_time=time(9, 0)
+                cafe_id=1, start_time=time(10, 0), end_time=time(9, 0)
             )
         service._validate_cafe_exists.assert_called_once_with(1)
 
@@ -95,9 +90,7 @@ class TestCreateSlot:
 
         with pytest.raises(ValidationException):
             await service.create_slot(
-                cafe_id=1,
-                start_time=time(10, 0),
-                end_time=time(10, 0)
+                cafe_id=1, start_time=time(10, 0), end_time=time(10, 0)
             )
 
 
@@ -107,8 +100,7 @@ class TestGetSlot:
     @pytest.mark.unit
     @pytest.mark.asyncio
     async def test_get_slot_success(
-            self,
-            mock_slot_factory: Callable[..., MagicMock]
+        self, mock_slot_factory: Callable[..., MagicMock]
     ) -> None:
         """Успешное получение слота по ID."""
         service = SlotService(session=None)
@@ -142,8 +134,7 @@ class TestDeleteSlot:
     @pytest.mark.unit
     @pytest.mark.asyncio
     async def test_delete_slot_success(
-            self,
-            mock_slot_factory: Callable[..., MagicMock]
+        self, mock_slot_factory: Callable[..., MagicMock]
     ) -> None:
         """Успешное удаление (деактивация) слота."""
         session = AsyncMock()
@@ -175,8 +166,7 @@ class TestDeleteSlot:
     @pytest.mark.unit
     @pytest.mark.asyncio
     async def test_delete_slot_wrong_cafe(
-            self,
-            mock_slot_factory: Callable[..., MagicMock]
+        self, mock_slot_factory: Callable[..., MagicMock]
     ) -> None:
         """Слот принадлежит другому кафе - возвращает False."""
         service = SlotService(session=None)
@@ -205,9 +195,7 @@ class TestValidateSlotOverlap:
         service.repo.get_all_by_cafe = AsyncMock(return_value=[existing_slot])
 
         await service._validate_slot_overlap(
-            cafe_id=1,
-            start_time=time(10, 0),
-            end_time=time(11, 0)
+            cafe_id=1, start_time=time(10, 0), end_time=time(11, 0)
         )
 
     @pytest.mark.unit
@@ -226,9 +214,7 @@ class TestValidateSlotOverlap:
 
         with pytest.raises(ConflictException) as exc:
             await service._validate_slot_overlap(
-                cafe_id=1,
-                start_time=time(10, 0),
-                end_time=time(12, 0)
+                cafe_id=1, start_time=time(10, 0), end_time=time(12, 0)
             )
 
         assert 'пересекается' in str(exc.value.detail).lower()
@@ -250,7 +236,7 @@ class TestValidateSlotOverlap:
             cafe_id=1,
             start_time=time(9, 0),
             end_time=time(11, 0),
-            exclude_slot_id=5
+            exclude_slot_id=5,
         )
 
 
@@ -260,8 +246,7 @@ class TestUpdateSlot:
     @pytest.mark.unit
     @pytest.mark.asyncio
     async def test_update_slot_time_success(
-            self,
-            mock_slot_factory: Callable[..., MagicMock]
+        self, mock_slot_factory: Callable[..., MagicMock]
     ) -> None:
         """Успешное обновление времени слота."""
         session = AsyncMock()
@@ -269,17 +254,13 @@ class TestUpdateSlot:
         service.repo = AsyncMock()
 
         mock_slot = mock_slot_factory(
-            id_=1, cafe_id=1, start=time(9, 0),
-            end=time(10, 0), active=True
+            id_=1, cafe_id=1, start=time(9, 0), end=time(10, 0), active=True
         )
         service.repo.get_by_id = AsyncMock(return_value=mock_slot)
         service._validate_slot_overlap = AsyncMock()
 
         result = await service.update_slot(
-            slot_id=1,
-            cafe_id=1,
-            start_time=time(10, 0),
-            end_time=time(11, 0)
+            slot_id=1, cafe_id=1, start_time=time(10, 0), end_time=time(11, 0)
         )
 
         assert result is not None
@@ -290,8 +271,7 @@ class TestUpdateSlot:
     @pytest.mark.unit
     @pytest.mark.asyncio
     async def test_update_slot_invalid_time(
-            self,
-            mock_slot_factory: Callable[..., MagicMock]
+        self, mock_slot_factory: Callable[..., MagicMock]
     ) -> None:
         """Ошибка при обновлении с неправильным временем."""
         service = SlotService(session=None)
@@ -306,7 +286,7 @@ class TestUpdateSlot:
                 slot_id=1,
                 cafe_id=1,
                 start_time=time(11, 0),
-                end_time=time(10, 0)
+                end_time=time(10, 0),
             )
 
     @pytest.mark.unit
@@ -323,10 +303,7 @@ class TestUpdateSlot:
         service.repo.get_by_id = AsyncMock(return_value=mock_slot)
 
         result = await service.update_slot(
-            slot_id=1,
-            cafe_id=1,
-            start_time=time(10, 0),
-            end_time=time(11, 0)
+            slot_id=1, cafe_id=1, start_time=time(10, 0), end_time=time(11, 0)
         )
 
         assert result is None  # Должен вернуть None
@@ -344,7 +321,7 @@ class TestUpdateSlot:
             slot_id=999,
             cafe_id=1,
             start_time=time(10, 0),
-            end_time=time(11, 0)
+            end_time=time(11, 0),
         )
 
         assert result is None
@@ -352,8 +329,7 @@ class TestUpdateSlot:
     @pytest.mark.unit
     @pytest.mark.asyncio
     async def test_update_slot_active_status(
-            self,
-            mock_slot_factory: Callable[..., MagicMock]
+        self, mock_slot_factory: Callable[..., MagicMock]
     ) -> None:
         """Обновление статуса активности слота."""
         session = AsyncMock()
@@ -363,11 +339,7 @@ class TestUpdateSlot:
         mock_slot = mock_slot_factory(id_=1, cafe_id=1, active=True)
         service.repo.get_by_id = AsyncMock(return_value=mock_slot)
 
-        result = await service.update_slot(
-            slot_id=1,
-            cafe_id=1,
-            active=False
-        )
+        result = await service.update_slot(slot_id=1, cafe_id=1, active=False)
 
         assert result is not None
         assert mock_slot.active is False

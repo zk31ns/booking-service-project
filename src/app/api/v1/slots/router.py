@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.app.api.v1.slots.schemas import SlotCreate, SlotInfo, SlotUpdate
-from src.app.api.v1.slots.service import SlotService
-from src.app.db.session import get_session
+from app.api.v1.slots.schemas import SlotCreate, SlotInfo, SlotUpdate
+from app.api.v1.slots.service import SlotService
+from app.db.session import get_session
 
 router = APIRouter(prefix='/cafes/{cafe_id}/slots')
 

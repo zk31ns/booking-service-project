@@ -11,9 +11,9 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
-from src.app.core.constants import Limits
-from src.app.core.security import get_password_hash, verify_password
-from src.app.models.models import User
+from app.core.constants import Limits
+from app.core.security import get_password_hash, verify_password
+from app.models.models import User
 
 
 class UserRepository:

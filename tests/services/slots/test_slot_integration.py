@@ -4,9 +4,9 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.app.api.v1.slots.service import SlotService
-from src.app.core.exceptions import ConflictException
-from src.app.models.cafe import Cafe
+from app.api.v1.slots.service import SlotService
+from app.core.exceptions import ConflictException
+from app.models.cafe import Cafe
 
 
 @pytest.fixture
@@ -31,14 +31,11 @@ def slot_service(db_session: AsyncSession) -> SlotService:
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_create_slot_integration(
-    cafe: Cafe,
-    slot_service: SlotService
+    cafe: Cafe, slot_service: SlotService
 ) -> None:
     """Успешное создание слота в реальной БД."""
     slot = await slot_service.create_slot(
-        cafe_id=cafe.id,
-        start_time=time(9, 0),
-        end_time=time(10, 0)
+        cafe_id=cafe.id, start_time=time(9, 0), end_time=time(10, 0)
     )
 
     assert slot.cafe_id == cafe.id
@@ -54,29 +51,23 @@ async def test_create_slot_integration(
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_create_slot_with_overlap_raises_error(
-    cafe: Cafe,
-    slot_service: SlotService
+    cafe: Cafe, slot_service: SlotService
 ) -> None:
     """Ошибка при попытке создать пересекающийся слот."""
     await slot_service.create_slot(
-        cafe_id=cafe.id,
-        start_time=time(9, 0),
-        end_time=time(10, 0)
+        cafe_id=cafe.id, start_time=time(9, 0), end_time=time(10, 0)
     )
 
     with pytest.raises(ConflictException):
         await slot_service.create_slot(
-            cafe_id=cafe.id,
-            start_time=time(9, 30),
-            end_time=time(10, 30)
+            cafe_id=cafe.id, start_time=time(9, 30), end_time=time(10, 30)
         )
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_get_cafe_slots_integration(
-    cafe: Cafe,
-    slot_service: SlotService
+    cafe: Cafe, slot_service: SlotService
 ) -> None:
     """Получение всех слотов кафе."""
     await slot_service.create_slot(cafe.id, time(9, 0), time(10, 0))
@@ -90,21 +81,13 @@ async def test_get_cafe_slots_integration(
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_update_slot_integration(
-    cafe: Cafe,
-    slot_service: SlotService
+    cafe: Cafe, slot_service: SlotService
 ) -> None:
     """Обновление времени слота."""
-    slot = await slot_service.create_slot(
-        cafe.id,
-        time(9, 0),
-        time(10, 0)
-    )
+    slot = await slot_service.create_slot(cafe.id, time(9, 0), time(10, 0))
 
     updated = await slot_service.update_slot(
-        slot.id,
-        cafe.id,
-        start_time=time(14, 0),
-        end_time=time(15, 0)
+        slot.id, cafe.id, start_time=time(14, 0), end_time=time(15, 0)
     )
 
     assert updated.start_time == time(14, 0)
@@ -114,8 +97,7 @@ async def test_update_slot_integration(
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_delete_slot_integration(
-    cafe: Cafe,
-    slot_service: SlotService
+    cafe: Cafe, slot_service: SlotService
 ) -> None:
     """Деактивация слота."""
     slot = await slot_service.create_slot(cafe.id, time(9, 0), time(10, 0))
@@ -132,8 +114,7 @@ async def test_delete_slot_integration(
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_update_slot_with_overlap_raises_error(
-        cafe: Cafe,
-        slot_service: SlotService
+    cafe: Cafe, slot_service: SlotService
 ) -> None:
     """Ошибка при обновлении слота с пересечением."""
     await slot_service.create_slot(cafe.id, time(9, 0), time(10, 0))
@@ -141,8 +122,5 @@ async def test_update_slot_with_overlap_raises_error(
 
     with pytest.raises(ConflictException):
         await slot_service.update_slot(
-            slot2.id,
-            cafe.id,
-            start_time=time(9, 30),
-            end_time=time(10, 30)
+            slot2.id, cafe.id, start_time=time(9, 30), end_time=time(10, 30)
         )

@@ -4,8 +4,8 @@ from sqlalchemy import ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
-from src.app.core.constants import Limits
-from src.app.db.base import Base
+from app.core.constants import Limits
+from app.db.base import Base
 
 
 class Table(Base):

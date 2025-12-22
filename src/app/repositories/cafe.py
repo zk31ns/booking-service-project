@@ -4,8 +4,8 @@ from uuid import UUID
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.app.models.cafe import Cafe
-from src.app.schemas.cafe import CafeCreate, CafeUpdate
+from app.models.cafe import Cafe
+from app.schemas.cafe import CafeCreate, CafeUpdate
 
 
 class CafeRepository:

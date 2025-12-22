@@ -3,12 +3,12 @@ from typing import List
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.app.api.dependencies import get_db
-from src.app.core.constants import TAGS_CAFES, Limits
-from src.app.repositories.cafe import CafeRepository
-from src.app.repositories.table import TableRepository
-from src.app.schemas.cafe import Cafe, CafeCreate, CafeUpdate
-from src.app.services.cafe import CafeService
+from app.api.dependencies import get_db
+from app.core.constants import TAGS_CAFES, Limits
+from app.repositories.cafe import CafeRepository
+from app.repositories.table import TableRepository
+from app.schemas.cafe import Cafe, CafeCreate, CafeUpdate
+from app.services.cafe import CafeService
 
 router = APIRouter(prefix='/cafes', tags=TAGS_CAFES)
 

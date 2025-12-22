@@ -57,17 +57,17 @@ class Cafe(Base):
         nullable=False,
     )
     active: Mapped[bool] = mapped_column(default=True)
-    tables: Mapped[list['Table']] = relationship(
-        'Table',
-        back_populates='cafe',
-        cascade='all, delete-orphan',
-    )
+    # tables: Mapped[list['Table']] = relationship(
+    #     'Table',
+    #     back_populates='cafe',
+    #     cascade='all, delete-orphan',
+    # )
 
-    photo: Mapped['Media | None'] = relationship(
-        'Media',
-        foreign_keys=[photo_id],
-        back_populates='cafe_photos',
-    )
+    # photo: Mapped['Media | None'] = relationship(
+    #     'Media',
+    #     foreign_keys=[photo_id],
+    #     back_populates='cafe_photos',
+    # )
 
     def __repr__(self) -> str:
         return f'<Cafe(id="{self.id}", name="{self.name}")>'

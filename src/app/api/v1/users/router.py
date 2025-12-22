@@ -13,7 +13,6 @@ from src.app.api.v1.users.dependencies import (
     get_current_active_user,
     get_current_superuser,
     get_current_user,
-    get_db,
     get_optional_user,
     get_user_repository,
 )
@@ -34,6 +33,7 @@ from src.app.core.exceptions import (
     ServiceUnavailableException,
     ValidationException,
 )
+from src.app.db.session import get_session
 from src.app.models.models import User
 
 router = APIRouter(tags=API.USERS)
@@ -47,7 +47,7 @@ router = APIRouter(tags=API.USERS)
 )
 async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    session: Annotated[AsyncSession, Depends(get_db)],
+    session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[UserService, Depends(get_user_service)],
 ) -> dict:
     """Аутентификация пользователя и получение JWT токенов.
@@ -82,7 +82,7 @@ async def refresh_tokens(
         str,
         Body(..., embed=True, description='Refresh токен'),
     ],
-    session: Annotated[AsyncSession, Depends(get_db)],
+    session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[UserService, Depends(get_user_service)],
 ) -> dict:
     """Обновляет access токен."""
@@ -110,7 +110,7 @@ async def refresh_tokens(
     'Только для администраторов или менеджеров.',
 )
 async def get_users(
-    session: Annotated[AsyncSession, Depends(get_db)],
+    session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[UserService, Depends(get_user_service)],
     current_user: Annotated[User, Depends(get_current_superuser)],
     skip: Annotated[
@@ -178,7 +178,7 @@ async def get_users(
 )
 async def create_user(
     user_create: UserCreate,
-    session: Annotated[AsyncSession, Depends(get_db)],
+    session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[UserService, Depends(get_user_service)],
     current_user: Annotated[Optional[User], Depends(get_optional_user)],
 ) -> UserInfo:
@@ -207,7 +207,7 @@ async def create_user(
 )
 async def get_user_by_id(
     user_id: Annotated[int, ...],
-    session: Annotated[AsyncSession, Depends(get_db)],
+    session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[UserService, Depends(get_user_service)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> UserInfo:
@@ -233,7 +233,7 @@ async def get_user_by_id(
 async def update_user(
     user_id: Annotated[int, ...],
     user_update: UserUpdate,
-    session: Annotated[AsyncSession, Depends(get_db)],
+    session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[UserService, Depends(get_user_service)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> UserInfo:
@@ -278,7 +278,7 @@ async def get_current_user_info(
 )
 async def update_current_user(
     user_update: UserUpdate,
-    session: Annotated[AsyncSession, Depends(get_db)],
+    session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[UserService, Depends(get_user_service)],
     current_user: Annotated[User, Depends(get_current_active_user)],
 ) -> UserInfo:
@@ -308,7 +308,7 @@ async def update_current_user(
 async def change_password(
     current_password: Annotated[str, Body(..., description='Текущий пароль')],
     new_password: Annotated[str, Body(..., description='Новый пароль')],
-    session: Annotated[AsyncSession, Depends(get_db)],
+    session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[UserService, Depends(get_user_service)],
     current_user: Annotated[User, Depends(get_current_active_user)],
 ) -> UserInfo:
@@ -340,7 +340,7 @@ async def change_password(
 )
 async def delete_user(
     user_id: Annotated[int, ...],
-    session: Annotated[AsyncSession, Depends(get_db)],
+    session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[UserService, Depends(get_user_service)],
     current_user: Annotated[User, Depends(get_current_superuser)],
 ) -> None:
@@ -366,7 +366,7 @@ async def delete_user(
     description='Деактивирует аккаунт текущего пользователя.',
 )
 async def delete_current_user(
-    session: Annotated[AsyncSession, Depends(get_db)],
+    session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[UserService, Depends(get_user_service)],
     current_user: Annotated[User, Depends(get_current_active_user)],
     confirm: Annotated[
@@ -403,7 +403,7 @@ async def search_users(
             description='Строка поиска',
         ),
     ],
-    session: Annotated[AsyncSession, Depends(get_db)],
+    session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[UserService, Depends(get_user_service)],
     current_user: Annotated[User, Depends(get_current_superuser)],
     skip: Annotated[int, Query(ge=0)] = 0,
@@ -431,7 +431,7 @@ async def search_users(
     description='Проверяет работоспособность сервиса пользователей.',
 )
 async def health_check(
-    session: Annotated[AsyncSession, Depends(get_db)],
+    session: Annotated[AsyncSession, Depends(get_session)],
     repo: Annotated[UserRepository, Depends(get_user_repository)],
 ) -> dict:
     """Проверка здоровья сервиса."""

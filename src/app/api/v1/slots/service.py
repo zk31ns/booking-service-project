@@ -9,6 +9,8 @@ from src.app.core.constants import ErrorCode
 from src.app.core.exceptions import ConflictException, ValidationException
 from src.app.models.slot import Slot
 
+from src.app.repositories import CafeRepository
+
 if TYPE_CHECKING:
     from src.app.api.v1.cafes.repository import CafeRepository
 

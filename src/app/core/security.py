@@ -81,7 +81,7 @@ def create_access_token(
         expire = datetime.now(timezone.utc) + expires_delta
     else:
         expire = datetime.now(timezone.utc) + timedelta(
-            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES,
+            minutes=settings.access_token_expire_minutes,
         )
 
     to_encode.update({'exp': expire, 'type': 'access'})
@@ -89,8 +89,8 @@ def create_access_token(
     try:
         return jwt.encode(
             to_encode,
-            settings.JWT_SECRET_KEY,
-            algorithm=settings.JWT_ALGORITHM,
+            settings.jwt_secret_key,
+            algorithm=settings.jwt_algorithm,
         )
     except JWTError as e:
         raise ValueError(f'Ошибка создания токена: {e}') from e
@@ -109,8 +109,8 @@ def decode_access_token(token: str) -> Optional[dict[str, Any]]:
     try:
         payload = jwt.decode(
             token,
-            settings.JWT_SECRET_KEY,
-            algorithms=[settings.JWT_ALGORITHM],
+            settings.jwt_secret_key,
+            algorithms=[settings.jwt_algorithm],
         )
 
         if payload.get('type') != 'access':
@@ -144,7 +144,7 @@ def create_refresh_token(
         expire = datetime.now(timezone.utc) + expires_delta
     else:
         expire = datetime.now(timezone.utc) + timedelta(
-            days=settings.REFRESH_TOKEN_EXPIRE_DAYS,
+            days=settings.refresh_token_expire_days,
         )
 
     to_encode.update({'exp': expire, 'type': 'refresh'})
@@ -152,8 +152,8 @@ def create_refresh_token(
     try:
         return jwt.encode(
             to_encode,
-            settings.JWT_SECRET_KEY,
-            algorithm=settings.JWT_ALGORITHM,
+            settings.jwt_secret_key,
+            algorithm=settings.jwt_algorithm,
         )
     except JWTError as e:
         raise ValueError(f'Ошибка создания refresh токена: {e}') from e
@@ -172,8 +172,8 @@ def decode_refresh_token(token: str) -> Optional[dict[str, Any]]:
     try:
         payload = jwt.decode(
             token,
-            settings.JWT_SECRET_KEY,
-            algorithms=[settings.JWT_ALGORITHM],
+            settings.jwt_secret_key,
+            algorithms=[settings.jwt_algorithm],
         )
 
         if payload.get('type') != 'refresh':

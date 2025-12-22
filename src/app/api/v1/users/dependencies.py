@@ -6,7 +6,7 @@
 - Валидации и обработки исключений
 """
 
-from typing import Annotated, AsyncGenerator, Optional
+from typing import Annotated, Optional
 
 from fastapi import Depends, HTTPException, Security
 from fastapi.security import (
@@ -34,17 +34,6 @@ from src.app.models.models import User
 security = HTTPBearer(auto_error=False)
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """Получает асинхронную сессию базы данных.
-
-    Yields:
-        AsyncSession: Асинхронная сессия SQLAlchemy
-
-    """
-    async with get_session() as session:
-        yield session
-
-
 def get_user_repository() -> UserRepository:
     """Получает репозиторий пользователей.
 
@@ -60,7 +49,7 @@ async def get_current_user(
         Optional[HTTPAuthorizationCredentials],
         Security(security),
     ],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_session)],
     repo: Annotated[UserRepository, Depends(get_user_repository)],
 ) -> User:
     """Получает текущего аутентифицированного пользователя из JWT токена.
@@ -161,7 +150,7 @@ async def get_optional_user(
         Optional[HTTPAuthorizationCredentials],
         Security(security),
     ],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_session)],
     repo: Annotated[UserRepository, Depends(get_user_repository)],
 ) -> Optional[User]:
     """Получает текущего пользователя, если токен передан.
@@ -185,7 +174,7 @@ async def get_optional_user(
 async def require_cafe_manager(
     cafe_id: int,
     current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_session)],
 ) -> User:
     """Проверяет, является ли пользователь менеджером указанного кафе.
 
@@ -224,7 +213,7 @@ async def require_cafe_manager(
 
 async def validate_refresh_token(
     refresh_token: str,
-    db: Annotated[AsyncSession, Depends(get_db)],
+    db: Annotated[AsyncSession, Depends(get_session)],
     repo: Annotated[UserRepository, Depends(get_user_repository)],
 ) -> User:
     """Валидирует refresh токен и возвращает пользователя.
@@ -289,7 +278,6 @@ async def get_current_user_username(
 
 __all__ = [
     'security',
-    'get_db',
     'get_user_repository',
     'get_current_user',
     'get_current_active_user',

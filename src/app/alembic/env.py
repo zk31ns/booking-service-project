@@ -6,15 +6,26 @@ from logging.config import fileConfig
 from pathlib import Path
 from typing import Any
 
+# Добавить корневую папку в путь для импорта (исправляет проблему с абсолютными
+# импортами). env.py находится в src/app/alembic/, поэтому нужно подняться
+# на 4 уровня до корня: alembic -> app -> src -> (parent) -> корень
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
+
+from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from alembic import context
-
-# Добавить src в путь для импорта (исправляет проблему с абсолютными импортами)
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-
 from src.app.db.base import Base
+
+# Import all models to register them with Base.metadata for autogenerate
+from src.app.models import (  # noqa: F401
+    Action,
+    Cafe,
+    Dish,
+    Table,
+    User,
+    cafe_managers,
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

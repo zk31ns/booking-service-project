@@ -7,7 +7,7 @@ on:
 jobs:
   notify:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Check if PR was merged
         id: check_merge
@@ -15,7 +15,7 @@ jobs:
           if [ "${{ github.event.pull_request.merged }}" == "true" ]; then
             echo "merged=true" >> $GITHUB_OUTPUT
           fi
-      
+
       - name: Send Telegram notification
         if: steps.check_merge.outputs.merged == 'true'
         uses: appleboy/telegram-action@master
@@ -24,12 +24,12 @@ jobs:
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           message: |
             ✅ **PR успешно смёржен в develop!**
-            
+
             📌 PR: #${{ github.event.pull_request.number }}
             📝 Название: ${{ github.event.pull_request.title }}
             👤 Автор: @${{ github.event.pull_request.user.login }}
-            
+
             🔗 Ссылка: ${{ github.event.pull_request.html_url }}
-            
+
             ✨ Ветка `${{ github.event.pull_request.head.ref }}` успешно интегрирована в develop
           format: html

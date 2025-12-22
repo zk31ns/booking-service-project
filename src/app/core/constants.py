@@ -20,7 +20,7 @@
 """
 
 import re
-from enum import Enum
+from enum import IntEnum, Enum
 
 # ========== API и Таги ==========
 
@@ -79,6 +79,9 @@ class Limits:
     MIN_CAFE_NAME_LENGTH = 3
     MAX_CAFE_NAME_LENGTH = 255
 
+    # Booking
+    MAX_BOOKING_NOTE_LENGTH = 256
+
     # Description
     MIN_DESCRIPTION_LENGTH = 0
     MAX_DESCRIPTION_LENGTH = 1000
@@ -134,13 +137,16 @@ class Times:
 # ========== Enum классы ==========
 
 
-class BookingStatus(str, Enum):
+class BookingStatus(IntEnum):
     """Статусы бронирования."""
 
-    NEW = 'new'  # Новая бронь
-    CONFIRMED = 'confirmed'  # Подтверждённая бронь
-    CANCELLED = 'cancelled'  # Отменённая бронь
-    FINISHED = 'finished'  # Завершённая бронь
+    BOOKING = 0  # Забронировано
+    CANCELED = 1  # Отменено
+    ACTIVE = 2  # Клиент подошёл
+    # NEW = 'new'  # Новая бронь
+    # CONFIRMED = 'confirmed'  # Подтверждённая бронь
+    # CANCELLED = 'cancelled'  # Отменённая бронь
+    # FINISHED = 'finished'  # Завершённая бронь
 
 
 class UserRole(str, Enum):
@@ -194,6 +200,7 @@ class ErrorCode(str, Enum):
     BOOKING_NOT_FOUND = 'booking_not_found'
     BOOKING_PAST_DATE = 'booking_past_date'
     TABLE_ALREADY_BOOKED = 'table_already_booked'
+    NOT_ENOUGH_SEATS = 'not_enough_seats'
     USER_ALREADY_BOOKED = 'user_already_booked'
     INSUFFICIENT_PERMISSIONS = 'insufficient_permissions'
     INVALID_STATUS_TRANSITION = 'invalid_status_transition'
@@ -276,6 +283,9 @@ class Messages:
         ErrorCode.BOOKING_NOT_FOUND: 'Бронь не найдена',
         ErrorCode.BOOKING_PAST_DATE: 'Нельзя забронировать на прошедшую дату',
         ErrorCode.TABLE_ALREADY_BOOKED: 'Столик уже забронирован на это время',
+        ErrorCode.NOT_ENOUGH_SEATS: (
+            'Недостаточно мест для указанного количества гостей'
+        ),
         ErrorCode.INSUFFICIENT_PERMISSIONS: 'Недостаточно прав доступа',
         ErrorCode.INVALID_STATUS_TRANSITION: 'Неверный переход статуса',
         ErrorCode.FILE_TOO_LARGE: 'Файл слишком большой (макс. 5MB)',
@@ -314,6 +324,13 @@ class Messages:
         'file_uploaded': 'Файл успешно загружен',
         'file_deleted': 'Файл удалён',
     }
+
+    @classmethod
+    def error(cls, error_code: ErrorCode) -> str:
+        return cls.errors.get(
+            error_code,
+            'Неизвестная ошибка',
+        )
 
 
 # ========== Celery задачи ==========

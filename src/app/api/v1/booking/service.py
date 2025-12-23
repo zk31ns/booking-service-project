@@ -1,24 +1,30 @@
-from typing import Dict, List, Tuple, Optional, Union
 from datetime import date
+from typing import Any, List, Optional, Tuple, Union
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.app.repositories import CafeRepository, TableRepository
+from .repository import BookingRepository
+from src.app.api.v1.booking.schemas import (
+    BookingCreate,
+    BookingUpdate,
+    TableSlotSchema,
+)
 from src.app.api.v1.slots.repository import SlotRepository
 from src.app.api.v1.users.repository import UserRepository
-from src.app.models import User, Booking, Table, Slot, Cafe
-from src.app.api.v1.booking.schemas import (
-    BookingCreate, BookingUpdate, TableSlot
-)
-from src.app.core.constants import ErrorCode, BookingStatus
+from src.app.core.constants import BookingStatus, ErrorCode
 from src.app.core.exceptions import (
-    AppException, AuthenticationException,
-    NotFoundException, ValidationException,
+    AppException,
+    AuthenticationException,
+    NotFoundException,
+    ValidationException,
 )
-from .repository import BookingRepository
+from src.app.models import Booking, Cafe, Slot, Table, User
+from src.app.repositories import CafeRepository, TableRepository
 
 
 class BookingService:
+    """Сервис бронирования."""
+
     def __init__(
         self,
         booking_repo: BookingRepository,
@@ -26,7 +32,8 @@ class BookingService:
         user_repo: UserRepository,
         table_repo: TableRepository,
         slot_repo: SlotRepository,
-    ):
+    ) -> None:
+        """Инициализирует сервис бронированния c необходимыми репозиториями."""
         self.booking_repo = booking_repo
         self.cafe_repo = cafe_repo
         self.user_repo = user_repo
@@ -78,8 +85,9 @@ class BookingService:
         show_all: bool = True,
         cafe_id: Optional[int] = None,
         user_id: Optional[int] = None,
-    ):
-        """
+    ) -> List[Booking]:
+        """Получить бронирования.
+
         Для суперюзеров и менеджеров:
             - Получить все бронирование
             - сортировать по кафе
@@ -97,20 +105,18 @@ class BookingService:
 
             user_id = current_user.id
 
-        bookings = await self.booking_repo.get_multi(
+        return await self.booking_repo.get_multi(
             session=session,
             user_id=user_id,
             cafe_id=cafe_id,
         )
-
-        return bookings
 
     async def get_booking(
         self,
         current_user: User,
         booking_id: int,
         session: AsyncSession,
-    ):
+    ) -> Booking:
         """Получить бронирование по id."""
         booking = await self.__get_booking_or_404(
             booking_id=booking_id, session=session
@@ -123,18 +129,23 @@ class BookingService:
         )
         return booking
 
-    async def modify_booking(
+    async def update_booking(
         self,
-        booking_update: BookingUpdate,
-        current_user: User,
-        booking_id: int,
+        update_booking: BookingUpdate,
         session: AsyncSession,
-    ):
-        """Изменить, перенести или отменить бронь."""
-        booking = await self.__get_booking_or_404(
-            booking_id=booking_id,
-            session=session
-        )
+        booking_id: int,
+        current_user: User,
+    ) -> Booking:
+        """Логика при обновлении брони.
+
+        Бронь должна существовать и быть активной.
+        Проверить права пользователя.
+        Валидировать и собрать данные для обновления.
+        """
+        booking = await self.__get_booking_or_404(booking_id, session)
+
+        if not booking.is_active:
+            raise AppException(ErrorCode.BOOKING_INACTIVE)
 
         await self._check_booking_permissions(
             session=session,
@@ -142,87 +153,37 @@ class BookingService:
             booking=booking
         )
 
-        changes = booking_update.model_dump(
-            exclude_unset=True,
-            exclude_none=True
-        )
+        update_data: dict[str, Union[int, str, date, bool]] = {}
 
-        if not changes:
-            return booking
+        booking_date = booking.booking_date
+        cafe_id = booking.cafe_id
+        guest_number = booking.guest_number
 
-        actual_changes = {}
+        if update_booking.booking_date is not None:
+            self._validate_booking_date(update_booking.booking_date)
+            update_data['booking_date'] = update_booking.booking_date
+            booking_date = update_booking.booking_date
 
-        for field, new_value in changes.items():
-            old_value = getattr(booking, field, None)
+        if update_booking.cafe_id is not None:
+            await self._validate_cafe(update_booking.cafe_id, session)
+            update_data['cafe_id'] = update_booking.cafe_id
+            cafe_id = update_booking.cafe_id
 
-            if field == 'table_slots':
-                new_slots = {
-                    (item['table_id'], item['slot_id'])
-                    for item in (new_value or [])
-                }
-                old_slots = {
-                    (slot.table_id, slot.slot_id)
-                    for slot in (old_value or [])
-                }
-                if new_slots != old_slots:
-                    actual_changes[field] = new_value
+        if update_booking.guest_number is not None:
+            await self._validate_guest_number(update_booking.guest_number)
+            update_data['guest_number'] = update_booking.guest_number
+            guest_number = update_booking.guest_number
 
-            elif new_value != old_value:
-                actual_changes[field] = new_value
-
-        if not actual_changes:
-            return booking
-
-        await self._validate_update_data(
-            booking=booking,
-            changes=actual_changes,
-            session=session,
-            current_user=current_user,
-        )
-
-        updated_booking = await self.booking_repo.update(
-            session=session,
-            booking=booking,
-            changes=actual_changes,
-        )
-        return updated_booking
-
-    async def _validate_update_data(
-        self,
-        booking: Booking,
-        changes: dict,
-        session: AsyncSession,
-        current_user: User
-    ) -> None:
-        """Валидация изменений."""
-
-        booking_date = changes.get('booking_date', booking.booking_date)
-        cafe_id = changes.get('cafe_id', booking.cafe_id)
-        guest_number = changes.get('guest_number', booking.guest_number)
-
-        if 'table_slots' in changes:
-            table_slots = changes['table_slots']
+        if update_booking.table_slots is not None:
+            table_slots: list[Any] = update_booking.table_slots
         else:
-            table_slots = [
-                {"table_id": ts.table_id, "slot_id": ts.slot_id}
-                for ts in booking.table_slots
-            ]
+            table_slots = booking.table_slots
 
-        # Валидация отдельных полей
-        if 'booking_date' in changes:
-            self._validate_booking_date(booking_date)
-
-        if 'cafe_id' in changes:
-            await self._validate_cafe(cafe_id, session)
-
-        if 'guest_number' in changes:
-            await self._validate_guest_number(guest_number)
-
-        validate_tables = any(key in changes for key in [
-            'table_slots', 'booking_date', 'cafe_id'
+        validate_tables = any(key in update_data for key in [
+            'booking_date', 'cafe_id'
         ])
 
-        if validate_tables:
+        if validate_tables or update_booking.table_slots is not None:
             await self._validate_new_table_slots(
                 table_slots=table_slots,
                 cafe_id=cafe_id,
@@ -233,23 +194,38 @@ class BookingService:
                 exclude_booking_id=booking.id
             )
 
+        if update_booking.note is not None:
+            update_data['note'] = update_booking.note
+
+        if update_booking.status is not None:
+            update_data['status'] = update_booking.status
+
+        if update_booking.is_active is not None:
+            update_data['is_active'] = update_booking.is_active
+
+        return await self.booking_repo.update(
+            session=session,
+            booking=booking,
+            update_booking=update_booking,
+            data=update_data
+        )
+
+    # Отправить сообщение Celery если бронь отменилась
+
     async def _validate_new_table_slots(
         self,
-        table_slots: List[TableSlot],
+        table_slots: List[TableSlotSchema],
         cafe_id: int,
         session: AsyncSession,
         booking_date: date,
         user: User,
         guest_number: Optional[int] = None,
         exclude_booking_id: Optional[int] = None,
-    ):
-        """Валидировать столики и окошки со временем"""
+    ) -> set:
+        """Валидировать столы и окошки со временем."""
         tables = set()
         for table_slot in table_slots:
-            if exclude_booking_id is None:
-                table_id, slot_id = table_slot.table_id, table_slot.slot_id
-            else:
-                table_id, slot_id = table_slot['table_id'], table_slot['slot_id']
+            table_id, slot_id = table_slot.table_id, table_slot.slot_id
 
             table, slot = await self._validate_table_slot(
                 table_id,
@@ -283,7 +259,7 @@ class BookingService:
 
     async def _validate_guest_number(
             self, guest_number: int
-    ):
+    ) -> None:
         if guest_number <= 0:
             raise AppException(ErrorCode.VALIDATION_ERROR)
 
@@ -300,7 +276,7 @@ class BookingService:
 
     async def __get_booking_or_404(
         self, booking_id: int, session: AsyncSession
-    ):
+    ) -> Booking:
         """Проверить существование бронирования и полчить его."""
         booking = await self.booking_repo.get(
             booking_id=booking_id,
@@ -310,21 +286,34 @@ class BookingService:
             raise NotFoundException(ErrorCode.BOOKING_NOT_FOUND)
         return booking
 
+    async def _is_manager(
+        self,
+        session: AsyncSession,
+        current_user: User,
+    ) -> bool:
+        """Пользователь является менеджером."""
+        return await self.user_repo.is_manager(session, current_user.id)
+
     async def _check_booking_permissions(
         self,
         session: AsyncSession,
         current_user: User,
         booking: Booking
-    ):
-        is_manager = await self.user_repo.is_manager(session, current_user.id)
+    ) -> None:
+        """Проверить права.
 
-        if not current_user.is_superuser and not is_manager:
+        Если пользователь не является суперюзером,
+        менеджером и бронь не его - доступ запрещён.
+        """
+        if not current_user.is_superuser and not await self._is_manager(
+            session, current_user
+        ):
             if booking.user_id != current_user.id:
                 raise AuthenticationException(
                     ErrorCode.INSUFFICIENT_PERMISSIONS
                 )
 
-    def _validate_booking_date(self, booking_date: date):
+    def _validate_booking_date(self, booking_date: date) -> None:
         """Проверить что дата брони в будущем."""
         if booking_date <= date.today():
             raise AppException(ErrorCode.BOOKING_PAST_DATE)
@@ -354,12 +343,116 @@ class BookingService:
         """Подсчитать общее количество мест."""
         return sum(table.seats for table in tables) if tables else 0
 
+    async def _validate_active_change(
+        self,
+        booking: Booking,
+        new_active: bool,
+        current_user: User,
+        session: AsyncSession
+    ) -> None:
+        """Валидация изменения is_active.
+
+        - Неактивную бронь нельзя активировать
+        - Деактивировать бронь может только суперюзер, менеджер и
+        владелец брони
+        """
+        if new_active is True and not booking.is_active:
+            raise AppException(ErrorCode.INVALID_STATUS_TRANSITION)
+
+        if new_active is False:
+            await self._check_booking_permissions(
+                session=session,
+                current_user=current_user,
+                booking=booking,
+            )
+
+    async def _validate_status_transition(
+        self,
+        current_status: BookingStatus,
+        new_status: BookingStatus,
+        current_user: User,
+        session: AsyncSession
+    ) -> None:
+        """Валидация изменения статуса брони.
+
+        - Нельзя совершить переход отсутствующий в allowed_transitions
+        - Можно совершить переходы соответствующие вашим правам
+        """
+        # Матрица разрешённых переходов
+        allowed_transitions = {
+            # Текущий статус: [разрешённые новые статусы]
+            BookingStatus.BOOKING: [
+                BookingStatus.CONFIRMED, BookingStatus.CANCELLED
+            ],
+            BookingStatus.CONFIRMED: [
+                BookingStatus.FINISHED, BookingStatus.CANCELLED
+            ],
+            BookingStatus.FINISHED: [],
+            BookingStatus.CANCELLED: [],
+        }
+
+        allowed = allowed_transitions.get(current_status, [])
+        if new_status not in allowed:
+            raise AppException(
+                ErrorCode.INVALID_STATUS_TRANSITION,
+                detail=(
+                    f"Невозможно изменить статус с {current_status}"
+                    f" на {new_status}"
+                )
+            )
+
+        await self._check_status_change_permissions(
+            current_status=current_status,
+            new_status=new_status,
+            user=current_user,
+            session=session
+        )
+
+    async def _check_status_change_permissions(
+        self,
+        current_status: BookingStatus,
+        new_status: BookingStatus,
+        user: User,
+        session: AsyncSession
+    ) -> None:
+        """Проверить права на изменение статуса.
+
+        - Суперюзер может всё
+        - Менеджер может подтвердить и отменить созданную бронь,
+        отменить и завершить подтверждённую бронь
+        - Пользователь может отменить свою созданную или подтвержденную бронь
+        """
+        if user.is_superuser:
+            return
+
+        if await self._is_manager(session=session, current_user=user):
+            manager_allowed = [
+                (BookingStatus.BOOKING, BookingStatus.CONFIRMED),
+                (BookingStatus.BOOKING, BookingStatus.CANCELLED),
+                (BookingStatus.CONFIRMED, BookingStatus.FINISHED),
+                (BookingStatus.CONFIRMED, BookingStatus.FINISHED),
+            ]
+            if (current_status, new_status) in manager_allowed:
+                return
+
+        if (
+            (current_status == BookingStatus.BOOKING or
+                current_status == BookingStatus.CONFIRMED) and
+                new_status == BookingStatus.CANCELLED
+        ):
+            return
+
+        raise AppException(
+            ErrorCode.INSUFFICIENT_PERMISSIONS,
+            detail="Недостаточно прав для изменения статуса"
+        )
+
     async def _trigger_celery_tasks(
         self,
         booking: Booking,
         user: User,
         cafe: Cafe
-    ):
+    ) -> None:
         """Запустить фоновые задачи (уведомления)."""
         # Здесь можно добавить вызов Celery задач
         pass

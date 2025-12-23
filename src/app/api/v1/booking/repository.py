@@ -1,30 +1,30 @@
-from datetime import time, date
-from typing import Dict, List, Optional, Union
+from datetime import date, time
+from typing import List, Optional, Union
 
-from sqlalchemy import select, delete
-from sqlalchemy.orm import selectinload
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from src.app.models import Booking, User, TableSlot, Slot
+from .schemas import BookingCreate, BookingUpdate
 from src.app.core.constants import BookingStatus
+from src.app.models import Booking, Slot, TableSlot, User
 
 
 class BookingRepository:
-    """CRUD для бронирования столиков в кафе.
-    Добавить деактивацию бронирования?"""
+    """CRUD для бронирования столиков в кафе."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Инициализирует репозиторий."""
         self.model = Booking
 
     async def get(
         self,
         booking_id: int,
         session: AsyncSession,
-    ):
+    ) -> Booking | None:
+        """Получить бронь."""
         booking = await session.execute(
-            select(self.model).where(
-                self.model.id == booking_id
-            )
+            select(self.model).where(self.model.id == booking_id)
         )
         return booking.scalars().first()
 
@@ -34,19 +34,26 @@ class BookingRepository:
         slot_id: int,
         date: date,
         session: AsyncSession,
-        exclude_booking_id: Optional[int] = None
+        exclude_booking_id: Optional[int] = None,
     ) -> bool:
         """Проверить, свободен ли стол в слот на эту дату."""
-
-        stmt = select(TableSlot).join(self.model).where(
-            TableSlot.table_id == table_id,
-            TableSlot.slot_id == slot_id,
-            self.model.booking_date == date,
-            self.model.status.in_(
-                [BookingStatus.BOOKING, BookingStatus.ACTIVE]
-            ),
-            self.model.is_active == True
+        stmt = (
+            select(TableSlot)
+            .join(self.model)
+            .where(
+                TableSlot.table_id == table_id,
+                TableSlot.slot_id == slot_id,
+                self.model.booking_date == date,
+                self.model.status.in_([
+                    BookingStatus.BOOKING,
+                    BookingStatus.CONFIRMED,
+                ]),
+                self.model.is_active.is_(True),
+            )
         )
+
+        if exclude_booking_id is not None:
+            stmt = stmt.where(Booking.id != exclude_booking_id)
 
         result = await session.execute(stmt)
         return result.scalar_one_or_none() is not None
@@ -58,8 +65,8 @@ class BookingRepository:
         end_time: time,
         booking_date: date,
         session: AsyncSession,
-        exclude_booking_id: Optional[int] = None
-    ):
+        exclude_booking_id: Optional[int] = None,
+    ) -> bool:
         """Проверить свободен ли пользователь в это время."""
         stmt = (
             select(Booking.id)
@@ -68,11 +75,12 @@ class BookingRepository:
             .where(
                 Booking.user_id == user_id,
                 Booking.booking_date == booking_date,
-                Booking.status.in_(
-                    [BookingStatus.BOOKING, BookingStatus.ACTIVE]
-                ),
-                Booking.is_active == True,
-                (start_time < Slot.end_time) & (end_time > Slot.start_time)
+                Booking.status.in_([
+                    BookingStatus.BOOKING,
+                    BookingStatus.CONFIRMED,
+                ]),
+                Booking.is_active.is_(True),
+                (start_time < Slot.end_time) & (end_time > Slot.start_time),
             )
             .limit(1)
         )
@@ -90,14 +98,10 @@ class BookingRepository:
         cafe_id: Optional[int] = None,
     ) -> List[Booking]:
         """Получение всех бронирований с фильтрацией."""
-
-        query = (
-            select(Booking)
-            .options(
-                selectinload(Booking.table_slots),
-                selectinload(Booking.cafe),
-                selectinload(Booking.user),
-            )
+        query = select(Booking).options(
+            selectinload(Booking.table_slots),
+            selectinload(Booking.cafe),
+            selectinload(Booking.user),
         )
 
         if user_id is not None:
@@ -107,19 +111,19 @@ class BookingRepository:
             query = query.where(Booking.cafe_id == cafe_id)
 
         result = await session.execute(query)
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     async def create(
-            self,
-            obj_in,
-            session: AsyncSession,
-            user: Optional[User] = None
-    ) -> Union[Booking]:
+        self,
+        obj_in: BookingCreate,
+        session: AsyncSession,
+        user: Optional[User] = None
+    ) -> Booking:
         """Создание нового бронирования."""
-        data = obj_in.dict(exclude={"table_slots"})
+        data = obj_in.dict(exclude={'table_slots'})
 
         if user is not None:
-            data["user_id"] = user.id
+            data['user_id'] = user.id
 
         booking = Booking(**data)
 
@@ -141,56 +145,33 @@ class BookingRepository:
         self,
         session: AsyncSession,
         booking: Booking,
-        changes: dict,
+        update_booking: BookingUpdate,
+        data: dict[str, Union[int, str, date, bool]],
     ) -> Booking:
-        """Обновить бронирование."""
+        """Обновить бронь.
 
-        if 'table_slots' in changes:
-            await self._bulk_replace_table_slots(
-                session=session,
-                booking=booking,
-                new_slots=changes.pop('table_slots')
+        update_booking: Схема с данными от пользователя
+        (все поля, включая None)
+        data: Уже валидированные и обработанные данные для простого UPDATE
+               (исключает table_slots и поля со значением None)
+        """
+        if data:
+            stmt = (
+                update(Booking).where(Booking.id == booking.id).values(**data)
             )
+            await session.execute(stmt)
 
-        for field, value in changes.items():
-            setattr(booking, field, value)
+        if update_booking.table_slots is not None and hasattr(
+            update_booking, 'model_fields_set'
+        ):
+            booking.table_slots.clear()
+
+            for slot_schema in update_booking.table_slots:
+                table_slot = TableSlot(
+                    table_id=slot_schema.table_id, slot_id=slot_schema.slot_id
+                )
+                booking.table_slots.append(table_slot)
 
         await session.commit()
-        await session.refresh(booking, ['table_slots'])
+        await session.refresh(booking)
         return booking
-
-    async def _bulk_replace_table_slots(
-        self,
-        session: AsyncSession,
-        booking: Booking,
-        new_slots: List[Dict[str, int]]
-    ) -> None:
-        """Замена table_slots через bulk operations."""
-
-        await session.execute(
-            delete(TableSlot).where(TableSlot.booking_id == booking.id)
-        )
-
-        if new_slots:
-            await session.execute(
-                TableSlot.__table__.insert(),
-                [
-                    {
-                        "booking_id": booking.id,
-                        "table_id": slot["table_id"],
-                        "slot_id": slot["slot_id"]
-                    }
-                    for slot in new_slots
-                ]
-            )
-        session.expire(booking, ['table_slots'])
-
-    async def remove(
-            self,
-            db_obj,
-            session: AsyncSession,
-    ) -> Booking:
-        """Удаление бронирования."""
-        await session.delete(db_obj)
-        await session.commit()
-        return db_obj

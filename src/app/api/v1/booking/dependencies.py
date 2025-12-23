@@ -1,45 +1,41 @@
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from .repository import BookingRepository
+from .service import BookingService
 from src.app.api.v1.slots.repository import SlotRepository
 from src.app.api.v1.users.dependencies import get_user_repository
 from src.app.api.v1.users.repository import UserRepository
-from src.app.repositories import CafeRepository, TableRepository
 from src.app.db.session import get_session
-from .repository import BookingRepository
-from .service import BookingService
+from src.app.repositories import CafeRepository, TableRepository
 
 
 async def get_cafe_repository(
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
 ) -> CafeRepository:
     """Получить репозиторий кафе."""
-    cafe_repo = CafeRepository(session)  # Передаем сессию
-    return cafe_repo
+    return CafeRepository(session)
 
 
 async def get_table_repository(
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
 ) -> TableRepository:
     """Получить репозиторий столиков."""
-    table_repo = TableRepository(session)  # Передаем сессию
-    return table_repo
+    return TableRepository(session)
 
 
 async def get_slot_repository(
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
 ) -> SlotRepository:
     """Получить репозиторий слотов."""
-    slot_repo = SlotRepository(session)  # Передаем сессию
-    return slot_repo
+    return SlotRepository(session)
 
 
 async def get_booking_repository(
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
 ) -> BookingRepository:
     """Получить репозиторий бронирований."""
-    booking_repo = BookingRepository()
-    return booking_repo
+    return BookingRepository()
 
 
 async def get_booking_service(
@@ -50,7 +46,6 @@ async def get_booking_service(
     slot_repo: SlotRepository = Depends(get_slot_repository),
 ) -> BookingService:
     """Получить сервис бронирований."""
-
     return BookingService(
         booking_repo=booking_repo,
         cafe_repo=cafe_repo,

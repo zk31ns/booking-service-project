@@ -4,6 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app.api.v1.slots.schemas import SlotCreate, SlotInfo, SlotUpdate
 from src.app.api.v1.slots.service import SlotService
+from src.app.core.constants import RedisKey, Times
+from src.app.core.redis_cache import RedisCache
 from src.app.db.session import get_session
 
 router = APIRouter(prefix='/cafes/{cafe_id}/slots')
@@ -16,9 +18,15 @@ async def get_all_slots(
     session: AsyncSession = Depends(get_session),
 ) -> list[SlotInfo]:
     """Получение всех слотов кафе."""
+    cached_data = await RedisCache.get(RedisKey.CACHE_KEY_ALL_SLOTS)
+    if cached_data is not None:
+        return [SlotInfo(**item) for item in cached_data]
     service = SlotService(session)
     slots = await service.get_cafe_slots(cafe_id, show_inactive)
     logger.info(f'Получены слоты для кафе cafe_id={cafe_id}')
+    await RedisCache.set(RedisKey.CACHE_KEY_ALL_SLOTS,
+                         slots,
+                         expire=Times.REDIS_CACHE_EXPIRE_TIME)
     return slots
 
 

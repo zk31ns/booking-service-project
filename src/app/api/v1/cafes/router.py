@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app.api.dependencies import get_db
-from src.app.core.constants import TAGS_CAFES, Limits
+from src.app.core.constants import TAGS_CAFES, Limits, RedisKey, Times
+from src.app.core.redis_cache import RedisCache
 from src.app.repositories.cafe import CafeRepository
 from src.app.repositories.table import TableRepository
 from src.app.schemas.cafe import Cafe, CafeCreate, CafeUpdate
@@ -38,11 +39,18 @@ async def get_cafes(
     cafe_service: CafeService = Depends(get_cafe_service),
 ) -> List[Cafe]:
     """Получить все кафе."""
-    return await cafe_service.get_all_cafes(
+    cached_data = await RedisCache.get(RedisKey.CACHE_KEY_ALL_CAFES)
+    if cached_data is not None:
+        return [Cafe(**item) for item in cached_data]
+    all_cafes = await cafe_service.get_all_cafes(
         skip=skip,
         limit=limit,
         active_only=active_only,
     )
+    await RedisCache.set(RedisKey.CACHE_KEY_ALL_CAFES,
+                         all_cafes,
+                         expire=Times.REDIS_CACHE_EXPIRE_TIME)
+    return all_cafes
 
 
 @router.get(

@@ -20,7 +20,7 @@
 """
 
 import re
-from enum import IntEnum, Enum
+from enum import Enum, IntEnum
 
 # ========== API и Таги ==========
 
@@ -112,7 +112,7 @@ class Times:
     TIME_ZONE = 'Europe/Moscow'
 
     # JWT токены
-    ACCESS_TOKEN_MINUTES = 60  # 1 час
+    ACCESS_TOKEN_MINUTES = 600  # 1 час
     REFRESH_TOKEN_DAYS = 7
 
     # Бронирование
@@ -141,12 +141,9 @@ class BookingStatus(IntEnum):
     """Статусы бронирования."""
 
     BOOKING = 0  # Забронировано
-    CANCELED = 1  # Отменено
-    ACTIVE = 2  # Клиент подошёл
-    # NEW = 'new'  # Новая бронь
-    # CONFIRMED = 'confirmed'  # Подтверждённая бронь
-    # CANCELLED = 'cancelled'  # Отменённая бронь
-    # FINISHED = 'finished'  # Завершённая бронь
+    CANCELLED = 1  # Отменено
+    CONFIRMED = 2  # Подтверждено
+    FINISHED = 3  # Завершено
 
 
 class UserRole(str, Enum):
@@ -199,6 +196,7 @@ class ErrorCode(str, Enum):
     # Booking
     BOOKING_NOT_FOUND = 'booking_not_found'
     BOOKING_PAST_DATE = 'booking_past_date'
+    BOOKING_INACTIVE = 'booking_inactive'
     TABLE_ALREADY_BOOKED = 'table_already_booked'
     NOT_ENOUGH_SEATS = 'not_enough_seats'
     USER_ALREADY_BOOKED = 'user_already_booked'
@@ -282,6 +280,7 @@ class Messages:
         ErrorCode.USER_ALREADY_BOOKED: 'У вас уже есть бронь на это время',
         ErrorCode.BOOKING_NOT_FOUND: 'Бронь не найдена',
         ErrorCode.BOOKING_PAST_DATE: 'Нельзя забронировать на прошедшую дату',
+        ErrorCode.BOOKING_INACTIVE: 'Бронь неактивна',
         ErrorCode.TABLE_ALREADY_BOOKED: 'Столик уже забронирован на это время',
         ErrorCode.NOT_ENOUGH_SEATS: (
             'Недостаточно мест для указанного количества гостей'
@@ -327,6 +326,7 @@ class Messages:
 
     @classmethod
     def error(cls, error_code: ErrorCode) -> str:
+        """Получить ошибку по коду."""
         return cls.errors.get(
             error_code,
             'Неизвестная ошибка',

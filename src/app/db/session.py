@@ -2,6 +2,7 @@
 
 Использует SQLAlchemy 2.0 async.
 """
+
 from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (

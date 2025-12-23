@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import Optional
-from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -34,10 +33,10 @@ class CafeBase(BaseModel):
 class CafeCreate(CafeBase):
     """Схема для создания кафе."""
 
-    photo_id: Optional[UUID] = Field(
-        default=None,
-        description='ID фотографии кафе',
-    )
+    # photo_id: Optional[UUID] = Field(
+    #     default=None,
+    #     description='ID фотографии кафе',
+    # )
     pass
 
 
@@ -70,7 +69,7 @@ class CafeInDBBase(CafeBase):
 
     model_config = ConfigDict(from_attributes=True)
     id: int
-    photo_id: Optional[UUID] = None
+    # photo_id: Optional[UUID] = None
     active: bool
     created_at: datetime
     updated_at: datetime

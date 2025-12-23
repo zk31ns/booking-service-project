@@ -7,7 +7,7 @@
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from sqlalchemy import and_, select, exists
+from sqlalchemy import and_, exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
@@ -443,11 +443,7 @@ class UserRepository:
         self,
         session: AsyncSession,
         user_id: int,
-    ) -> bool | None:
-        """Искать пользователя среди менеджеров."""
-        stmt = select(
-            exists().where(
-                cafe_managers.c.user_id == user_id
-            )
-        )
-        return await session.scalar(stmt)
+    ) -> bool:
+        """Проверить является ли пользователь менеджером."""
+        stmt = select(exists().where(cafe_managers.c.user_id == user_id))
+        return await session.scalar(stmt) is not None

@@ -22,7 +22,6 @@ from src.app.db.base import Base
 
 if TYPE_CHECKING:
     from src.app.models import Booking
-    from src.app.models import Cafe
 
 
 class User(Base):

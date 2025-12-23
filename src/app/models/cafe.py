@@ -1,17 +1,15 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
-from uuid import UUID
 
-from sqlalchemy import ForeignKey, Index, String, Text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Index, String, Text
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
 from src.app.core.constants import Limits
 from src.app.db.base import Base
-from src.app.models.table import Table
 
 if TYPE_CHECKING:
-    from app.api.v1.media.models import Media
+    pass
 
 
 class Cafe(Base):
@@ -43,10 +41,10 @@ class Cafe(Base):
         Text,
         nullable=True,
     )
-    photo_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey('media.id', ondelete='SET NULL'),
-        nullable=True,
-    )
+    # photo_id: Mapped[UUID | None] = mapped_column(
+    #     ForeignKey('media.id', ondelete='SET NULL'),
+    #     nullable=True,
+    # )
     created_at: Mapped[datetime] = mapped_column(
         server_default=func.now(),
         nullable=False,

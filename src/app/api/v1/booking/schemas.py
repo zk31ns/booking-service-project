@@ -41,7 +41,6 @@ class BookingCreate(BookingBase):
     cafe_id: int
     booking_date: date
     table_slots: list[TableSlotSchema]
-    status: BookingStatus | None = BookingStatus.BOOKING
 
 
 class BookingUpdate(BookingBase):

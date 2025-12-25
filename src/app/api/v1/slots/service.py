@@ -1,5 +1,5 @@
 from datetime import time
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,21 +8,32 @@ from src.app.api.v1.slots.repository import SlotRepository
 from src.app.core.constants import ErrorCode
 from src.app.core.exceptions import ConflictException, ValidationException
 from src.app.models.slot import Slot
-
-if TYPE_CHECKING:
-    from src.app.api.v1.cafes.repository import CafeRepository
+from src.app.repositories.cafe import CafeRepository
 
 
 class SlotService:
     """Бизнес-логика для слотов."""
 
     def __init__(self, session: AsyncSession) -> None:
-        """Инициализация сервиса слотов."""
+        """Инициализация сервиса слотов.
+
+        Args:
+            session: Сессия БД.
+
+        """
         self.session = session
         self.repo = SlotRepository(session)
 
     async def _validate_cafe_exists(self, cafe_id: int) -> None:
-        """Проверка существования кафе."""
+        """Проверка существования кафе.
+
+        Args:
+            cafe_id: Идентификатор кафе.
+
+        Raises:
+            ValidationException: Если кафе не найдено.
+
+        """
         cafe_repo = CafeRepository(self.session)
         cafe = await cafe_repo.get_by_id(cafe_id)
 
@@ -38,7 +49,21 @@ class SlotService:
         start_time: time,
         end_time: time,
     ) -> Slot:
-        """Создание слота с проверками."""
+        """Создание слота с проверками.
+
+        Args:
+            cafe_id: Идентификатор кафе.
+            start_time: Время начала слота.
+            end_time: Время окончания слота.
+
+        Returns:
+            Slot: Созданный слот.
+
+        Raises:
+            ValidationException: Если кафе не найдено,
+            время некорректно или есть пересечение.
+
+        """
         await self._validate_cafe_exists(cafe_id)
         if start_time >= end_time:
             raise ValidationException(
@@ -57,17 +82,45 @@ class SlotService:
     def _slots_overlap(
         self, s1_start: time, s1_end: time, s2_start: time, s2_end: time
     ) -> bool:
-        """Проверка пересечения двух временных интервалов."""
+        """Проверка пересечения двух временных интервалов.
+
+        Args:
+            s1_start: Время начала первого интервала.
+            s1_end: Время окончания первого интервала.
+            s2_start: Время начала второго интервала.
+            s2_end: Время окончания второго интервала.
+
+        Returns:
+            bool: True если интервалы пересекаются, иначе False.
+
+        """
         return s1_start < s2_end and s2_start < s1_end
 
     async def get_slot(self, slot_id: int) -> Optional[Slot]:
-        """Получение слота."""
+        """Получение слота.
+
+        Args:
+            slot_id: Идентификатор слота.
+
+        Returns:
+            Slot | None: Слот или None если не найден.
+
+        """
         return await self.repo.get_by_id(slot_id)
 
     async def get_cafe_slots(
         self, cafe_id: int, show_inactive: bool = False
     ) -> list[Slot]:
-        """Получение слотов кафе."""
+        """Получение слотов кафе.
+
+        Args:
+            cafe_id: Идентификатор кафе.
+            show_inactive: Показывать ли неактивные слоты.
+
+        Returns:
+            list[Slot]: Список слотов, отсортированный по времени начала.
+
+        """
         return await self.repo.get_all_by_cafe(cafe_id, show_inactive)
 
     async def update_slot(
@@ -77,8 +130,23 @@ class SlotService:
         start_time: Optional[time] = None,
         end_time: Optional[time] = None,
         active: Optional[bool] = None,
-    ) -> Optional[Slot]:
-        """Обновление слота."""
+    ) -> Slot | None:
+        """Обновление слота.
+
+        Args:
+            slot_id: Идентификатор слота.
+            cafe_id: Идентификатор кафе (для проверки принадлежности).
+            start_time: Новое время начала или None если не изменяется.
+            end_time: Новое время окончания или None если не изменяется.
+            active: Новый статус активности или None если не изменяется.
+
+        Returns:
+            Slot | None: Обновленный слот или None если слот не найден.
+
+        Raises:
+            ValidationException: Если время некорректно или есть пересечение.
+
+        """
         slot = await self.repo.get_by_id(slot_id)
 
         if not slot or slot.cafe_id != cafe_id:
@@ -108,7 +176,16 @@ class SlotService:
         return slot
 
     async def delete_slot(self, slot_id: int, cafe_id: int) -> bool:
-        """Удаление слота."""
+        """Удаление слота (логическое удаление).
+
+        Args:
+            slot_id: Идентификатор слота.
+            cafe_id: Идентификатор кафе (для проверки принадлежности).
+
+        Returns:
+            bool: True если слот успешно удален, False если не найден.
+
+        """
         slot = await self.repo.get_by_id(slot_id)
         if not slot or slot.cafe_id != cafe_id:
             return False
@@ -125,7 +202,18 @@ class SlotService:
         end_time: time,
         exclude_slot_id: Optional[int] = None,
     ) -> None:
-        """Проверка пересечения с существующими слотами."""
+        """Проверка пересечения с существующими слотами.
+
+        Args:
+            cafe_id: Идентификатор кафе.
+            start_time: Время начала проверяемого интервала.
+            end_time: Время окончания проверяемого интервала.
+            exclude_slot_id: ID слота, который исключить из проверки.
+
+        Raises:
+            ConflictException: Если найдено пересечение с существующим слотом.
+
+        """
         existing_slots = await self.repo.get_all_by_cafe(
             cafe_id, show_inactive=False
         )

@@ -94,7 +94,7 @@ async def update_slot(
     if not slot:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=ErrorCode.SLOT_NOT_FOUND
+            detail=ErrorCode.SLOT_NOT_FOUND,
         )
     await session.commit()
     logger.info(f'Обновлен слот slot_id={slot_id}')
@@ -126,7 +126,7 @@ async def delete_slot(
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=ErrorCode.SLOT_NOT_FOUNDx
+            detail=ErrorCode.SLOT_NOT_FOUNDx,
         )
     await session.commit()
     logger.info(f'Удален слот slot_id={slot_id}')

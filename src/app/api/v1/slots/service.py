@@ -1,5 +1,4 @@
 from datetime import time
-from typing import Optional
 
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -96,7 +95,7 @@ class SlotService:
         """
         return s1_start < s2_end and s2_start < s1_end
 
-    async def get_slot(self, slot_id: int) -> Optional[Slot]:
+    async def get_slot(self, slot_id: int) -> Slot | None:
         """Получение слота.
 
         Args:
@@ -127,9 +126,9 @@ class SlotService:
         self,
         slot_id: int,
         cafe_id: int,
-        start_time: Optional[time] = None,
-        end_time: Optional[time] = None,
-        active: Optional[bool] = None,
+        start_time: time | None = None,
+        end_time: time | None = None,
+        active: bool | None = None,
     ) -> Slot | None:
         """Обновление слота.
 
@@ -200,7 +199,7 @@ class SlotService:
         cafe_id: int,
         start_time: time,
         end_time: time,
-        exclude_slot_id: Optional[int] = None,
+        exclude_slot_id: int | None = None,
     ) -> None:
         """Проверка пересечения с существующими слотами.
 

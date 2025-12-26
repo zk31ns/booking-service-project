@@ -3,8 +3,8 @@ from typing import List, Optional
 from sqlalchemy import and_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.app.models.table import Table
-from src.app.schemas.table import TableCreate, TableUpdate
+from src.app.models.tables import Table
+from src.app.schemas.tables import TableCreate, TableUpdate
 
 
 class TableRepository:
@@ -30,7 +30,7 @@ class TableRepository:
             query = query.where(Table.active)
         query = query.offset(skip).limit(limit)
         result = await self.session.execute(query)
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     async def get_by_id(
         self,

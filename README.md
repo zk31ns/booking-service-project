@@ -192,7 +192,7 @@ docker-compose logs -f postgres
 - **Flower:** http://localhost:5555 (мониторинг Celery)
 - **Celery Worker:** автоматический рабочий процесс
 
-**⚠️ Важно:** Docker-compose.yml ещё в разработке (P1.5). Сейчас разработка ведётся локально.
+**⚠️ Важно:** `Dockerfile` перемещён в `src/Dockerfile`, а `docker-compose.yml` указывает на него (build.dockerfile: src/Dockerfile). Все зависимости берутся из `src/requirements.txt`.
 
 [↑ Вернуться к оглавлению](#оглавление)
 
@@ -232,9 +232,11 @@ booking_seats_team_project/
 │   │   │   ├── versions/      # Migration files
 │   │   │   └── script.py.mako # Migration template
 │   │   ├── alembic.ini        # Alembic configuration
-│   │   └── requirements.txt    # Основные зависимости
+│   │   └──                    # (зависимости теперь в src/requirements.txt)
 ├── infra/                      # Docker и конфигурация
-│   └── docker-compose.yml     # (скоро)
+│   └── docker-compose.yml     # Compose (указывает на src/Dockerfile)
+├── src/Dockerfile              # Dockerfile (перемещён из infra)
+├── src/requirements.txt        # Основные зависимости
 ├── tests/                      # 🧪 Unit & Integration tests
 │   ├── api/                   # API endpoint tests
 │   ├── services/              # Business logic tests

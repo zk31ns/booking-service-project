@@ -8,7 +8,7 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
-from .constants import (
+from app.core.constants import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     MAX_UPLOAD_SIZE_BYTES,
     REFRESH_TOKEN_EXPIRE_DAYS,

@@ -3,8 +3,8 @@ from typing import List, Optional
 from sqlalchemy import and_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.app.models.tables import Table
-from src.app.schemas.tables import TableCreate, TableUpdate
+from app.models.tables import Table
+from app.schemas.tables import TableCreate, TableUpdate
 
 
 class TableRepository:

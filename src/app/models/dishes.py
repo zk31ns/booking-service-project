@@ -4,7 +4,7 @@ from decimal import Decimal
 from sqlalchemy import Numeric
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.app.db.base import Base
+from app.db.base import Base
 
 
 class Dish(Base):

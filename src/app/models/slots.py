@@ -3,7 +3,7 @@ from datetime import datetime, time
 from sqlalchemy import ForeignKey, Time
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.app.db.base import Base
+from app.db.base import Base
 
 
 class Slot(Base):

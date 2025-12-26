@@ -6,12 +6,12 @@ from sqlalchemy import ForeignKey, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
-from src.app.core.constants import Limits
-from src.app.db.base import Base
-from src.app.models.tables import Table
+from app.core.constants import Limits
+from app.db.base import Base
+from app.models.tables import Table
 
 if TYPE_CHECKING:
-    from src.app.models.media import Media
+    from app.models.media import Media
 
 
 class Cafe(Base):

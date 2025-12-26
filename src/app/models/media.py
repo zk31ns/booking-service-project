@@ -1,12 +1,16 @@
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import Index, Integer, String, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.app.db.base import Base
+
+if TYPE_CHECKING:
+    from src.app.models.cafes import Cafe
 
 
 class Media(Base):
@@ -39,6 +43,12 @@ class Media(Base):
     active: Mapped[bool] = mapped_column(
         default=True,
         nullable=False,
+    )
+
+    cafe_photos: Mapped[list['Cafe']] = relationship(
+        'Cafe',
+        foreign_keys='Cafe.photo_id',
+        back_populates='photo',
     )
 
     __table_args__ = (

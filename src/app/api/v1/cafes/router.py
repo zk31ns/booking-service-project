@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app.api.dependencies import get_db
-from src.app.core.constants import TAGS_CAFES, Limits
+from src.app.core.constants import TAGS_CAFES, Limits, RedisKey, Times
+from src.app.core.redis_cache import RedisCache
 from src.app.repositories.cafes import CafeRepository
 from src.app.repositories.tables import TableRepository
 from src.app.schemas.cafes import Cafe, CafeCreate, CafeUpdate
@@ -36,10 +37,19 @@ async def get_cafes(
     cafe_service: CafeService = Depends(get_cafe_service),
 ) -> list[Cafe]:
     """Получить все кафе."""
+    cache_key = f'{RedisKey.CACHE_KEY_ALL_CAFES}:{skip}:{limit}:{active_only}'
+    cached_data = await RedisCache.get(cache_key)
+    if cached_data is not None:
+        return [Cafe(**item) for item in cached_data]
     cafes = await cafe_service.get_all_cafes(
         skip=skip,
         limit=limit,
         active_only=active_only,
+    )
+    await RedisCache.set(
+        cache_key,
+        cafes,
+        expire=Times.REDIS_CACHE_EXPIRE_TIME,
     )
     return [Cafe.model_validate(c) for c in cafes]
 
@@ -75,6 +85,7 @@ async def create_cafe(
 ) -> Cafe:
     """Создать новое кафе."""
     cafe = await cafe_service.create_cafe(cafe_create)
+    await RedisCache.delete_pattern(f'{RedisKey.CACHE_KEY_ALL_CAFES}:*')
     return Cafe.model_validate(cafe)
 
 
@@ -94,6 +105,7 @@ async def update_cafe(
 ) -> Cafe:
     """Обновить кафе."""
     cafe = await cafe_service.update_cafe(cafe_id, cafe_update)
+    await RedisCache.delete_pattern(f'{RedisKey.CACHE_KEY_ALL_CAFES}:*')
     return Cafe.model_validate(cafe)
 
 
@@ -109,4 +121,5 @@ async def delete_cafe(
 ) -> None:
     """Удалить кафе (логически)."""
     await cafe_service.delete_cafe(cafe_id)
+    await RedisCache.delete_pattern(f'{RedisKey.CACHE_KEY_ALL_CAFES}:*')
     return

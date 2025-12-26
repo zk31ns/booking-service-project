@@ -134,6 +134,13 @@ class Times:
 # ========== Enum классы ==========
 
 
+class RedisKey(str, Enum):
+    """Ключи кэша в Redis."""
+
+    CACHE_KEY_ALL_CAFES = 'cafe:all'  # ключ для кэша кафе
+    CACHE_KEY_ALL_SLOTS = 'slots:all'  # ключ для кэша слотов
+
+
 class BookingStatus(str, Enum):
     """Статусы бронирования."""
 

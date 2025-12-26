@@ -1,5 +1,5 @@
-from .cafe import CafeService
-from .table import TableService
+from .cafes import CafeService
+from .tables import TableService
 
 __all__ = [
     'CafeService',

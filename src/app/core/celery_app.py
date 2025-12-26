@@ -45,6 +45,8 @@ celery_app.conf.update(
 )
 
 # Настройка расписания для Celery Beat
+# NOTE: cleanup_expired_bookings - заглушка для тестирования
+# работоспособности Celery Beat. Реализуется после вввода бронирований.
 celery_app.conf.beat_schedule = {
     'periodically_cleanup_expired_bookings': {
         'task': 'cleanup_expired_bookings',

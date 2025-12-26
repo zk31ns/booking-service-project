@@ -1,4 +1,4 @@
-"""Dishes router module."""
+"""Media router module."""
 
 from src.app.api.v1.media.router import router
 

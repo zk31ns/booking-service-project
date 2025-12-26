@@ -37,7 +37,8 @@ async def get_cafes(
     cafe_service: CafeService = Depends(get_cafe_service),
 ) -> list[Cafe]:
     """Получить все кафе."""
-    cached_data = await RedisCache.get(RedisKey.CACHE_KEY_ALL_CAFES)
+    cache_key = f'{RedisKey.CACHE_KEY_ALL_CAFES}:{skip}:{limit}:{active_only}'
+    cached_data = await RedisCache.get(cache_key)
     if cached_data is not None:
         return [Cafe(**item) for item in cached_data]
     cafes = await cafe_service.get_all_cafes(
@@ -46,7 +47,7 @@ async def get_cafes(
         active_only=active_only,
     )
     await RedisCache.set(
-        RedisKey.CACHE_KEY_ALL_CAFES,
+        cache_key,
         cafes,
         expire=Times.REDIS_CACHE_EXPIRE_TIME,
     )
@@ -84,6 +85,7 @@ async def create_cafe(
 ) -> Cafe:
     """Создать новое кафе."""
     cafe = await cafe_service.create_cafe(cafe_create)
+    await RedisCache.delete_pattern(f'{RedisKey.CACHE_KEY_ALL_CAFES}:*')
     return Cafe.model_validate(cafe)
 
 
@@ -103,6 +105,7 @@ async def update_cafe(
 ) -> Cafe:
     """Обновить кафе."""
     cafe = await cafe_service.update_cafe(cafe_id, cafe_update)
+    await RedisCache.delete_pattern(f'{RedisKey.CACHE_KEY_ALL_CAFES}:*')
     return Cafe.model_validate(cafe)
 
 
@@ -118,4 +121,5 @@ async def delete_cafe(
 ) -> None:
     """Удалить кафе (логически)."""
     await cafe_service.delete_cafe(cafe_id)
+    await RedisCache.delete_pattern(f'{RedisKey.CACHE_KEY_ALL_CAFES}:*')
     return

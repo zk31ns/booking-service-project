@@ -8,13 +8,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app.api.v1.media.schemas import MediaInfo, MediaResponse
-from src.app.api.v1.media.service import MediaService
 from src.app.api.v1.users.dependencies import get_current_user
 from src.app.core.constants import ErrorCode
 from src.app.core.exceptions import AuthorizationException, NotFoundException
 from src.app.db.session import get_session
 from src.app.models import User
 from src.app.models.media import Media
+from src.app.services.media import MediaService
 
 router = APIRouter(prefix='/media')
 

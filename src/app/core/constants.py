@@ -240,6 +240,10 @@ class ErrorCode(str, Enum):
     CAFE_NOT_FOUND = 'cafe_not_found'
     CAFE_INACTIVE = 'cafe_inactive'
     NOT_CAFE_MANAGER = 'not_cafe_manager'
+    CAFE_ALREADY_EXISTS = 'cafe_already_exists'
+    CAFE_UPDATE_FAILED = 'cafe_update_failed'
+    CAFE_DELETE_FAILED = 'cafe_delete_failed'
+    CAFE_PHOTO_UPDATE_FAILED = 'cafe_photo_update_failed'
 
     # Table
     TABLE_NOT_FOUND = 'table_not_found'
@@ -326,6 +330,12 @@ class Messages:
         ),
         ErrorCode.PHONE_ALREADY_REGISTERED: 'Телефон уже зарегистрирован',
         ErrorCode.USER_DEACTIVATED: 'Пользователь деактивирован',
+        ErrorCode.CAFE_ALREADY_EXISTS: 'Кафе с таким названием уже существует',
+        ErrorCode.CAFE_UPDATE_FAILED: 'Не удалось обновить кафе',
+        ErrorCode.CAFE_DELETE_FAILED: 'Не удалось удалить кафе',
+        ErrorCode.CAFE_PHOTO_UPDATE_FAILED: (
+            'Не удалось установить фото для кафе'
+        ),
         ErrorCode.CAFE_NOT_FOUND: 'Кафе не найдено',
         ErrorCode.CAFE_INACTIVE: 'Кафе неактивно',
         ErrorCode.NOT_CAFE_MANAGER: 'Вы не являетесь менеджером этого кафе',

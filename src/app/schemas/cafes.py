@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.core.constants import Limits
+from src.app.core.constants import Limits
 
 
 class CafeBase(BaseModel):
@@ -69,7 +69,7 @@ class CafeInDBBase(CafeBase):
 
     model_config = ConfigDict(from_attributes=True)
     id: int
-    # photo_id: Optional[UUID] = None
+    photo_id: Optional[UUID] = None
     active: bool
     created_at: datetime
     updated_at: datetime

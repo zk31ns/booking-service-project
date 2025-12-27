@@ -3,10 +3,11 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 
-from app.models.cafes import Cafe
-from app.repositories.cafes import CafeRepository
-from app.repositories.tables import TableRepository
-from app.schemas.cafes import CafeCreate, CafeUpdate
+from src.app.core.constants import ErrorCode, Messages
+from src.app.models.cafes import Cafe
+from src.app.repositories.cafes import CafeRepository
+from src.app.repositories.tables import TableRepository
+from src.app.schemas.cafes import CafeCreate, CafeUpdate
 
 
 class CafeService:
@@ -17,7 +18,13 @@ class CafeService:
         cafe_repository: CafeRepository,
         table_repository: TableRepository,
     ) -> None:
-        """Инициализация сервиса."""
+        """Инициализация сервиса кафе.
+
+        Args:
+            cafe_repository: Репозиторий для работы с кафе.
+            table_repository: Репозиторий для работы со столиками.
+
+        """
         self.cafe_repository = cafe_repository
         self.table_repository = table_repository
 
@@ -27,7 +34,17 @@ class CafeService:
         limit: int = 100,
         active_only: bool = True,
     ) -> List[Cafe]:
-        """Получить все кафе."""
+        """Получить список всех кафе.
+
+        Args:
+            skip: Количество записей для пропуска.
+            limit: Максимальное количество записей для возврата.
+            active_only: Флаг фильтрации только активных кафе.
+
+        Returns:
+            List[Cafe]: Список объектов кафе.
+
+        """
         return await self.cafe_repository.get_all(
             skip=skip,
             limit=limit,
@@ -35,34 +52,74 @@ class CafeService:
         )
 
     async def get_cafe_by_id(self, cafe_id: int) -> Cafe:
-        """Получить кафе по ID."""
+        """Получить кафе по идентификатору.
+
+        Args:
+            cafe_id: Идентификатор кафе.
+
+        Returns:
+            Cafe: Объект кафе.
+
+        Raises:
+            HTTPException: Если кафе не найдено (статус 404).
+            HTTPException: Если кафе удалено (статус 410).
+
+        """
         cafe = await self.cafe_repository.get_by_id(cafe_id)
         if not cafe:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail='Кафе не найдено',
+                detail=Messages.errors[ErrorCode.CAFE_NOT_FOUND],
             )
         if not cafe.active:
             raise HTTPException(
                 status_code=status.HTTP_410_GONE,
-                detail='Кафе удалено',
+                detail=Messages.errors[ErrorCode.CAFE_INACTIVE],
             )
         return cafe
 
     async def create_cafe(self, cafe_create: CafeCreate) -> Cafe:
-        """Создать новое кафе."""
+        """Создать новое кафе.
+
+        Args:
+            cafe_create: Данные для создания кафе.
+
+        Returns:
+            Cafe: Созданный объект кафе.
+
+        Raises:
+            HTTPException: Если кафе с таким названием уже существует
+            (статус 400).
+
+        """
         existing_cafe = await self.cafe_repository.get_by_name(
             cafe_create.name,
         )
         if existing_cafe:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail='Кафе с таким названием уже существует',
+                detail=Messages.errors[ErrorCode.CAFE_ALREADY_EXISTS],
             )
         return await self.cafe_repository.create(cafe_create)
 
     async def update_cafe(self, cafe_id: int, cafe_update: CafeUpdate) -> Cafe:
-        """Обновить кафе."""
+        """Обновить данные кафе.
+
+        Args:
+            cafe_id: Идентификатор кафе.
+            cafe_update: Данные для обновления кафе.
+
+        Returns:
+            Cafe: Обновленный объект кафе.
+
+        Raises:
+            HTTPException: Если кафе не найдено (статус 404).
+            HTTPException: Если кафе удалено (статус 410).
+            HTTPException: Если кафе с таким названием уже существует
+            (статус 400).
+            HTTPException: Если не удалось обновить кафе (статус 500).
+
+        """
         cafe = await self.get_cafe_by_id(cafe_id)
         if cafe_update.name and cafe_update.name != cafe.name:
             existing_cafe = await self.cafe_repository.get_by_name(
@@ -71,40 +128,79 @@ class CafeService:
             if existing_cafe and existing_cafe.id != cafe_id:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail='Кафе с таким названием уже существует',
+                    detail=Messages.errors[ErrorCode.CAFE_ALREADY_EXISTS],
                 )
         updated_cafe = await self.cafe_repository.update(cafe_id, cafe_update)
         if not updated_cafe:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail='Не удалось обновить кафе',
+                detail=Messages.errors[ErrorCode.CAFE_UPDATE_FAILED],
             )
         return updated_cafe
 
     async def delete_cafe(self, cafe_id: int) -> bool:
-        """Удалить кафе (логически)."""
+        """Удалить кафе (логическое удаление).
+
+        Args:
+            cafe_id: Идентификатор кафе.
+
+        Returns:
+            bool: True, если удаление выполнено успешно.
+
+        Raises:
+            HTTPException: Если кафе не найдено (статус 404).
+            HTTPException: Если кафе удалено (статус 410).
+            HTTPException: Если не удалось удалить кафе (статус 500).
+
+        """
         await self.get_cafe_by_id(cafe_id)
         result = await self.cafe_repository.delete(cafe_id)
         if not result:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail='Не удалось удалить кафе',
+                detail=Messages.errors[ErrorCode.CAFE_DELETE_FAILED],
             )
         return True
 
     async def set_cafe_photo(self, cafe_id: int, photo_id: UUID) -> bool:
-        """Установить фото для кафе."""
+        """Установить фото для кафе.
+
+        Args:
+            cafe_id: Идентификатор кафе.
+            photo_id: Идентификатор фотографии.
+
+        Returns:
+            bool: True, если операция выполнена успешно.
+
+        Raises:
+            HTTPException: Если кафе не найдено (статус 404).
+            HTTPException: Если кафе удалено (статус 410).
+            HTTPException: Если не удалось установить фото (статус 500).
+
+        """
         await self.get_cafe_by_id(cafe_id)
         result = await self.cafe_repository.set_photo(cafe_id, photo_id)
         if not result:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail='Не удалось установить фото для кафе',
+                detail=Messages.errors[ErrorCode.CAFE_PHOTO_UPDATE_FAILED],
             )
         return True
 
     async def get_cafe_stats(self, cafe_id: int) -> dict:
-        """Получить статистику по кафе."""
+        """Получить статистику по кафе.
+
+        Args:
+            cafe_id: Идентификатор кафе.
+
+        Returns:
+            dict: Статистика по кафе.
+
+        Raises:
+            HTTPException: Если кафе не найдено (статус 404).
+            HTTPException: Если кафе удалено (статус 410).
+
+        """
         cafe = await self.get_cafe_by_id(cafe_id)
         tables_count = await self.table_repository.count_for_cafe(cafe_id)
         return {

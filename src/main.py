@@ -15,9 +15,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import health
 from app.api.v1.actions import router as actions_router
 from app.api.v1.booking import router as booking_router
+from app.api.v1.cafes import router as cafes_router
 from app.api.v1.dishes import router as dishes_router
 from app.api.v1.media import router as media_router
 from app.api.v1.slots import router as slots_router
+from app.api.v1.tables import router as tables_router
 from app.api.v1.users import router as users_router
 from app.core.config import settings
 from app.core.constants import API
@@ -86,9 +88,9 @@ app.include_router(media_router, prefix=API.V1_PREFIX, tags=API.MEDIA)
 # Booking
 app.include_router(booking_router, prefix=API.V1_PREFIX, tags=API.BOOKING)
 
-# TODO: Cafes router (Павел)
-# app.include_router(cafes_router, prefix=API.V1_PREFIX, tags=API.CAFES)
+# Cafes
+app.include_router(cafes_router, prefix=API.V1_PREFIX, tags=API.CAFES)
 
-# TODO: Tables router (Павел)
-# app.include_router(tables_router, prefix=API.V1_PREFIX, tags=API.TABLES)
+# Tables
+app.include_router(tables_router, prefix=API.V1_PREFIX, tags=API.TABLES)
 # ===========================

@@ -5,11 +5,12 @@ from sqlalchemy import Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
-from src.app.core.constants import Limits
-from src.app.db.base import Base
+from app.core.constants import Limits
+from app.db.base import Base
+from app.models.tables import Table
 
 if TYPE_CHECKING:
-    pass
+    from app.models.media import Media
 
 
 class Cafe(Base):

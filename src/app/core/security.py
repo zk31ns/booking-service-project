@@ -10,7 +10,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
 
-from src.app.core.config import settings
+from app.core.config import settings
 
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
@@ -89,8 +89,8 @@ def create_access_token(
     try:
         return jwt.encode(
             to_encode,
-            settings.JWT_SECRET_KEY,
-            algorithm=settings.JWT_ALGORITHM,
+            settings.jwt_secret_key,
+            algorithm=settings.jwt_algorithm,
         )
     except JWTError as e:
         raise ValueError(f'Ошибка создания токена: {e}') from e
@@ -109,8 +109,8 @@ def decode_access_token(token: str) -> Optional[dict[str, Any]]:
     try:
         payload = jwt.decode(
             token,
-            settings.JWT_SECRET_KEY,
-            algorithms=[settings.JWT_ALGORITHM],
+            settings.jwt_secret_key,
+            algorithms=[settings.jwt_algorithm],
         )
 
         if payload.get('type') != 'access':
@@ -152,8 +152,8 @@ def create_refresh_token(
     try:
         return jwt.encode(
             to_encode,
-            settings.JWT_SECRET_KEY,
-            algorithm=settings.JWT_ALGORITHM,
+            settings.jwt_secret_key,
+            algorithm=settings.jwt_algorithm,
         )
     except JWTError as e:
         raise ValueError(f'Ошибка создания refresh токена: {e}') from e
@@ -172,8 +172,8 @@ def decode_refresh_token(token: str) -> Optional[dict[str, Any]]:
     try:
         payload = jwt.decode(
             token,
-            settings.JWT_SECRET_KEY,
-            algorithms=[settings.JWT_ALGORITHM],
+            settings.jwt_secret_key,
+            algorithms=[settings.jwt_algorithm],
         )
 
         if payload.get('type') != 'refresh':

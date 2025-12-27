@@ -15,21 +15,22 @@ from fastapi.security import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
-# from src.app.api.v1.cafes.models import cafe_managers
+from app.api.dependencies import get_db
+
+# from app.api.v1.cafes.models import cafe_managers
 # Модуль отсутствует, импорт закомментирован для устранения ошибки
-from src.app.api.v1.users.repository import UserRepository
-from src.app.core.constants import ErrorCode
-from src.app.core.exceptions import (
+from app.api.v1.users.repository import UserRepository
+from app.core.constants import ErrorCode
+from app.core.exceptions import (
     AuthenticationException,
     AuthorizationException,
 )
-from src.app.core.security import (
+from app.core.security import (
     get_current_user_id_from_token,
     get_current_username_from_token,
     verify_refresh_token,
 )
-from src.app.db.session import get_session
-from src.app.models.models import User
+from app.models.models import User
 
 security = HTTPBearer(auto_error=False)
 
@@ -49,7 +50,7 @@ async def get_current_user(
         Optional[HTTPAuthorizationCredentials],
         Security(security),
     ],
-    db: Annotated[AsyncSession, Depends(get_session)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     repo: Annotated[UserRepository, Depends(get_user_repository)],
 ) -> User:
     """Получает текущего аутентифицированного пользователя из JWT токена.
@@ -150,7 +151,7 @@ async def get_optional_user(
         Optional[HTTPAuthorizationCredentials],
         Security(security),
     ],
-    db: Annotated[AsyncSession, Depends(get_session)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     repo: Annotated[UserRepository, Depends(get_user_repository)],
 ) -> Optional[User]:
     """Получает текущего пользователя, если токен передан.
@@ -174,7 +175,7 @@ async def get_optional_user(
 async def require_cafe_manager(
     cafe_id: int,
     current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_session)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> User:
     """Проверяет, является ли пользователь менеджером указанного кафе.
 
@@ -213,7 +214,7 @@ async def require_cafe_manager(
 
 async def validate_refresh_token(
     refresh_token: str,
-    db: Annotated[AsyncSession, Depends(get_session)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     repo: Annotated[UserRepository, Depends(get_user_repository)],
 ) -> User:
     """Валидирует refresh токен и возвращает пользователя.

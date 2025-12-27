@@ -1,22 +1,13 @@
 """Модели базы данных."""
 
-from src.app.models.action import Action
-from src.app.models.booking import Booking, TableSlot
-from src.app.models.cafe import Cafe
-from src.app.models.dish import Dish
-from src.app.models.models import User, cafe_managers
-from src.app.models.slot import Slot
-from src.app.models.table import Table
+from app.models.actions import Action
+from app.models.booking import Booking, TableSlot
+from app.models.cafes import Cafe
+from app.models.dishes import Dish
+from app.models.media import Media
+from app.models.models import User, cafe_managers
+from app.models.slots import Slot
+from app.models.tables import Table
 
-__all__ = [
-    'User',
-    'cafe_managers',
-    'Dish',
-    'Action',
-    'Cafe',
-    'Table',
-    'Booking',
-    'TableSlot',
-    'Slot',
-]
-__models__ = [User, Cafe, Table, Dish, Action, Booking, Slot]
+__all__ = ['User', 'cafe_managers', 'Dish', 'Action', 'Cafe', 'Table', 'Media', 'Booking', 'TableSlot', 'Slot']
+__models__ = [User, cafe_managers, Cafe, Table, Dish, Action, Media, Booking, TableSlot, Slot]

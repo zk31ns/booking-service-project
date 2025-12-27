@@ -84,7 +84,7 @@ where python # Windows
 # Обновить pip до последней версии
 pip install --upgrade pip
 
-# Установить основные зависимости (из src/requirements.txt)
+# Установить основные зависимости
 pip install -r src/requirements.txt
 
 # Установить зависимости для стилизации и разработки
@@ -153,9 +153,13 @@ alembic downgrade -1
 
 ```bash
 # Убедитесь, что виртуальное окружение активировано (venv)
-# Команда запускается из корня проекта
-python -m uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+# ВАЖНО: Запускать ИЗ ПАПКИ src (где находится main.py и app/)
+
+cd src
+python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+**Важно:** Приложение должно запускаться из директории `src/` потому что импорты используют `from app.*`, а не `from src.app.*` (для совместимости с Docker и Celery worker).
 
 API будет доступен на: **http://localhost:8000**
 
@@ -192,7 +196,7 @@ docker-compose logs -f postgres
 - **Flower:** http://localhost:5555 (мониторинг Celery)
 - **Celery Worker:** автоматический рабочий процесс
 
-**⚠️ Важно:** Docker-compose.yml ещё в разработке (P1.5). Сейчас разработка ведётся локально.
+**⚠️ Важно:** `Dockerfile` перемещён в `src/Dockerfile`, а `docker-compose.yml` указывает на него (build.dockerfile: src/Dockerfile). Все зависимости берутся из `src/requirements.txt`.
 
 [↑ Вернуться к оглавлению](#оглавление)
 
@@ -232,9 +236,11 @@ booking_seats_team_project/
 │   │   │   ├── versions/      # Migration files
 │   │   │   └── script.py.mako # Migration template
 │   │   ├── alembic.ini        # Alembic configuration
-│   │   └── requirements.txt    # Основные зависимости
+│   │   └──                    # (зависимости теперь в src/requirements.txt)
 ├── infra/                      # Docker и конфигурация
-│   └── docker-compose.yml     # (скоро)
+│   └── docker-compose.yml     # Compose (указывает на src/Dockerfile)
+├── src/Dockerfile              # Dockerfile (перемещён из infra)
+├── src/requirements.txt        # Основные зависимости
 ├── tests/                      # 🧪 Unit & Integration tests
 │   ├── api/                   # API endpoint tests
 │   ├── services/              # Business logic tests

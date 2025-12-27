@@ -8,7 +8,7 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
-from .constants import (
+from app.core.constants import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     MAX_UPLOAD_SIZE_BYTES,
     REFRESH_TOKEN_EXPIRE_DAYS,
@@ -43,8 +43,12 @@ class Settings(BaseSettings):
         ..., env='JWT_SECRET_KEY', description='Секретный ключ для JWT'
     )
     jwt_algorithm: str = Field(default='HS256', env='JWT_ALGORITHM')
-    access_token_expire_minutes: int = ACCESS_TOKEN_EXPIRE_MINUTES
-    refresh_token_expire_days: int = REFRESH_TOKEN_EXPIRE_DAYS
+    access_token_expire_minutes: int = Field(
+        default=ACCESS_TOKEN_EXPIRE_MINUTES, env='ACCESS_TOKEN_EXPIRE_MINUTES'
+    )
+    refresh_token_expire_days: int = Field(
+        default=REFRESH_TOKEN_EXPIRE_DAYS, env='REFRESH_TOKEN_EXPIRE_DAYS'
+    )
 
     # ========== Redis ==========
     redis_url: str = Field(
@@ -101,10 +105,15 @@ class Settings(BaseSettings):
     )
 
     # ========== Telegram bot ID ==========
-    TELEGRAM_BOT_TOKEN: str = Field(
-        default='', description='Telegram bot token'
+    # (опционально для будущих уведомлений)
+    telegram_bot_token: str = Field(
+        default='', env='TELEGRAM_BOT_TOKEN', description='Telegram bot token'
     )
-    TELEGRAM_API_URL: str = 'https://api.telegram.org'
+    telegram_api_url: str = Field(
+        default='https://api.telegram.org',
+        env='TELEGRAM_API_URL',
+        description='Telegram API URL',
+    )
 
     class Config:
         """Pydantic конфигурация."""

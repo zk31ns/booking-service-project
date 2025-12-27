@@ -88,8 +88,10 @@ src/
 │   ├── conftest.py           (Pytest fixtures)
 │   └── README.md             (Testing guide)
 ├── infra/                      (Infrastructure)
-│   ├── docker-compose.yml
+│   ├── docker-compose.yml      (build.dockerfile: src/Dockerfile)
 │   └── .env.example
+├── src/Dockerfile              (Dockerfile relocated from infra)
+├── src/requirements.txt        (Primary dependencies)
 ├── pytest.ini                  (Pytest configuration)
 ├── ARCHITECTURE.md             (This file)
 ├── DATABASE_SCHEMA.md

@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.app.core.constants import Limits
+from app.core.constants import Limits
 
 
 class CafeBase(BaseModel):
@@ -33,11 +33,10 @@ class CafeBase(BaseModel):
 class CafeCreate(CafeBase):
     """Схема для создания кафе."""
 
-    # photo_id: Optional[UUID] = Field(
-    #     default=None,
-    #     description='ID фотографии кафе',
-    # )
-    pass
+    photo_id: Optional[UUID] = Field(
+        default=None,
+        description='ID фотографии кафе',
+    )
 
 
 class CafeUpdate(BaseModel):

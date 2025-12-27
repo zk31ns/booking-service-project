@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from redis.asyncio import Redis
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
-from src.app.core.constants import Times
+from app.core.constants import Times
 
 
 class RedisCache:
@@ -126,3 +126,23 @@ class RedisCache:
         if not cls.redis:
             return
         await cls.redis.delete(key)
+
+    @classmethod
+    async def delete_pattern(cls, pattern: str) -> None:
+        """Удаление всех ключей по паттерну.
+
+        Args:
+            pattern: паттерн для поиска ключей (например, "cafes:*")
+
+        """
+        if not cls.redis:
+            return
+        cursor = 0
+        while True:
+            cursor, keys = await cls.redis.scan(
+                cursor, match=pattern, count=100
+            )
+            if keys:
+                await cls.redis.delete(*keys)
+            if cursor == 0:
+                break

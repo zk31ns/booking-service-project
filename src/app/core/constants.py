@@ -5,7 +5,7 @@
 лучшей структурации и типизации.
 
 Использование:
-    from src.app.core.constants import (
+    from app.core.constants import (
         API, Limits, Times, Messages, ErrorCode
     )
 
@@ -14,7 +14,7 @@
     print(Times.ACCESS_TOKEN_MINUTES)  # 60
 
 Обратная совместимость:
-    from src.app.core.constants import (
+    from app.core.constants import (
         API_V1_PREFIX, TAGS_HEALTH
     )  # Старые имена всё ещё работают
 """
@@ -135,6 +135,13 @@ class Times:
 
 
 # ========== Enum классы ==========
+
+
+class RedisKey(str, Enum):
+    """Ключи кэша в Redis."""
+
+    CACHE_KEY_ALL_CAFES = 'cafe:all'  # ключ для кэша кафе
+    CACHE_KEY_ALL_SLOTS = 'slots:all'  # ключ для кэша слотов
 
 
 class BookingStatus(str, Enum):
@@ -395,12 +402,14 @@ class Messages:
 class CeleryTasks:
     """Имена и пути Celery задач."""
 
-    SEND_BOOKING_REMINDER = 'app.core.celery_tasks.send_booking_reminder'
-    NOTIFY_MANAGER = 'app.core.celery_tasks.notify_manager'
+    SEND_BOOKING_REMINDER = 'src.app.core.celery_tasks.send_booking_reminder'
+    NOTIFY_MANAGER = 'src.app.core.celery_tasks.notify_manager'
     SEND_CANCELLATION_NOTIFICATION = (
-        'app.core.celery_tasks.send_cancellation_notification'
+        'src.app.core.celery_tasks.send_cancellation_notification'
     )
-    CLEANUP_EXPIRED_BOOKINGS = 'app.core.celery_tasks.cleanup_expired_bookings'
+    CLEANUP_EXPIRED_BOOKINGS = (
+        'src.app.core.celery_tasks.cleanup_expired_bookings'
+    )
 
 
 # ========== Регулярные выражения ==========
@@ -420,7 +429,6 @@ class Patterns:
     PHONE = re.compile(r'^\+?7[\s\-\(\)]*\d[\d\s\-\(\)]*$')
 
 
-# ========== Обратная совместимость (для постепенного перехода) ==========
 # ========== Обратная совместимость (для постепенного перехода) ==========
 # Можно удалить после обновления всех файлов
 

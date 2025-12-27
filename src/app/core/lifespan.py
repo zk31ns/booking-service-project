@@ -6,8 +6,8 @@ from typing import AsyncIterator
 import redis.asyncio as redis
 from fastapi import FastAPI
 
-from src.app.core.config import settings
-from src.app.core.redis_cache import RedisCache
+from app.core.config import settings
+from app.core.redis_cache import RedisCache
 
 
 @asynccontextmanager

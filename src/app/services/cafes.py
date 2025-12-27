@@ -3,10 +3,10 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 
-from src.app.models.cafe import Cafe
-from src.app.repositories.cafe import CafeRepository
-from src.app.repositories.table import TableRepository
-from src.app.schemas.cafe import CafeCreate, CafeUpdate
+from app.models.cafes import Cafe
+from app.repositories.cafes import CafeRepository
+from app.repositories.tables import TableRepository
+from app.schemas.cafes import CafeCreate, CafeUpdate
 
 
 class CafeService:

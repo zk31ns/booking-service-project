@@ -1,5 +1,5 @@
-from .cafe import Cafe, CafeCreate, CafeUpdate, CafeWithRelations
-from .table import Table, TableCreate, TableUpdate, TableWithCafe
+from .cafes import Cafe, CafeCreate, CafeUpdate, CafeWithRelations
+from .tables import Table, TableCreate, TableUpdate, TableWithCafe
 
 __all__ = [
     'Cafe',

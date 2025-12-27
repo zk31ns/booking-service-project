@@ -82,9 +82,7 @@ class MediaService:
             )
             raise ValidationException(
                 ErrorCode.IMAGE_TOO_SMALL,
-                detail=f'Изображение слишком маленькое. '
-                f'Минимальный размер: {Limits.MIN_IMAGE_WIDTH}'
-                f'x{Limits.MIN_IMAGE_HEIGHT}px',
+                detail=Messages.errors[ErrorCode.IMAGE_TOO_SMALL],
             )
 
         if (
@@ -99,9 +97,7 @@ class MediaService:
             )
             raise ValidationException(
                 ErrorCode.IMAGE_TOO_LARGE_DIMENSIONS,
-                detail=f'Изображение слишком большое. '
-                f'Максимальный размер: {Limits.MAX_IMAGE_WIDTH}'
-                f'x{Limits.MAX_IMAGE_HEIGHT}px',
+                detail=Messages.errors[ErrorCode.IMAGE_TOO_LARGE_DIMENSIONS],
             )
         logger.info(
             f'Размеры изображения валидны: {image.width}x{image.height}px'

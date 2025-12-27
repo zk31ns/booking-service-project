@@ -355,6 +355,12 @@ class Messages:
             'Нельзя деактивировать бронь с активным статусом'
         ),
         ErrorCode.FILE_TOO_LARGE: 'Файл слишком большой (макс. 5MB)',
+        ErrorCode.IMAGE_TOO_LARGE_DIMENSIONS: (
+            f'Изображение слишком большое. '
+            f'Максимум: {Limits.MAX_IMAGE_WIDTH}'
+            f'x{Limits.MAX_IMAGE_HEIGHT}px'
+        ),
+        ErrorCode.IMAGE_TOO_SMALL: 'Изображение слишком маленькое',
         ErrorCode.INVALID_FILE_TYPE: (
             'Недопустимый тип файла (разрешены JPG, PNG)'
         ),

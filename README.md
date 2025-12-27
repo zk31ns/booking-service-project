@@ -153,9 +153,13 @@ alembic downgrade -1
 
 ```bash
 # Убедитесь, что виртуальное окружение активировано (venv)
-# Команда запускается из корня проекта
-python -m uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+# ВАЖНО: Запускать ИЗ ПАПКИ src (где находится main.py и app/)
+
+cd src
+python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+**Важно:** Приложение должно запускаться из директории `src/` потому что импорты используют `from app.*`, а не `from src.app.*` (для совместимости с Docker и Celery worker).
 
 API будет доступен на: **http://localhost:8000**
 

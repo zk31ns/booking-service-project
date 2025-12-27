@@ -46,7 +46,7 @@ class BookingCreate(BookingBase):
 class BookingUpdate(BookingBase):
     """Схема обновления бронирования."""
 
-    is_active: bool | None
+    is_active: bool | None = Field(default=None)
 
     model_config = ConfigDict(extra='forbid', validate_default=True)
 

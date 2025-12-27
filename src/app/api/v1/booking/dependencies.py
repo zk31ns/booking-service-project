@@ -1,13 +1,16 @@
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .repository import BookingRepository
-from .service import BookingService
 from src.app.api.v1.slots.repository import SlotRepository
 from src.app.api.v1.users.dependencies import get_user_repository
 from src.app.api.v1.users.repository import UserRepository
 from src.app.db.session import get_session
-from src.app.repositories import CafeRepository, TableRepository
+from src.app.repositories import (
+    BookingRepository,
+    CafeRepository,
+    TableRepository
+)
+from src.app.services.booking import BookingService
 
 
 async def get_cafe_repository(
@@ -35,7 +38,7 @@ async def get_booking_repository(
     session: AsyncSession = Depends(get_session),
 ) -> BookingRepository:
     """Получить репозиторий бронирований."""
-    return BookingRepository()
+    return BookingRepository(session)
 
 
 async def get_booking_service(

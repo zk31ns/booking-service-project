@@ -105,7 +105,7 @@ class SlotService:
             Slot | None: Слот или None если не найден.
 
         """
-        return await self.repo.get_by_id(slot_id)
+        return await self.repo.get(slot_id)
 
     async def get_cafe_slots(
         self, cafe_id: int, show_inactive: bool = False
@@ -146,7 +146,7 @@ class SlotService:
             ValidationException: Если время некорректно или есть пересечение.
 
         """
-        slot = await self.repo.get_by_id(slot_id)
+        slot = await self.repo.get(slot_id)
 
         if not slot or slot.cafe_id != cafe_id:
             return None
@@ -185,7 +185,7 @@ class SlotService:
             bool: True если слот успешно удален, False если не найден.
 
         """
-        slot = await self.repo.get_by_id(slot_id)
+        slot = await self.repo.get(slot_id)
         if not slot or slot.cafe_id != cafe_id:
             return False
 

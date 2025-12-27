@@ -38,7 +38,6 @@ class CafeCreate(CafeBase):
         default=None,
         description='ID фотографии кафе',
     )
-    pass
 
 
 class CafeUpdate(BaseModel):

@@ -4,6 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.slots.schemas import SlotCreate, SlotInfo, SlotUpdate
 from app.api.v1.slots.service import SlotService
+from app.core.constants import ErrorCode, RedisKey, Times
+from app.core.redis_cache import RedisCache
 from app.db.session import get_session
 
 router = APIRouter(prefix='/cafes/{cafe_id}/slots')
@@ -16,9 +18,18 @@ async def get_all_slots(
     session: AsyncSession = Depends(get_session),
 ) -> list[SlotInfo]:
     """Получение всех слотов кафе."""
+    cache_key = f'{RedisKey.CACHE_KEY_ALL_SLOTS}:{cafe_id}:{show_inactive}'
+    cached_data = await RedisCache.get(cache_key)
+    if cached_data is not None:
+        return [SlotInfo(**item) for item in cached_data]
     service = SlotService(session)
     slots = await service.get_cafe_slots(cafe_id, show_inactive)
     logger.info(f'Получены слоты для кафе cafe_id={cafe_id}')
+    await RedisCache.set(
+        cache_key,
+        slots,
+        expire=Times.REDIS_CACHE_EXPIRE_TIME,
+    )
     return slots
 
 
@@ -28,10 +39,22 @@ async def create_slot(
     data: SlotCreate,
     session: AsyncSession = Depends(get_session),
 ) -> SlotInfo:
-    """Создание нового слота для кафе."""
+    """Создание нового слота для кафе.
+
+    Args:
+        cafe_id: Идентификатор кафе.
+        data: Данные для создания слота (время начала и окончания).
+        session: Сессия БД (внедряется автоматически).
+
+    Returns:
+        SlotInfo: Информация о созданном слоте.
+
+    """
     service = SlotService(session)
     slot = await service.create_slot(cafe_id, data.start_time, data.end_time)
     await session.commit()
+    cache_pattern = f'{RedisKey.CACHE_KEY_ALL_SLOTS}:{cafe_id}:*'
+    await RedisCache.delete_pattern(cache_pattern)
     logger.info(f'Создан слот для кафе cafe_id={cafe_id}')
     return slot
 
@@ -47,7 +70,21 @@ async def update_slot(
     data: SlotUpdate,
     session: AsyncSession = Depends(get_session),
 ) -> SlotInfo:
-    """Обновление слота."""
+    """Обновление слота.
+
+    Args:
+        cafe_id: Идентификатор кафе.
+        slot_id: Идентификатор слота.
+        data: Данные для обновления слота (может содержать время и статус).
+        session: Сессия БД (внедряется автоматически).
+
+    Returns:
+        SlotInfo: Информация об обновленном слоте.
+
+    Raises:
+        HTTPException: Если слот не найден (статус 404).
+
+    """
     service = SlotService(session)
     slot = await service.update_slot(
         slot_id,
@@ -57,8 +94,13 @@ async def update_slot(
         data.active,
     )
     if not slot:
-        raise HTTPException(status_code=404, detail='Слот не найден')
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=ErrorCode.SLOT_NOT_FOUND,
+        )
     await session.commit()
+    cache_pattern = f'{RedisKey.CACHE_KEY_ALL_SLOTS}:{cafe_id}:*'
+    await RedisCache.delete_pattern(cache_pattern)
     logger.info(f'Обновлен слот slot_id={slot_id}')
     return slot
 
@@ -69,10 +111,28 @@ async def delete_slot(
     slot_id: int,
     session: AsyncSession = Depends(get_session),
 ) -> None:
-    """Удаление слота."""
+    """Удаление слота.
+
+    Args:
+        cafe_id: Идентификатор кафе.
+        slot_id: Идентификатор слота.
+        session: Сессия БД (внедряется автоматически).
+
+    Returns:
+        None: Не возвращает данные (статус 204 No Content).
+
+    Raises:
+        HTTPException: Если слот не найден (статус 404).
+
+    """
     service = SlotService(session)
     result = await service.delete_slot(slot_id, cafe_id)
     if not result:
-        raise HTTPException(status_code=404, detail='Слот не найден')
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=ErrorCode.SLOT_NOT_FOUND,
+        )
     await session.commit()
+    cache_pattern = f'{RedisKey.CACHE_KEY_ALL_SLOTS}:{cafe_id}:*'
+    await RedisCache.delete_pattern(cache_pattern)
     logger.info(f'Удален слот slot_id={slot_id}')

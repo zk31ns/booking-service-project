@@ -4,8 +4,8 @@ from uuid import UUID
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.cafe import Cafe
-from app.schemas.cafe import CafeCreate, CafeUpdate
+from app.models.cafes import Cafe
+from app.schemas.cafes import CafeCreate, CafeUpdate
 
 
 class CafeRepository:
@@ -27,7 +27,7 @@ class CafeRepository:
             query = query.where(Cafe.active)
         query = query.offset(skip).limit(limit)
         result = await self.session.execute(query)
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     async def get_by_id(
         self,

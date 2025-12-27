@@ -8,10 +8,10 @@ from sqlalchemy.sql import func
 
 from app.core.constants import Limits
 from app.db.base import Base
-from app.models.table import Table
+from app.models.tables import Table
 
 if TYPE_CHECKING:
-    from app.api.v1.media.models import Media
+    from app.models.media import Media
 
 
 class Cafe(Base):

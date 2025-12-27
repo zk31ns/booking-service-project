@@ -1,14 +1,13 @@
-from typing import List
-
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_db
-from app.core.constants import TAGS_CAFES, Limits
-from app.repositories.cafe import CafeRepository
-from app.repositories.table import TableRepository
-from app.schemas.cafe import Cafe, CafeCreate, CafeUpdate
-from app.services.cafe import CafeService
+from app.core.constants import TAGS_CAFES, Limits, RedisKey, Times
+from app.core.redis_cache import RedisCache
+from app.repositories.cafes import CafeRepository
+from app.repositories.tables import TableRepository
+from app.schemas.cafes import Cafe, CafeCreate, CafeUpdate
+from app.services.cafes import CafeService
 
 router = APIRouter(prefix='/cafes', tags=TAGS_CAFES)
 
@@ -36,13 +35,23 @@ async def get_cafes(
     ),
     active_only: bool = Query(True, description='Только активные кафе'),
     cafe_service: CafeService = Depends(get_cafe_service),
-) -> List[Cafe]:
+) -> list[Cafe]:
     """Получить все кафе."""
-    return await cafe_service.get_all_cafes(
+    cache_key = f'{RedisKey.CACHE_KEY_ALL_CAFES}:{skip}:{limit}:{active_only}'
+    cached_data = await RedisCache.get(cache_key)
+    if cached_data is not None:
+        return [Cafe(**item) for item in cached_data]
+    cafes = await cafe_service.get_all_cafes(
         skip=skip,
         limit=limit,
         active_only=active_only,
     )
+    await RedisCache.set(
+        cache_key,
+        cafes,
+        expire=Times.REDIS_CACHE_EXPIRE_TIME,
+    )
+    return [Cafe.model_validate(c) for c in cafes]
 
 
 @router.get(
@@ -59,7 +68,8 @@ async def get_cafe(
     cafe_service: CafeService = Depends(get_cafe_service),
 ) -> Cafe:
     """Получить кафе по ID."""
-    return await cafe_service.get_cafe_by_id(cafe_id)
+    cafe = await cafe_service.get_cafe_by_id(cafe_id)
+    return Cafe.model_validate(cafe)
 
 
 @router.post(
@@ -74,7 +84,9 @@ async def create_cafe(
     cafe_service: CafeService = Depends(get_cafe_service),
 ) -> Cafe:
     """Создать новое кафе."""
-    return await cafe_service.create_cafe(cafe_create)
+    cafe = await cafe_service.create_cafe(cafe_create)
+    await RedisCache.delete_pattern(f'{RedisKey.CACHE_KEY_ALL_CAFES}:*')
+    return Cafe.model_validate(cafe)
 
 
 @router.patch(
@@ -92,7 +104,9 @@ async def update_cafe(
     cafe_service: CafeService = Depends(get_cafe_service),
 ) -> Cafe:
     """Обновить кафе."""
-    return await cafe_service.update_cafe(cafe_id, cafe_update)
+    cafe = await cafe_service.update_cafe(cafe_id, cafe_update)
+    await RedisCache.delete_pattern(f'{RedisKey.CACHE_KEY_ALL_CAFES}:*')
+    return Cafe.model_validate(cafe)
 
 
 @router.delete(
@@ -107,4 +121,5 @@ async def delete_cafe(
 ) -> None:
     """Удалить кафе (логически)."""
     await cafe_service.delete_cafe(cafe_id)
+    await RedisCache.delete_pattern(f'{RedisKey.CACHE_KEY_ALL_CAFES}:*')
     return

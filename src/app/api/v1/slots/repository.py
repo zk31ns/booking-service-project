@@ -1,18 +1,22 @@
 from datetime import time
-from typing import Optional
 
 from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.slot import Slot
+from app.models.slots import Slot
 
 
 class SlotRepository:
     """Repository для CRUD операций со слотами."""
 
     def __init__(self, session: AsyncSession) -> None:
-        """Инициализация репозитория."""
+        """Инициализация репозитория.
+
+        Args:
+            session: Сессия БД.
+
+        """
         self.session = session
 
     async def create(
@@ -23,7 +27,14 @@ class SlotRepository:
     ) -> Slot:
         """Создание нового слота.
 
-        TODO: Добавить проверку активности кафе когда модель Cafe будет готова.
+        Args:
+            cafe_id: Идентификатор кафе.
+            start_time: Время начала слота.
+            end_time: Время окончания слота.
+
+        Returns:
+            Slot: Созданный слот.
+
         """
         slot = Slot(
             cafe_id=cafe_id,
@@ -39,8 +50,16 @@ class SlotRepository:
         )
         return slot
 
-    async def get_by_id(self, slot_id: int) -> Optional[Slot]:
-        """Получение слота по ID."""
+    async def get_by_id(self, slot_id: int) -> Slot | None:
+        """Получение слота по ID.
+
+        Args:
+            slot_id: Идентификатор слота.
+
+        Returns:
+            Slot | None: Слот или None если не найден.
+
+        """
         query = select(Slot).where(Slot.id == slot_id)
         result = await self.session.execute(query)
         slot = result.scalar_one_or_none()
@@ -57,7 +76,16 @@ class SlotRepository:
         cafe_id: int,
         show_inactive: bool = False,
     ) -> list[Slot]:
-        """Получение всех слотов кафе."""
+        """Получение всех слотов кафе.
+
+        Args:
+            cafe_id: Идентификатор кафе.
+            show_inactive: Показывать ли неактивные слоты. По умолчанию False.
+
+        Returns:
+            list[Slot]: Список слотов, отсортированный по времени начала.
+
+        """
         query = select(Slot).where(Slot.cafe_id == cafe_id)
 
         if not show_inactive:
@@ -65,7 +93,7 @@ class SlotRepository:
 
         query = query.order_by(Slot.start_time)
         result = await self.session.execute(query)
-        slots = result.scalars().all()
+        slots = list(result.scalars().all())
 
         logger.info(
             f'Получено {len(slots)} слотов для кафе cafe_id={cafe_id} '
@@ -77,11 +105,23 @@ class SlotRepository:
         self,
         slot_id: int,
         cafe_id: int,
-        start_time: Optional[time] = None,
-        end_time: Optional[time] = None,
-        active: Optional[bool] = None,
-    ) -> Optional[Slot]:
-        """Обновление слота."""
+        start_time: time | None = None,
+        end_time: time | None = None,
+        active: bool | None = None,
+    ) -> Slot | None:
+        """Обновление слота.
+
+        Args:
+            slot_id: Идентификатор слота.
+            cafe_id: Идентификатор кафе (для проверки принадлежности).
+            start_time: Новое время начала или None если не изменяется.
+            end_time: Новое время окончания или None если не изменяется.
+            active: Новый статус активности или None если не изменяется.
+
+        Returns:
+            Slot | None: Обновленный слот или None если слот не найден.
+
+        """
         slot = await self.get_by_id(slot_id)
         if not slot or slot.cafe_id != cafe_id:
             return None
@@ -97,7 +137,16 @@ class SlotRepository:
         return slot
 
     async def delete(self, slot_id: int, cafe_id: int) -> bool:
-        """Логическое удаление слота (установка active=False)."""
+        """Логическое удаление слота.
+
+        Args:
+            slot_id: Идентификатор слота.
+            cafe_id: Идентификатор кафе (для проверки принадлежности).
+
+        Returns:
+            bool: True если слот успешно удален, False если не найден.
+
+        """
         slot = await self.get_by_id(slot_id)
         if not slot or slot.cafe_id != cafe_id:
             return False

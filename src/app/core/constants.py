@@ -20,7 +20,7 @@
 """
 
 import re
-from enum import Enum, IntEnum
+from enum import Enum
 
 # ========== API и Таги ==========
 
@@ -37,7 +37,7 @@ class API:
     CAFES = ['cafes']
     TABLES = ['tables']
     SLOTS = ['slots']
-    BOOKING = ['booking']
+    PENDING = ['booking']
     MEDIA = ['media']
 
 
@@ -137,13 +137,11 @@ class Times:
 # ========== Enum классы ==========
 
 
-class BookingStatus(IntEnum):
-    """Статусы бронирования."""
-
-    BOOKING = 0  # Забронировано
-    CANCELLED = 1  # Отменено
-    CONFIRMED = 2  # Подтверждено
-    FINISHED = 3  # Завершено
+class BookingStatus(str, Enum):
+    PENDING = "pending"
+    CONFIRMED = "confirmed"
+    CANCELLED = "cancelled"
+    COMPLETED = "completed"
 
 
 class UserRole(str, Enum):
@@ -152,6 +150,56 @@ class UserRole(str, Enum):
     CUSTOMER = 'customer'  # Клиент
     MANAGER = 'manager'  # Менеджер кафе
     ADMIN = 'admin'  # Администратор
+
+
+# ========== Бизнес-правила для бронирования ==========
+
+class BookingRules:
+    """Бизнес-правила для работы с бронированиями."""
+
+    # Статусы, активной брони (видимой для редактирования)
+    ACTIVE_STATUSES = {BookingStatus.PENDING, BookingStatus.CONFIRMED}
+
+    # Статусы, при которых бронь считается завершенной/неактивной
+    INACTIVE_STATUSES = {BookingStatus.CANCELLED, BookingStatus.COMPLETED}
+
+    # Разрешенные переходы статусов для каждой роли
+    # Формат: {роль: {текущий_статус: {разрешенные_новые_статусы}}}
+    STATUS_TRANSITIONS = {
+        UserRole.CUSTOMER: {
+            BookingStatus.PENDING: {BookingStatus.CANCELLED},
+            BookingStatus.CONFIRMED: {BookingStatus.CANCELLED},
+            BookingStatus.CANCELLED: set(),
+            BookingStatus.COMPLETED: set(),
+        },
+        UserRole.MANAGER: {
+            BookingStatus.PENDING: {
+                BookingStatus.CONFIRMED,
+                BookingStatus.CANCELLED
+            },
+            BookingStatus.CONFIRMED: {
+                BookingStatus.CANCELLED,
+                BookingStatus.COMPLETED
+            },
+            BookingStatus.CANCELLED: set(),
+            BookingStatus.COMPLETED: set(),
+        },
+        UserRole.ADMIN: {
+            BookingStatus.PENDING: {
+                BookingStatus.CONFIRMED,
+                BookingStatus.CANCELLED
+            },
+            BookingStatus.CONFIRMED: {
+                BookingStatus.CANCELLED,
+                BookingStatus.COMPLETED
+            },
+            BookingStatus.CANCELLED: {
+                BookingStatus.PENDING,
+                BookingStatus.CONFIRMED
+            },
+            BookingStatus.COMPLETED: {BookingStatus.CONFIRMED},
+        }
+    }
 
 
 class ErrorCode(str, Enum):
@@ -202,6 +250,8 @@ class ErrorCode(str, Enum):
     USER_ALREADY_BOOKED = 'user_already_booked'
     INSUFFICIENT_PERMISSIONS = 'insufficient_permissions'
     INVALID_STATUS_TRANSITION = 'invalid_status_transition'
+    CANNOT_ACTIVATE_INACTIVE_STATUS = "cannot_activate_inactive_status"
+    CANNOT_DEACTIVATE_ACTIVE_STATUS = "cannot_deactivate_active_status"
 
     # Media
     FILE_TOO_LARGE = 'file_too_large'
@@ -287,6 +337,12 @@ class Messages:
         ),
         ErrorCode.INSUFFICIENT_PERMISSIONS: 'Недостаточно прав доступа',
         ErrorCode.INVALID_STATUS_TRANSITION: 'Неверный переход статуса',
+        ErrorCode.CANNOT_ACTIVATE_INACTIVE_STATUS: (
+            'Нельзя активировать бронь с неактивным статусом'
+        ),
+        ErrorCode. CANNOT_DEACTIVATE_ACTIVE_STATUS: (
+            'Нельзя деактивировать бронь с активным статусом'
+        ),
         ErrorCode.FILE_TOO_LARGE: 'Файл слишком большой (макс. 5MB)',
         ErrorCode.INVALID_FILE_TYPE: (
             'Недопустимый тип файла (разрешены JPG, PNG)'
@@ -376,7 +432,7 @@ TAGS_AUTH = API.AUTH
 TAGS_CAFES = API.CAFES
 TAGS_TABLES = API.TABLES
 TAGS_SLOTS = API.SLOTS
-TAGS_BOOKING = API.BOOKING
+TAGS_BOOKING = API.PENDING
 TAGS_MEDIA = API.MEDIA
 
 # Sizes/Limits

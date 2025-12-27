@@ -37,6 +37,7 @@ async def get_all_bookings(
 
     Returns:
         Список бронирований
+
     """
     return await service.get_all_bookings(
         current_user=current_user,
@@ -67,6 +68,7 @@ async def create_booking(
 
     Raises:
         HTTPException: Если данные невалидны или недостаточно прав
+
     """
     return await service.create_booking(
         booking_in=booking_in,
@@ -95,6 +97,7 @@ async def get_booking(
 
     Raises:
         HTTPException: Если бронирование не найдено или недостаточно прав
+
     """
     return await service.get_booking(
         current_user=current_user,
@@ -128,6 +131,7 @@ async def update_booking(
     Raises:
         HTTPException: Если бронирование не найдено, недостаточно прав
                      или данные невалидны
+
     """
     return await service.update_booking(
         update_booking=booking_in,

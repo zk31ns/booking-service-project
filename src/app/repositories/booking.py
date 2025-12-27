@@ -54,7 +54,7 @@ class BookingRepository(BaseCRUD[Booking]):
                 TableSlot.slot_id == slot_id,
                 self.model.booking_date == date,
                 self.model.status.in_([
-                    BookingStatus.BOOKING,
+                    BookingStatus.PENDING,
                     BookingStatus.CONFIRMED,
                 ]),
                 self.model.is_active.is_(True),
@@ -96,7 +96,7 @@ class BookingRepository(BaseCRUD[Booking]):
                 Booking.user_id == user_id,
                 Booking.booking_date == booking_date,
                 Booking.status.in_([
-                    BookingStatus.BOOKING,
+                    BookingStatus.PENDING,
                     BookingStatus.CONFIRMED,
                 ]),
                 Booking.is_active.is_(True),

@@ -9,10 +9,10 @@ from src.app.api.v1.booking.schemas import (
 from src.app.api.v1.slots.repository import SlotRepository
 from src.app.api.v1.users.repository import UserRepository
 from src.app.core.constants import (
-    BookingStatus,
     BookingRules,
+    BookingStatus,
     ErrorCode,
-    UserRole
+    UserRole,
 )
 from src.app.core.exceptions import (
     AppException,
@@ -24,7 +24,7 @@ from src.app.models import Booking, Cafe, Slot, Table, User
 from src.app.repositories import (
     BookingRepository,
     CafeRepository,
-    TableRepository
+    TableRepository,
 )
 
 
@@ -47,6 +47,7 @@ class BookingService:
             user_repo: Репозиторий для работы с пользователями
             table_repo: Репозиторий для работы со столами
             slot_repo: Репозиторий для работы со слотами времени
+
         """
         self.booking_repo = booking_repo
         self.cafe_repo = cafe_repo
@@ -73,6 +74,7 @@ class BookingService:
             NotFoundException: Если кафе не найдено
             ValidationException: Если данные невалидны
             AppException: Если недостаточно мест или стол занят
+
         """
         self._validate_booking_date(booking_in.booking_date)
 
@@ -127,6 +129,7 @@ class BookingService:
 
         Raises:
             AuthenticationException: Если недостаточно прав
+
         """
         is_manager = await self.user_repo.is_manager(
             user_id=current_user.id
@@ -158,6 +161,7 @@ class BookingService:
         Raises:
             NotFoundException: Если бронирование не найдено
             AuthenticationException: Если недостаточно прав
+
         """
         booking = await self.__get_booking_or_404(
             booking_id=booking_id
@@ -193,6 +197,7 @@ class BookingService:
             AppException: Если неверный переход статуса
             AuthenticationException: Если недостаточно прав
             ValidationException: Если данные невалидны
+
         """
         booking = await self.__get_booking_or_404(booking_id)
 
@@ -304,6 +309,7 @@ class BookingService:
             ValidationException: Если стол или слот не найдены
             AppException: Если стол уже занят
             AppException: Если пользователь уже имеет бронь на это время
+
         """
         tables = set()
         for table_slot in table_slots:
@@ -346,6 +352,7 @@ class BookingService:
 
         Raises:
             AppException: Если количество гостей <= 0
+
         """
         if guest_number <= 0:
             raise AppException(ErrorCode.VALIDATION_ERROR)
@@ -365,6 +372,7 @@ class BookingService:
         Raises:
             NotFoundException: Если кафе не найдено
             AppException: Если кафе неактивно
+
         """
         cafe = await self.cafe_repo.get_by_id(cafe_id)
         if not cafe:
@@ -387,6 +395,7 @@ class BookingService:
 
         Raises:
             NotFoundException: Если бронирование не найдено
+
         """
         booking = await self.booking_repo.get(
             booking_id=booking_id
@@ -406,6 +415,7 @@ class BookingService:
 
         Returns:
             True если пользователь менеджер, иначе False
+
         """
         return await self.user_repo.is_manager(user_id=current_user.id)
 
@@ -425,6 +435,7 @@ class BookingService:
 
         Raises:
             AuthenticationException: Если недостаточно прав
+
         """
         if not current_user.is_superuser and not await self._is_manager(
              current_user
@@ -442,6 +453,7 @@ class BookingService:
 
         Raises:
             AppException: Если дата в прошлом или сегодня
+
         """
         if booking_date <= date.today():
             raise AppException(ErrorCode.BOOKING_PAST_DATE)
@@ -465,6 +477,7 @@ class BookingService:
         Raises:
             ValidationException: Если стол или слот не найдены
             AppException: Если стол или слот неактивны
+
         """
         table = await self.table_repo.get_by_id(table_id)
         if not table or table.cafe_id != cafe_id:
@@ -487,6 +500,7 @@ class BookingService:
 
         Returns:
             Суммарное количество мест
+
         """
         return sum(table.seats for table in tables) if tables else 0
 
@@ -501,22 +515,22 @@ class BookingService:
 
         Returns:
             Роль пользователя
+
         """
         if user.is_superuser:
             return UserRole.ADMIN
-        elif self._is_manager(current_user=user):
+        if self._is_manager(current_user=user):
             return UserRole.MANAGER
-        else:
-            return UserRole.CUSTOMER
+        return UserRole.CUSTOMER
 
     async def _process_status_update(
         self,
         booking: Booking,
-        new_status_value: int,
+        new_status_value: str,
         user_role: UserRole,
         update_data: dict,
         current_user: User
-    ):
+    ) -> None:
         """Обработать изменение статуса бронирования.
 
         Проверяет разрешенные переходы статусов и устанавливает
@@ -531,6 +545,7 @@ class BookingService:
 
         Raises:
             AppException: Если переход статуса запрещен
+
         """
         current_status = BookingStatus(booking.status)
         new_status = BookingStatus(new_status_value)
@@ -557,13 +572,13 @@ class BookingService:
         requested_active: bool,
         user_role: UserRole,
         update_data: dict,
-        new_status: Optional[int]
-    ):
+        new_status: Optional[str]
+    ) -> None:
         """Обработать изменение активности бронирования.
 
         Правила:
-        - Нельзя деактивировать активные статусы (CREATED, CONFIRMED)
-        - Нельзя активировать неактивные статусы (CANCELLED, FINISHED)
+        - Нельзя деактивировать активные статусы (PENDING, CONFIRMED)
+        - Нельзя активировать неактивные статусы (CANCELLED, COMPLETED)
           кроме администратора
 
         Args:
@@ -575,6 +590,7 @@ class BookingService:
 
         Raises:
             AppException: Если запрос противоречит бизнес-правилам
+
         """
         status = new_status if new_status is not None else booking.status
         status_enum = BookingStatus(status)
@@ -604,6 +620,7 @@ class BookingService:
             booking: Созданное бронирование
             user: Пользователь, создавший бронирование
             cafe: Кафе, для которого создано бронирование
+
         """
         # Здесь можно добавить вызов Celery задач
         pass

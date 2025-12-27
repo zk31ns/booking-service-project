@@ -76,7 +76,7 @@ class Booking(Base):
     status: Mapped[str] = mapped_column(
         Integer,
         nullable=False,
-        default=BookingStatus.BOOKING,
+        default=BookingStatus.PENDING,
     )
     note: Mapped[str | None] = mapped_column(
         String(Limits.MAX_BOOKING_NOTE_LENGTH)

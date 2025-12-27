@@ -8,7 +8,7 @@ from src.app.db.session import get_session
 from src.app.repositories import (
     BookingRepository,
     CafeRepository,
-    TableRepository
+    TableRepository,
 )
 from src.app.services.booking import BookingService
 
@@ -23,6 +23,7 @@ async def get_cafe_repository(
 
     Returns:
         Инициализированный репозиторий кафе
+
     """
     return CafeRepository(session)
 
@@ -37,6 +38,7 @@ async def get_table_repository(
 
     Returns:
         Инициализированный репозиторий столиков
+
     """
     return TableRepository(session)
 
@@ -51,6 +53,7 @@ async def get_slot_repository(
 
     Returns:
         Инициализированный репозиторий слотов времени
+
     """
     return SlotRepository(session)
 
@@ -65,6 +68,7 @@ async def get_booking_repository(
 
     Returns:
         Инициализированный репозиторий бронирований
+
     """
     return BookingRepository(session)
 
@@ -90,6 +94,7 @@ async def get_booking_service(
 
     Returns:
         Инициализированный сервис бронирований
+
     """
     return BookingService(
         booking_repo=booking_repo,

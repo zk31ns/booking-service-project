@@ -29,7 +29,7 @@ from src.app.repositories import (
 
 
 class BookingService:
-    """Сервис бронирования."""
+    """Сервис для управления бронированиями."""
 
     def __init__(
         self,
@@ -39,7 +39,15 @@ class BookingService:
         table_repo: TableRepository,
         slot_repo: SlotRepository,
     ) -> None:
-        """Инициализирует сервис бронированния c необходимыми репозиториями."""
+        """Инициализирует сервис бронирования.
+
+        Args:
+            booking_repo: Репозиторий для работы с бронированиями
+            cafe_repo: Репозиторий для работы с кафе
+            user_repo: Репозиторий для работы с пользователями
+            table_repo: Репозиторий для работы со столами
+            slot_repo: Репозиторий для работы со слотами времени
+        """
         self.booking_repo = booking_repo
         self.cafe_repo = cafe_repo
         self.user_repo = user_repo
@@ -51,7 +59,21 @@ class BookingService:
         booking_in: BookingCreate,
         user: User,
     ) -> Booking:
-        """Создать бронирование."""
+        """Создать новое бронирование.
+
+        Args:
+            booking_in: Данные для создания бронирования
+            user: Пользователь, создающий бронирование
+
+        Returns:
+            Созданное бронирование
+
+        Raises:
+            AppException: Если дата бронирования в прошлом
+            NotFoundException: Если кафе не найдено
+            ValidationException: Если данные невалидны
+            AppException: Если недостаточно мест или стол занят
+        """
         self._validate_booking_date(booking_in.booking_date)
 
         cafe = await self._validate_cafe(booking_in.cafe_id)
@@ -76,7 +98,6 @@ class BookingService:
             user=user,
         )
 
-        # Запустить фоновые задачи (уведомления)
         await self._trigger_celery_tasks(booking, user, cafe)
 
         return booking
@@ -88,15 +109,24 @@ class BookingService:
         cafe_id: Optional[int] = None,
         user_id: Optional[int] = None,
     ) -> List[Booking]:
-        """Получить бронирования.
+        """Получить список бронирований с учетом прав доступа.
 
-        Для суперюзеров и менеджеров:
-            - Получить все бронирование
-            - сортировать по кафе
-            - сортировать по пользователю
-            - получить свои бронирования
-        Для пользователей:
-            - получить свои бронирования
+        Для суперюзеров и менеджеров: все бронирования с возможностью
+        фильтрации.
+        Для обычных пользователей: только свои бронирования.
+
+        Args:
+            current_user: Текущий пользователь
+            show_all: Показывать все бронирования (True) или
+            только свои (False)
+            cafe_id: ID кафе для фильтрации
+            user_id: ID пользователя для фильтрации
+
+        Returns:
+            Список бронирований
+
+        Raises:
+            AuthenticationException: Если недостаточно прав
         """
         is_manager = await self.user_repo.is_manager(
             user_id=current_user.id
@@ -104,7 +134,6 @@ class BookingService:
         if (
             not current_user.is_superuser and not is_manager
         ) or not show_all:
-
             user_id = current_user.id
 
         return await self.booking_repo.get_multi(
@@ -117,7 +146,19 @@ class BookingService:
         current_user: User,
         booking_id: int
     ) -> Booking:
-        """Получить бронирование по id."""
+        """Получить бронирование по ID.
+
+        Args:
+            current_user: Текущий пользователь
+            booking_id: ID бронирования
+
+        Returns:
+            Найденное бронирование
+
+        Raises:
+            NotFoundException: Если бронирование не найдено
+            AuthenticationException: Если недостаточно прав
+        """
         booking = await self.__get_booking_or_404(
             booking_id=booking_id
         )
@@ -134,13 +175,24 @@ class BookingService:
         booking_id: int,
         current_user: User,
     ) -> Booking:
-        """Логика при обновлении брони.
+        """Обновить существующее бронирование.
 
-        Проверить существование брони.
-        Проверить права пользователя.
-        С неактивной бронью может взаимодействовать только суперюзер.
-        Статусы должны сменяться по логике.
-        Валидировать и собрать данные для обновления.
+        Проверяет права доступа, валидирует данные и применяет бизнес-правила.
+
+        Args:
+            update_booking: Данные для обновления
+            booking_id: ID обновляемого бронирования
+            current_user: Текущий пользователь
+
+        Returns:
+            Обновленное бронирование
+
+        Raises:
+            NotFoundException: Если бронирование не найдено
+            AppException: Если бронирование неактивно
+            AppException: Если неверный переход статуса
+            AuthenticationException: Если недостаточно прав
+            ValidationException: Если данные невалидны
         """
         booking = await self.__get_booking_or_404(booking_id)
 
@@ -223,8 +275,6 @@ class BookingService:
             data=update_data
         )
 
-    # Отправить сообщение Celery если бронь отменилась
-
     async def _validate_new_table_slots(
         self,
         table_slots: List[TableSlotSchema],
@@ -234,7 +284,27 @@ class BookingService:
         guest_number: Optional[int] = None,
         exclude_booking_id: Optional[int] = None,
     ) -> set:
-        """Валидировать столы и окошки со временем."""
+        """Валидировать связки столов и временных слотов.
+
+        Проверяет существование таблиц и слотов, их принадлежность кафе,
+        доступность столов на указанную дату и занятость пользователя.
+
+        Args:
+            table_slots: Список связок стол+слот
+            cafe_id: ID кафе
+            booking_date: Дата бронирования
+            user: Пользователь, для которого проверяется занятость
+            guest_number: Количество гостей (опционально)
+            exclude_booking_id: ID бронирования для исключения из проверки
+
+        Returns:
+            Множество валидных столов
+
+        Raises:
+            ValidationException: Если стол или слот не найдены
+            AppException: Если стол уже занят
+            AppException: Если пользователь уже имеет бронь на это время
+        """
         tables = set()
         for table_slot in table_slots:
             table_id, slot_id = table_slot.table_id, table_slot.slot_id
@@ -269,6 +339,14 @@ class BookingService:
     async def _validate_guest_number(
             self, guest_number: int
     ) -> None:
+        """Валидировать количество гостей.
+
+        Args:
+            guest_number: Количество гостей
+
+        Raises:
+            AppException: Если количество гостей <= 0
+        """
         if guest_number <= 0:
             raise AppException(ErrorCode.VALIDATION_ERROR)
 
@@ -276,7 +354,18 @@ class BookingService:
         self,
         cafe_id: int
     ) -> Cafe:
-        """Валидация кафе."""
+        """Валидировать существование и активность кафе.
+
+        Args:
+            cafe_id: ID кафе
+
+        Returns:
+            Найденное кафе
+
+        Raises:
+            NotFoundException: Если кафе не найдено
+            AppException: Если кафе неактивно
+        """
         cafe = await self.cafe_repo.get_by_id(cafe_id)
         if not cafe:
             raise NotFoundException(ErrorCode.CAFE_NOT_FOUND)
@@ -288,7 +377,17 @@ class BookingService:
         self,
         booking_id: int
     ) -> Booking:
-        """Проверить существование бронирования и полчить его."""
+        """Получить бронирование или выбросить исключение если не найдено.
+
+        Args:
+            booking_id: ID бронирования
+
+        Returns:
+            Найденное бронирование
+
+        Raises:
+            NotFoundException: Если бронирование не найдено
+        """
         booking = await self.booking_repo.get(
             booking_id=booking_id
         )
@@ -300,7 +399,14 @@ class BookingService:
         self,
         current_user: User,
     ) -> bool:
-        """Пользователь является менеджером."""
+        """Проверить является ли пользователь менеджером.
+
+        Args:
+            current_user: Пользователь для проверки
+
+        Returns:
+            True если пользователь менеджер, иначе False
+        """
         return await self.user_repo.is_manager(user_id=current_user.id)
 
     async def _check_booking_permissions(
@@ -308,10 +414,17 @@ class BookingService:
         current_user: User,
         booking: Booking
     ) -> None:
-        """Проверить права.
+        """Проверить права доступа к бронированию.
 
-        Если пользователь не является суперюзером,
-        менеджером и бронь не его - доступ запрещён.
+        Суперюзеры и менеджеры имеют доступ ко всем бронированиям.
+        Обычные пользователи имеют доступ только к своим бронированиям.
+
+        Args:
+            current_user: Текущий пользователь
+            booking: Бронирование для проверки
+
+        Raises:
+            AuthenticationException: Если недостаточно прав
         """
         if not current_user.is_superuser and not await self._is_manager(
              current_user
@@ -322,7 +435,14 @@ class BookingService:
                 )
 
     def _validate_booking_date(self, booking_date: date) -> None:
-        """Проверить что дата брони в будущем."""
+        """Проверить что дата бронирования в будущем.
+
+        Args:
+            booking_date: Дата для проверки
+
+        Raises:
+            AppException: Если дата в прошлом или сегодня
+        """
         if booking_date <= date.today():
             raise AppException(ErrorCode.BOOKING_PAST_DATE)
 
@@ -332,7 +452,20 @@ class BookingService:
         slot_id: int,
         cafe_id: int
     ) -> Tuple[Table, Slot]:
-        """Валидация стола и слота."""
+        """Валидировать связку стол+слот.
+
+        Args:
+            table_id: ID стола
+            slot_id: ID слота времени
+            cafe_id: ID кафе для проверки принадлежности
+
+        Returns:
+            Кортеж (стол, слот)
+
+        Raises:
+            ValidationException: Если стол или слот не найдены
+            AppException: Если стол или слот неактивны
+        """
         table = await self.table_repo.get_by_id(table_id)
         if not table or table.cafe_id != cafe_id:
             raise ValidationException(ErrorCode.TABLE_NOT_FOUND)
@@ -347,14 +480,28 @@ class BookingService:
         return table, slot
 
     def _calculate_total_seats(self, tables: set) -> int:
-        """Подсчитать общее количество мест."""
+        """Подсчитать общее количество мест у столов.
+
+        Args:
+            tables: Множество столов
+
+        Returns:
+            Суммарное количество мест
+        """
         return sum(table.seats for table in tables) if tables else 0
 
     def _get_user_role(
             self,
             user: User
     ) -> UserRole:
-        """Определяем роль пользователя."""
+        """Определить роль пользователя.
+
+        Args:
+            user: Пользователь для определения роли
+
+        Returns:
+            Роль пользователя
+        """
         if user.is_superuser:
             return UserRole.ADMIN
         elif self._is_manager(current_user=user):
@@ -370,7 +517,21 @@ class BookingService:
         update_data: dict,
         current_user: User
     ):
-        """Обработка обновления статуса."""
+        """Обработать изменение статуса бронирования.
+
+        Проверяет разрешенные переходы статусов и устанавливает
+        автоматическое значение is_active на основе нового статуса.
+
+        Args:
+            booking: Обновляемое бронирование
+            new_status_value: Новое значение статуса
+            user_role: Роль пользователя
+            update_data: Словарь для накопления данных обновления
+            current_user: Текущий пользователь
+
+        Raises:
+            AppException: Если переход статуса запрещен
+        """
         current_status = BookingStatus(booking.status)
         new_status = BookingStatus(new_status_value)
 
@@ -398,12 +559,23 @@ class BookingService:
         update_data: dict,
         new_status: Optional[int]
     ):
-        """Обработка изменения is_active.
+        """Обработать изменение активности бронирования.
 
-        Правила для is_active:
+        Правила:
         - Нельзя деактивировать активные статусы (CREATED, CONFIRMED)
-        - Нельзя активировать неактивные статусы (CANCELLED, COMPLETED)
-           кроме суперюзера"""
+        - Нельзя активировать неактивные статусы (CANCELLED, FINISHED)
+          кроме администратора
+
+        Args:
+            booking: Обновляемое бронирование
+            requested_active: Запрашиваемое значение активности
+            user_role: Роль пользователя
+            update_data: Словарь для накопления данных обновления
+            new_status: Новый статус
+
+        Raises:
+            AppException: Если запрос противоречит бизнес-правилам
+        """
         status = new_status if new_status is not None else booking.status
         status_enum = BookingStatus(status)
 
@@ -426,6 +598,12 @@ class BookingService:
         user: User,
         cafe: Cafe
     ) -> None:
-        """Запустить фоновые задачи (уведомления)."""
+        """Запустить фоновые Celery задачи.
+
+        Args:
+            booking: Созданное бронирование
+            user: Пользователь, создавший бронирование
+            cafe: Кафе, для которого создано бронирование
+        """
         # Здесь можно добавить вызов Celery задач
         pass

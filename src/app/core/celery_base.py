@@ -6,8 +6,8 @@ import aiohttp
 from celery import Task
 from celery.app.trace import ExceptionInfo
 
-from app.core.constants import EventType
-from app.core.logging import logger
+from src.app.core.constants import EventType
+from src.app.core.logging import logger
 
 
 class BaseTask(Task):

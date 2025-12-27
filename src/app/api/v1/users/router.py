@@ -9,7 +9,7 @@ from fastapi import APIRouter, Body, Depends, Query, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.users.dependencies import (
+from src.app.api.v1.users.dependencies import (
     get_current_active_user,
     get_current_superuser,
     get_current_user,
@@ -17,15 +17,15 @@ from app.api.v1.users.dependencies import (
     get_optional_user,
     get_user_repository,
 )
-from app.api.v1.users.repository import UserRepository
-from app.api.v1.users.schemas import (
+from src.app.api.v1.users.repository import UserRepository
+from src.app.api.v1.users.schemas import (
     UserCreate,
     UserInfo,
     UserUpdate,
 )
-from app.api.v1.users.service import UserService, get_user_service
-from app.core.constants import API, ErrorCode, Limits
-from app.core.exceptions import (
+from src.app.api.v1.users.service import UserService, get_user_service
+from src.app.core.constants import API, ErrorCode, Limits
+from src.app.core.exceptions import (
     AuthenticationException,
     AuthorizationException,
     ConflictException,
@@ -34,7 +34,7 @@ from app.core.exceptions import (
     ServiceUnavailableException,
     ValidationException,
 )
-from app.models.models import User
+from src.app.models.models import User
 
 router = APIRouter(tags=API.USERS)
 

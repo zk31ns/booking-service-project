@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.core.constants import Limits
+from src.app.core.constants import Limits
 
 
 class CafeBase(BaseModel):

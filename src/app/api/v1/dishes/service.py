@@ -2,9 +2,9 @@ from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.dishes.constants import DEFAULT_LIMIT, DEFAULT_SKIP
-from app.api.v1.dishes.repository import DishRepository
-from app.api.v1.dishes.schemas import DishCreate, DishInfo, DishUpdate
+from src.app.api.v1.dishes.constants import DEFAULT_LIMIT, DEFAULT_SKIP
+from src.app.api.v1.dishes.repository import DishRepository
+from src.app.api.v1.dishes.schemas import DishCreate, DishInfo, DishUpdate
 
 
 class DishService:

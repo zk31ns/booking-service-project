@@ -4,7 +4,7 @@ from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.slots import Slot
+from src.app.models.slots import Slot
 
 
 class SlotRepository:

@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from app.api.v1.dishes.constants import (
+from src.app.api.v1.dishes.constants import (
     DISH_DESCRIPTION_MAX_LENGTH,
     DISH_NAME_MAX_LENGTH,
     DISH_NAME_MIN_LENGTH,

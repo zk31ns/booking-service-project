@@ -17,8 +17,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.constants import Limits
-from app.db.base import Base
+from src.app.core.constants import Limits
+from src.app.db.base import Base
 
 if TYPE_CHECKING:
     from app.api.v1.booking.models import Booking

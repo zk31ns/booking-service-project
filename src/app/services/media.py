@@ -7,13 +7,13 @@ from PIL import Image
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
-from app.core.constants import ErrorCode, Limits
-from app.core.exceptions import (
+from src.app.core.config import settings
+from src.app.core.constants import ErrorCode, Limits
+from src.app.core.exceptions import (
     InternalServerException,
     ValidationException,
 )
-from app.models.media import Media
+from src.app.models.media import Media
 
 
 class MediaService:

@@ -3,8 +3,8 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.actions.schemas import ActionCreate, ActionUpdate
-from app.models import Action
+from src.app.api.v1.actions.schemas import ActionCreate, ActionUpdate
+from src.app.models import Action
 
 
 class ActionRepository:

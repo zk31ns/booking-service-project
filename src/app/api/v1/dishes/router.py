@@ -3,10 +3,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.dishes.constants import DEFAULT_LIMIT, DEFAULT_SKIP
-from app.api.v1.dishes.schemas import DishCreate, DishInfo, DishUpdate
-from app.api.v1.dishes.service import DishService
-from app.db import get_session
+from src.app.api.v1.dishes.constants import DEFAULT_LIMIT, DEFAULT_SKIP
+from src.app.api.v1.dishes.schemas import DishCreate, DishInfo, DishUpdate
+from src.app.api.v1.dishes.service import DishService
+from src.app.db import get_session
 
 router = APIRouter(prefix='/dishes', tags=['dishes'])
 

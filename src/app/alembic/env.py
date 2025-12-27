@@ -15,10 +15,10 @@ from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from app.db.base import Base
+from src.app.db.base import Base
 
 # Import all models to register them with Base.metadata for autogenerate
-from app.models import (  # noqa: F401
+from src.app.models import (  # noqa: F401
     Action,
     Cafe,
     Dish,

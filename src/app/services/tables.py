@@ -2,10 +2,10 @@ from typing import List
 
 from fastapi import HTTPException, status
 
-from app.models.tables import Table
-from app.repositories.cafes import CafeRepository
-from app.repositories.tables import TableRepository
-from app.schemas.tables import TableCreate, TableUpdate
+from src.app.models.tables import Table
+from src.app.repositories.cafes import CafeRepository
+from src.app.repositories.tables import TableRepository
+from src.app.schemas.tables import TableCreate, TableUpdate
 
 
 class TableService:

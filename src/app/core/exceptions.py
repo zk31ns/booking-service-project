@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 
 from fastapi import HTTPException, status
 
-from app.core.constants import ErrorCode, Messages
+from src.app.core.constants import ErrorCode, Messages
 
 
 class AppException(HTTPException):

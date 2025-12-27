@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from redis.asyncio import Redis
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
-from app.core.constants import Times
+from src.app.core.constants import Times
 
 
 class RedisCache:

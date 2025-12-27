@@ -7,10 +7,9 @@ from sqlalchemy.sql import func
 
 from app.core.constants import Limits
 from app.db.base import Base
-from app.models.tables import Table
 
 if TYPE_CHECKING:
-    from app.models.media import Media
+    pass
 
 
 class Cafe(Base):

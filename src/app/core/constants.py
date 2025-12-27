@@ -145,6 +145,8 @@ class RedisKey(str, Enum):
 
 
 class BookingStatus(str, Enum):
+    """Статусы бронирований."""
+
     PENDING = "pending"
     CONFIRMED = "confirmed"
     CANCELLED = "cancelled"

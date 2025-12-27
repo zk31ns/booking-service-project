@@ -2,11 +2,11 @@ from datetime import time
 from uuid import uuid4
 
 import pytest
+from app.models.cafe import Cafe
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.slots.service import SlotService
 from app.core.exceptions import ConflictException
-from app.models.cafe import Cafe
 
 
 @pytest.fixture

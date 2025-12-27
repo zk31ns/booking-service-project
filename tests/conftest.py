@@ -16,8 +16,7 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.orm import sessionmaker
 
 from app.db.base import Base
-
-from src.main import app
+from main import app
 
 
 @pytest.fixture(scope='session')

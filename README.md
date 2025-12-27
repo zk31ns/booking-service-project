@@ -84,7 +84,7 @@ where python # Windows
 # Обновить pip до последней версии
 pip install --upgrade pip
 
-# Установить основные зависимости (из src/requirements.txt)
+# Установить основные зависимости
 pip install -r src/requirements.txt
 
 # Установить зависимости для стилизации и разработки

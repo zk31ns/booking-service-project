@@ -1,0 +1,4 @@
+ImportError while loading conftest 'D:\Development\1_PRACTICUM\booking_seats_team_project\tests\conftest.py'.
+tests\conftest.py:18: in <module>
+    from app.db.base import Base
+E   ModuleNotFoundError: No module named 'app'

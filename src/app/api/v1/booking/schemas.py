@@ -7,13 +7,19 @@ from src.app.core.constants import BookingStatus, Limits
 
 
 class CafeShort(BaseModel):
-    """Краткая схема кафе."""
+    """Краткая информация о кафе.
+
+    Используется для вложенного отображения кафе в ответах API.
+    """
 
     id: int
 
 
 class TableSlotSchema(BaseModel):
-    """Схема для окошек и столов."""
+    """Схема для связки стола и временного слота.
+
+    Представляет информацию о конкретном столе и времени бронирования.
+    """
 
     table_id: int
     slot_id: int
@@ -22,7 +28,11 @@ class TableSlotSchema(BaseModel):
 
 
 class BookingBase(BaseModel):
-    """Базовая схема бронирования."""
+    """Базовая схема бронирования.
+
+    Содержит общие поля, используемые для создания и обновления бронирований.
+    Все поля опциональны для поддержки частичного обновления.
+    """
 
     guest_number: int | None = Field(None, gt=0)
     cafe_id: int | None = Field(None, gt=0)
@@ -35,7 +45,11 @@ class BookingBase(BaseModel):
 
 
 class BookingCreate(BookingBase):
-    """Схема создания бронирования."""
+    """Схема для создания нового бронирования.
+
+    Наследует базовую схему, но делает обязательными поля,
+    необходимые для создания бронирования.
+    """
 
     guest_number: int = Field(..., gt=0)
     cafe_id: int
@@ -44,7 +58,11 @@ class BookingCreate(BookingBase):
 
 
 class BookingUpdate(BookingBase):
-    """Схема обновления бронирования."""
+    """Схема для обновления существующего бронирования.
+
+    Наследует базовую схему и добавляет поле is_active.
+    Все поля опциональны для поддержки частичного обновления.
+    """
 
     is_active: bool | None = Field(default=None)
 
@@ -52,7 +70,11 @@ class BookingUpdate(BookingBase):
 
 
 class BookingDB(BookingBase):
-    """Схема для получения бронирования."""
+    """Схема для отображения бронирования в ответах API.
+
+    Содержит полную информацию о бронировании включая связанные сущности
+    и метаданные. Используется для ответов GET запросов.
+    """
 
     id: int
     user: UserShortInfo

@@ -22,7 +22,22 @@ async def get_all_bookings(
     user_id: Optional[int] = None,
     service: BookingService = Depends(get_booking_service),
 ) -> List[Booking]:
-    """Получить все доступные бронирования."""
+    """Получить список доступных бронирований.
+
+    В зависимости от прав пользователя возвращает:
+    - Для суперюзеров и менеджеров: все бронирования с фильтрацией
+    - Для обычных пользователей: только свои бронирования
+
+    Args:
+        current_user: Текущий аутентифицированный пользователь
+        show_all: Показывать все бронирования или только свои
+        cafe_id: ID кафе для фильтрации
+        user_id: ID пользователя для фильтрации
+        service: Сервис для работы с бронированиями
+
+    Returns:
+        Список бронирований
+    """
     return await service.get_all_bookings(
         current_user=current_user,
         show_all=show_all,
@@ -40,7 +55,19 @@ async def create_booking(
     user: User = Depends(get_current_active_user),
     service: BookingService = Depends(get_booking_service),
 ) -> Booking:
-    """Создать бронирование."""
+    """Создать новое бронирование.
+
+    Args:
+        booking_in: Данные для создания бронирования
+        user: Текущий аутентифицированный пользователь
+        service: Сервис для работы с бронированиями
+
+    Returns:
+        Созданное бронирование
+
+    Raises:
+        HTTPException: Если данные невалидны или недостаточно прав
+    """
     return await service.create_booking(
         booking_in=booking_in,
         user=user,
@@ -56,7 +83,19 @@ async def get_booking(
     booking_id: int,
     service: BookingService = Depends(get_booking_service),
 ) -> Booking:
-    """Получить бронирование."""
+    """Получить бронирование по ID.
+
+    Args:
+        current_user: Текущий аутентифицированный пользователь
+        booking_id: ID запрашиваемого бронирования
+        service: Сервис для работы с бронированиями
+
+    Returns:
+        Найденное бронирование
+
+    Raises:
+        HTTPException: Если бронирование не найдено или недостаточно прав
+    """
     return await service.get_booking(
         current_user=current_user,
         booking_id=booking_id
@@ -73,7 +112,23 @@ async def update_booking(
     user: User = Depends(get_current_active_user),
     service: BookingService = Depends(get_booking_service),
 ) -> Booking:
-    """Изменить бронирование."""
+    """Обновить существующее бронирование.
+
+    Поддерживает частичное обновление полей бронирования.
+
+    Args:
+        booking_in: Данные для обновления бронирования
+        booking_id: ID обновляемого бронирования
+        user: Текущий аутентифицированный пользователь
+        service: Сервис для работы с бронированиями
+
+    Returns:
+        Обновленное бронирование
+
+    Raises:
+        HTTPException: Если бронирование не найдено, недостаточно прав
+                     или данные невалидны
+    """
     return await service.update_booking(
         update_booking=booking_in,
         current_user=user,

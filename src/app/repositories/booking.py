@@ -174,7 +174,6 @@ class BookingRepository(BaseCRUD[Booking]):
         ]
 
         self.session.add(booking)
-        await self.session.commit()
         await self.session.refresh(booking)
 
         return booking
@@ -220,6 +219,5 @@ class BookingRepository(BaseCRUD[Booking]):
                 )
                 booking.table_slots.append(table_slot)
 
-        await self.session.commit()
         await self.session.refresh(booking)
         return booking

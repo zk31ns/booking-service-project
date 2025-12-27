@@ -147,10 +147,10 @@ class RedisKey(str, Enum):
 class BookingStatus(str, Enum):
     """Статусы бронирований."""
 
-    PENDING = "pending"
-    CONFIRMED = "confirmed"
-    CANCELLED = "cancelled"
-    COMPLETED = "completed"
+    PENDING = 'pending'
+    CONFIRMED = 'confirmed'
+    CANCELLED = 'cancelled'
+    COMPLETED = 'completed'
 
 
 class UserRole(str, Enum):
@@ -162,6 +162,7 @@ class UserRole(str, Enum):
 
 
 # ========== Бизнес-правила для бронирования ==========
+
 
 class BookingRules:
     """Бизнес-правила для работы с бронированиями."""
@@ -184,11 +185,11 @@ class BookingRules:
         UserRole.MANAGER: {
             BookingStatus.PENDING: {
                 BookingStatus.CONFIRMED,
-                BookingStatus.CANCELLED
+                BookingStatus.CANCELLED,
             },
             BookingStatus.CONFIRMED: {
                 BookingStatus.CANCELLED,
-                BookingStatus.COMPLETED
+                BookingStatus.COMPLETED,
             },
             BookingStatus.CANCELLED: set(),
             BookingStatus.COMPLETED: set(),
@@ -196,18 +197,18 @@ class BookingRules:
         UserRole.ADMIN: {
             BookingStatus.PENDING: {
                 BookingStatus.CONFIRMED,
-                BookingStatus.CANCELLED
+                BookingStatus.CANCELLED,
             },
             BookingStatus.CONFIRMED: {
                 BookingStatus.CANCELLED,
-                BookingStatus.COMPLETED
+                BookingStatus.COMPLETED,
             },
             BookingStatus.CANCELLED: {
                 BookingStatus.PENDING,
-                BookingStatus.CONFIRMED
+                BookingStatus.CONFIRMED,
             },
             BookingStatus.COMPLETED: {BookingStatus.CONFIRMED},
-        }
+        },
     }
 
 
@@ -259,8 +260,8 @@ class ErrorCode(str, Enum):
     USER_ALREADY_BOOKED = 'user_already_booked'
     INSUFFICIENT_PERMISSIONS = 'insufficient_permissions'
     INVALID_STATUS_TRANSITION = 'invalid_status_transition'
-    CANNOT_ACTIVATE_INACTIVE_STATUS = "cannot_activate_inactive_status"
-    CANNOT_DEACTIVATE_ACTIVE_STATUS = "cannot_deactivate_active_status"
+    CANNOT_ACTIVATE_INACTIVE_STATUS = 'cannot_activate_inactive_status'
+    CANNOT_DEACTIVATE_ACTIVE_STATUS = 'cannot_deactivate_active_status'
 
     # Media
     FILE_TOO_LARGE = 'file_too_large'
@@ -349,7 +350,7 @@ class Messages:
         ErrorCode.CANNOT_ACTIVATE_INACTIVE_STATUS: (
             'Нельзя активировать бронь с неактивным статусом'
         ),
-        ErrorCode. CANNOT_DEACTIVATE_ACTIVE_STATUS: (
+        ErrorCode.CANNOT_DEACTIVATE_ACTIVE_STATUS: (
             'Нельзя деактивировать бронь с активным статусом'
         ),
         ErrorCode.FILE_TOO_LARGE: 'Файл слишком большой (макс. 5MB)',

@@ -21,7 +21,7 @@ from app.core.constants import Limits
 from app.db.base import Base
 
 if TYPE_CHECKING:
-    from src.app.models import Booking
+    from app.models import Booking
 
 
 class User(Base):

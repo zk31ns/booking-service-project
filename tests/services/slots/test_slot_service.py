@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.api.v1.slots.service import SlotService
+from app.services.slot import SlotService
 from app.core.exceptions import ConflictException, ValidationException
 
 

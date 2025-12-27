@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.slots.schemas import SlotCreate, SlotInfo, SlotUpdate
-from app.api.v1.slots.service import SlotService
+from app.schemas.slot import SlotCreate, SlotInfo, SlotUpdate
+from app.services.slot import SlotService
 from app.core.constants import ErrorCode, RedisKey, Times
 from app.core.redis_cache import RedisCache
 from app.db.session import get_session

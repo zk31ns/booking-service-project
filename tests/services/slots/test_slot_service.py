@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.services.slot import SlotService
 from app.core.exceptions import ConflictException, ValidationException
+from app.services.slot import SlotService
 
 
 class TestSlotsOverlap:

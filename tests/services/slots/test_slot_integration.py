@@ -5,8 +5,8 @@ import pytest
 from app.models.cafe import Cafe
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.slot import SlotService
 from app.core.exceptions import ConflictException
+from app.services.slot import SlotService
 
 
 @pytest.fixture

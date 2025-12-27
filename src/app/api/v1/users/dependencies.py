@@ -279,7 +279,6 @@ async def get_current_user_username(
 
 __all__ = [
     'security',
-    'get_db',
     'get_user_repository',
     'get_current_user',
     'get_current_active_user',

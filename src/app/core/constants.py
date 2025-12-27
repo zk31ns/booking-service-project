@@ -38,6 +38,7 @@ class API:
     TABLES = ['tables']
     SLOTS = ['slots']
     BOOKING = ['booking']
+    PENDING = ['booking']
     MEDIA = ['media']
 
 
@@ -79,6 +80,9 @@ class Limits:
     MIN_CAFE_NAME_LENGTH = 3
     MAX_CAFE_NAME_LENGTH = 255
 
+    # Booking
+    MAX_BOOKING_NOTE_LENGTH = 256
+
     # Description
     MIN_DESCRIPTION_LENGTH = 0
     MAX_DESCRIPTION_LENGTH = 1000
@@ -109,7 +113,7 @@ class Times:
     TIME_ZONE = 'Europe/Moscow'
 
     # JWT токены
-    ACCESS_TOKEN_MINUTES = 60  # 1 час
+    ACCESS_TOKEN_MINUTES = 600  # 1 час
     REFRESH_TOKEN_DAYS = 7
 
     # Бронирование
@@ -142,12 +146,12 @@ class RedisKey(str, Enum):
 
 
 class BookingStatus(str, Enum):
-    """Статусы бронирования."""
+    """Статусы бронирований."""
 
-    NEW = 'new'  # Новая бронь
-    CONFIRMED = 'confirmed'  # Подтверждённая бронь
-    CANCELLED = 'cancelled'  # Отменённая бронь
-    FINISHED = 'finished'  # Завершённая бронь
+    PENDING = 'pending'
+    CONFIRMED = 'confirmed'
+    CANCELLED = 'cancelled'
+    COMPLETED = 'completed'
 
 
 class UserRole(str, Enum):
@@ -156,6 +160,57 @@ class UserRole(str, Enum):
     CUSTOMER = 'customer'  # Клиент
     MANAGER = 'manager'  # Менеджер кафе
     ADMIN = 'admin'  # Администратор
+
+
+# ========== Бизнес-правила для бронирования ==========
+
+
+class BookingRules:
+    """Бизнес-правила для работы с бронированиями."""
+
+    # Статусы, активной брони (видимой для редактирования)
+    ACTIVE_STATUSES = {BookingStatus.PENDING, BookingStatus.CONFIRMED}
+
+    # Статусы, при которых бронь считается завершенной/неактивной
+    INACTIVE_STATUSES = {BookingStatus.CANCELLED, BookingStatus.COMPLETED}
+
+    # Разрешенные переходы статусов для каждой роли
+    # Формат: {роль: {текущий_статус: {разрешенные_новые_статусы}}}
+    STATUS_TRANSITIONS = {
+        UserRole.CUSTOMER: {
+            BookingStatus.PENDING: {BookingStatus.CANCELLED},
+            BookingStatus.CONFIRMED: {BookingStatus.CANCELLED},
+            BookingStatus.CANCELLED: set(),
+            BookingStatus.COMPLETED: set(),
+        },
+        UserRole.MANAGER: {
+            BookingStatus.PENDING: {
+                BookingStatus.CONFIRMED,
+                BookingStatus.CANCELLED,
+            },
+            BookingStatus.CONFIRMED: {
+                BookingStatus.CANCELLED,
+                BookingStatus.COMPLETED,
+            },
+            BookingStatus.CANCELLED: set(),
+            BookingStatus.COMPLETED: set(),
+        },
+        UserRole.ADMIN: {
+            BookingStatus.PENDING: {
+                BookingStatus.CONFIRMED,
+                BookingStatus.CANCELLED,
+            },
+            BookingStatus.CONFIRMED: {
+                BookingStatus.CANCELLED,
+                BookingStatus.COMPLETED,
+            },
+            BookingStatus.CANCELLED: {
+                BookingStatus.PENDING,
+                BookingStatus.CONFIRMED,
+            },
+            BookingStatus.COMPLETED: {BookingStatus.CONFIRMED},
+        },
+    }
 
 
 class ErrorCode(str, Enum):
@@ -200,10 +255,14 @@ class ErrorCode(str, Enum):
     # Booking
     BOOKING_NOT_FOUND = 'booking_not_found'
     BOOKING_PAST_DATE = 'booking_past_date'
+    BOOKING_INACTIVE = 'booking_inactive'
     TABLE_ALREADY_BOOKED = 'table_already_booked'
+    NOT_ENOUGH_SEATS = 'not_enough_seats'
     USER_ALREADY_BOOKED = 'user_already_booked'
     INSUFFICIENT_PERMISSIONS = 'insufficient_permissions'
     INVALID_STATUS_TRANSITION = 'invalid_status_transition'
+    CANNOT_ACTIVATE_INACTIVE_STATUS = 'cannot_activate_inactive_status'
+    CANNOT_DEACTIVATE_ACTIVE_STATUS = 'cannot_deactivate_active_status'
 
     # Media
     FILE_TOO_LARGE = 'file_too_large'
@@ -282,9 +341,19 @@ class Messages:
         ErrorCode.USER_ALREADY_BOOKED: 'У вас уже есть бронь на это время',
         ErrorCode.BOOKING_NOT_FOUND: 'Бронь не найдена',
         ErrorCode.BOOKING_PAST_DATE: 'Нельзя забронировать на прошедшую дату',
+        ErrorCode.BOOKING_INACTIVE: 'Бронь неактивна',
         ErrorCode.TABLE_ALREADY_BOOKED: 'Столик уже забронирован на это время',
+        ErrorCode.NOT_ENOUGH_SEATS: (
+            'Недостаточно мест для указанного количества гостей'
+        ),
         ErrorCode.INSUFFICIENT_PERMISSIONS: 'Недостаточно прав доступа',
         ErrorCode.INVALID_STATUS_TRANSITION: 'Неверный переход статуса',
+        ErrorCode.CANNOT_ACTIVATE_INACTIVE_STATUS: (
+            'Нельзя активировать бронь с неактивным статусом'
+        ),
+        ErrorCode.CANNOT_DEACTIVATE_ACTIVE_STATUS: (
+            'Нельзя деактивировать бронь с активным статусом'
+        ),
         ErrorCode.FILE_TOO_LARGE: 'Файл слишком большой (макс. 5MB)',
         ErrorCode.INVALID_FILE_TYPE: (
             'Недопустимый тип файла (разрешены JPG, PNG)'
@@ -321,6 +390,14 @@ class Messages:
         'file_uploaded': 'Файл успешно загружен',
         'file_deleted': 'Файл удалён',
     }
+
+    @classmethod
+    def error(cls, error_code: ErrorCode) -> str:
+        """Получить ошибку по коду."""
+        return cls.errors.get(
+            error_code,
+            'Неизвестная ошибка',
+        )
 
 
 # ========== Celery задачи ==========
@@ -367,7 +444,7 @@ TAGS_AUTH = API.AUTH
 TAGS_CAFES = API.CAFES
 TAGS_TABLES = API.TABLES
 TAGS_SLOTS = API.SLOTS
-TAGS_BOOKING = API.BOOKING
+TAGS_BOOKING = API.PENDING
 TAGS_MEDIA = API.MEDIA
 
 # Sizes/Limits

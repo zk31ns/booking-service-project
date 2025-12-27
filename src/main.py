@@ -3,11 +3,18 @@
 Main entry point приложения.
 """
 
+import os
+import sys
+
+# Добавить текущую директорию в sys.path для правильной работы импортов
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1 import health
 from app.api.v1.actions import router as actions_router
+from app.api.v1.booking import router as booking_router
 from app.api.v1.dishes import router as dishes_router
 from app.api.v1.media import router as media_router
 from app.api.v1.slots import router as slots_router
@@ -60,13 +67,12 @@ app.include_router(actions_router, prefix=API.V1_PREFIX)
 # Media
 app.include_router(media_router, prefix=API.V1_PREFIX, tags=API.MEDIA)
 
+# Booking
+app.include_router(booking_router, prefix=API.V1_PREFIX, tags=API.BOOKING)
 
 # TODO: Cafes router (Павел)
 # app.include_router(cafes_router, prefix=API.V1_PREFIX, tags=API.CAFES)
 
 # TODO: Tables router (Павел)
 # app.include_router(tables_router, prefix=API.V1_PREFIX, tags=API.TABLES)
-
-# TODO: Booking router (Анастасия)
-# app.include_router(booking_router, prefix=API.V1_PREFIX, tags=API.BOOKING)
 # ============================

@@ -21,8 +21,7 @@ from app.core.constants import Limits
 from app.db.base import Base
 
 if TYPE_CHECKING:
-    from app.api.v1.booking.models import Booking
-    from app.api.v1.cafes.models import Cafe
+    from app.models import Booking
 
 
 class User(Base):
@@ -94,11 +93,11 @@ class User(Base):
         back_populates='user',
         cascade='all, delete-orphan',
     )
-    managed_cafes: Mapped[List['Cafe']] = relationship(
-        'Cafe',
-        secondary='cafe_managers',
-        back_populates='managers',
-    )
+    # managed_cafes: Mapped[List['Cafe']] = relationship(
+    #     'Cafe',
+    #     secondary='cafe_managers',
+    #     back_populates='managers',
+    # )
 
     def __repr__(self) -> str:
         """Строковое представление объекта User.

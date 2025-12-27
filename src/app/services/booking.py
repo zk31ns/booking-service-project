@@ -1,27 +1,27 @@
 from datetime import date
 from typing import Any, List, Optional, Tuple, Union
 
-from src.app.api.v1.booking.schemas import (
+from app.api.v1.booking.schemas import (
     BookingCreate,
     BookingUpdate,
     TableSlotSchema,
 )
-from src.app.api.v1.slots.repository import SlotRepository
-from src.app.api.v1.users.repository import UserRepository
-from src.app.core.constants import (
+from app.api.v1.slots.repository import SlotRepository
+from app.api.v1.users.repository import UserRepository
+from app.core.constants import (
     BookingRules,
     BookingStatus,
     ErrorCode,
     UserRole,
 )
-from src.app.core.exceptions import (
+from app.core.exceptions import (
     AppException,
     AuthenticationException,
     NotFoundException,
     ValidationException,
 )
-from src.app.models import Booking, Cafe, Slot, Table, User
-from src.app.repositories import (
+from app.models import Booking, Cafe, Slot, Table, User
+from app.repositories import (
     BookingRepository,
     CafeRepository,
     TableRepository,
@@ -131,12 +131,8 @@ class BookingService:
             AuthenticationException: Если недостаточно прав
 
         """
-        is_manager = await self.user_repo.is_manager(
-            user_id=current_user.id
-        )
-        if (
-            not current_user.is_superuser and not is_manager
-        ) or not show_all:
+        is_manager = await self.user_repo.is_manager(user_id=current_user.id)
+        if (not current_user.is_superuser and not is_manager) or not show_all:
             user_id = current_user.id
 
         return await self.booking_repo.get_multi(
@@ -145,9 +141,7 @@ class BookingService:
         )
 
     async def get_booking(
-        self,
-        current_user: User,
-        booking_id: int
+        self, current_user: User, booking_id: int
     ) -> Booking:
         """Получить бронирование по ID.
 
@@ -163,13 +157,10 @@ class BookingService:
             AuthenticationException: Если недостаточно прав
 
         """
-        booking = await self.__get_booking_or_404(
-            booking_id=booking_id
-        )
+        booking = await self.__get_booking_or_404(booking_id=booking_id)
 
         await self._check_booking_permissions(
-            current_user=current_user,
-            booking=booking
+            current_user=current_user, booking=booking
         )
         return booking
 
@@ -204,9 +195,7 @@ class BookingService:
         user_role = self._get_user_role(current_user)
 
         if not booking.is_active and user_role != UserRole.ADMIN:
-            raise AppException(
-                ErrorCode.BOOKING_INACTIVE
-            )
+            raise AppException(ErrorCode.BOOKING_INACTIVE)
 
         update_data: dict[str, Union[int, str, date, bool]] = {}
 
@@ -216,7 +205,7 @@ class BookingService:
                 new_status_value=update_booking.status,
                 user_role=user_role,
                 update_data=update_data,
-                current_user=current_user
+                current_user=current_user,
             )
 
         if update_booking.is_active is not None:
@@ -225,12 +214,11 @@ class BookingService:
                 requested_active=update_booking.is_active,
                 user_role=user_role,
                 update_data=update_data,
-                new_status=update_booking.status
+                new_status=update_booking.status,
             )
 
         await self._check_booking_permissions(
-            current_user=current_user,
-            booking=booking
+            current_user=current_user, booking=booking
         )
 
         booking_date = booking.booking_date
@@ -257,9 +245,9 @@ class BookingService:
         else:
             table_slots = booking.table_slots
 
-        validate_tables = any(key in update_data for key in [
-            'booking_date', 'cafe_id'
-        ])
+        validate_tables = any(
+            key in update_data for key in ['booking_date', 'cafe_id']
+        )
 
         if validate_tables or update_booking.table_slots is not None:
             await self._validate_new_table_slots(
@@ -268,16 +256,14 @@ class BookingService:
                 booking_date=booking_date,
                 user=current_user,
                 guest_number=guest_number,
-                exclude_booking_id=booking.id
+                exclude_booking_id=booking.id,
             )
 
         if update_booking.note is not None:
             update_data['note'] = update_booking.note
 
         return await self.booking_repo.update(
-            booking=booking,
-            update_booking=update_booking,
-            data=update_data
+            booking=booking, update_booking=update_booking, data=update_data
         )
 
     async def _validate_new_table_slots(
@@ -316,16 +302,11 @@ class BookingService:
             table_id, slot_id = table_slot.table_id, table_slot.slot_id
 
             table, slot = await self._validate_table_slot(
-                table_id,
-                slot_id,
-                cafe_id
+                table_id, slot_id, cafe_id
             )
 
             if await self.booking_repo.is_occupied(
-                table_id,
-                slot_id,
-                booking_date,
-                exclude_booking_id
+                table_id, slot_id, booking_date, exclude_booking_id
             ):
                 raise AppException(ErrorCode.TABLE_ALREADY_BOOKED)
 
@@ -334,7 +315,7 @@ class BookingService:
                 slot.start_time,
                 slot.end_time,
                 booking_date,
-                exclude_booking_id
+                exclude_booking_id,
             ):
                 raise AppException(ErrorCode.USER_ALREADY_BOOKED)
 
@@ -342,9 +323,7 @@ class BookingService:
 
         return tables
 
-    async def _validate_guest_number(
-            self, guest_number: int
-    ) -> None:
+    async def _validate_guest_number(self, guest_number: int) -> None:
         """Валидировать количество гостей.
 
         Args:
@@ -357,10 +336,7 @@ class BookingService:
         if guest_number <= 0:
             raise AppException(ErrorCode.VALIDATION_ERROR)
 
-    async def _validate_cafe(
-        self,
-        cafe_id: int
-    ) -> Cafe:
+    async def _validate_cafe(self, cafe_id: int) -> Cafe:
         """Валидировать существование и активность кафе.
 
         Args:
@@ -381,10 +357,7 @@ class BookingService:
             raise AppException(ErrorCode.CAFE_INACTIVE)
         return cafe
 
-    async def __get_booking_or_404(
-        self,
-        booking_id: int
-    ) -> Booking:
+    async def __get_booking_or_404(self, booking_id: int) -> Booking:
         """Получить бронирование или выбросить исключение если не найдено.
 
         Args:
@@ -397,9 +370,7 @@ class BookingService:
             NotFoundException: Если бронирование не найдено
 
         """
-        booking = await self.booking_repo.get(
-            booking_id=booking_id
-        )
+        booking = await self.booking_repo.get(booking_id=booking_id)
         if booking is None:
             raise NotFoundException(ErrorCode.BOOKING_NOT_FOUND)
         return booking
@@ -420,9 +391,7 @@ class BookingService:
         return await self.user_repo.is_manager(user_id=current_user.id)
 
     async def _check_booking_permissions(
-        self,
-        current_user: User,
-        booking: Booking
+        self, current_user: User, booking: Booking
     ) -> None:
         """Проверить права доступа к бронированию.
 
@@ -438,7 +407,7 @@ class BookingService:
 
         """
         if not current_user.is_superuser and not await self._is_manager(
-             current_user
+            current_user
         ):
             if booking.user_id != current_user.id:
                 raise AuthenticationException(
@@ -459,10 +428,7 @@ class BookingService:
             raise AppException(ErrorCode.BOOKING_PAST_DATE)
 
     async def _validate_table_slot(
-        self,
-        table_id: int,
-        slot_id: int,
-        cafe_id: int
+        self, table_id: int, slot_id: int, cafe_id: int
     ) -> Tuple[Table, Slot]:
         """Валидировать связку стол+слот.
 
@@ -504,10 +470,7 @@ class BookingService:
         """
         return sum(table.seats for table in tables) if tables else 0
 
-    def _get_user_role(
-            self,
-            user: User
-    ) -> UserRole:
+    def _get_user_role(self, user: User) -> UserRole:
         """Определить роль пользователя.
 
         Args:
@@ -529,7 +492,7 @@ class BookingService:
         new_status_value: str,
         user_role: UserRole,
         update_data: dict,
-        current_user: User
+        current_user: User,
     ) -> None:
         """Обработать изменение статуса бронирования.
 
@@ -555,16 +518,14 @@ class BookingService:
         )
 
         if new_status not in allowed_transitions:
-            raise AppException(
-                ErrorCode.INVALID_STATUS_TRANSITION
-            )
+            raise AppException(ErrorCode.INVALID_STATUS_TRANSITION)
 
         update_data['status'] = new_status_value
 
         if 'is_active' not in update_data:
-            update_data[
-                'is_active'
-            ] = new_status in BookingRules.ACTIVE_STATUSES
+            update_data['is_active'] = (
+                new_status in BookingRules.ACTIVE_STATUSES
+            )
 
     async def _process_active_update(
         self,
@@ -572,7 +533,7 @@ class BookingService:
         requested_active: bool,
         user_role: UserRole,
         update_data: dict,
-        new_status: Optional[str]
+        new_status: Optional[str],
     ) -> None:
         """Обработать изменение активности бронирования.
 
@@ -609,10 +570,7 @@ class BookingService:
         update_data['is_active'] = requested_active
 
     async def _trigger_celery_tasks(
-        self,
-        booking: Booking,
-        user: User,
-        cafe: Cafe
+        self, booking: Booking, user: User, cafe: Cafe
     ) -> None:
         """Запустить фоновые Celery задачи.
 

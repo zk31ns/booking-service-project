@@ -5,10 +5,11 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.api.v1.booking.schemas import BookingCreate, BookingUpdate
+from app.core.constants import BookingStatus
+from app.models import Booking, Slot, TableSlot, User
+
 from .base import BaseCRUD
-from src.app.api.v1.booking.schemas import BookingCreate, BookingUpdate
-from src.app.core.constants import BookingStatus
-from src.app.models import Booking, Slot, TableSlot, User
 
 
 class BookingRepository(BaseCRUD[Booking]):
@@ -142,9 +143,7 @@ class BookingRepository(BaseCRUD[Booking]):
         return list(result.scalars().all())
 
     async def create(
-        self,
-        obj_in: BookingCreate,
-        user: Optional[User] = None
+        self, obj_in: BookingCreate, user: Optional[User] = None
     ) -> Booking:
         """Создать новое бронирование.
 

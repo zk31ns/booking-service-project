@@ -2,11 +2,12 @@ from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends
 
+from app.api.v1.users.dependencies import get_current_active_user
+from app.models import Booking, User
+from app.services.booking import BookingService
+
 from .dependencies import get_booking_service
 from .schemas import BookingCreate, BookingDB, BookingUpdate
-from src.app.api.v1.users.dependencies import get_current_active_user
-from src.app.models import Booking, User
-from src.app.services.booking import BookingService
 
 router = APIRouter()
 
@@ -100,8 +101,7 @@ async def get_booking(
 
     """
     return await service.get_booking(
-        current_user=current_user,
-        booking_id=booking_id
+        current_user=current_user, booking_id=booking_id
     )
 
 
@@ -134,7 +134,5 @@ async def update_booking(
 
     """
     return await service.update_booking(
-        update_booking=booking_in,
-        current_user=user,
-        booking_id=booking_id
+        update_booking=booking_in, current_user=user, booking_id=booking_id
     )

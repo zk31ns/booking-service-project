@@ -2,8 +2,8 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.app.api.v1.users.schemas import UserShortInfo
-from src.app.core.constants import BookingStatus, Limits
+from app.api.v1.users.schemas import UserShortInfo
+from app.core.constants import BookingStatus, Limits
 
 
 class CafeShort(BaseModel):

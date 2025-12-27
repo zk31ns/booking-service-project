@@ -1,16 +1,16 @@
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.app.api.v1.slots.repository import SlotRepository
-from src.app.api.v1.users.dependencies import get_user_repository
-from src.app.api.v1.users.repository import UserRepository
-from src.app.db.session import get_session
-from src.app.repositories import (
+from app.api.v1.slots.repository import SlotRepository
+from app.api.v1.users.dependencies import get_user_repository
+from app.api.v1.users.repository import UserRepository
+from app.db.session import get_session
+from app.repositories import (
     BookingRepository,
     CafeRepository,
     TableRepository,
 )
-from src.app.services.booking import BookingService
+from app.services.booking import BookingService
 
 
 async def get_cafe_repository(

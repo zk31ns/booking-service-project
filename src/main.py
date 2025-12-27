@@ -3,6 +3,12 @@
 Main entry point приложения.
 """
 
+import os
+import sys
+
+# Добавить текущую директорию в sys.path для правильной работы импортов
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 

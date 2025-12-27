@@ -9,7 +9,7 @@ from app.services.booking import BookingService
 from .dependencies import get_booking_service
 from .schemas import BookingCreate, BookingDB, BookingUpdate
 
-router = APIRouter()
+router = APIRouter(prefix='/booking', tags=['booking'])
 
 
 @router.get(

@@ -37,6 +37,7 @@ class API:
     CAFES = ['cafes']
     TABLES = ['tables']
     SLOTS = ['slots']
+    BOOKING = ['booking']
     PENDING = ['booking']
     MEDIA = ['media']
 

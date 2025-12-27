@@ -441,9 +441,8 @@ class UserRepository:
 
     async def is_manager(
         self,
-        session: AsyncSession,
         user_id: int,
     ) -> bool:
         """Проверить является ли пользователь менеджером."""
         stmt = select(exists().where(cafe_managers.c.user_id == user_id))
-        return await session.scalar(stmt) is not None
+        return await self.session.scalar(stmt) is not None

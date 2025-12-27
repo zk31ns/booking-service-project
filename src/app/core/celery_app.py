@@ -7,9 +7,9 @@ from celery.schedules import crontab
 from celery.signals import setup_logging as celery_setup_logging
 from celery.signals import task_postrun, task_prerun
 
-from src.app.core.config import settings
-from src.app.core.constants import EventType, Times
-from src.app.core.logging import logger, setup_logging
+from app.core.config import settings
+from app.core.constants import EventType, Times
+from app.core.logging import logger, setup_logging
 
 celery_app = Celery(
     'booking',
@@ -109,4 +109,4 @@ def task_postrun_handler(
     )
 
 
-celery_app.autodiscover_tasks(['src.app.core.celery_tasks'])
+celery_app.autodiscover_tasks(['app.core.celery_tasks'])

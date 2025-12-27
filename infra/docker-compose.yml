@@ -65,10 +65,12 @@ services:
     container_name: booking_worker
     env_file: ../.env
     build:
-      context: ..
-      dockerfile: src/Dockerfile
-    command: celery -A src.app.core.celery_app:celery_app worker --loglevel=info
+      context: ../src
+      dockerfile: Dockerfile
+    command: celery -A app.core.celery_app:celery_app worker --loglevel=info
     working_dir: /app
+    volumes:
+      - ../src:/app
     environment:
       - PYTHONPATH=/app
     depends_on:
@@ -82,13 +84,14 @@ services:
     container_name: booking_beat
     env_file: ../.env
     build:
-      context: ..
-      dockerfile: src/Dockerfile
-    command: celery -A src.app.core.celery_app:celery_app beat --loglevel=info
+      context: ../src
+      dockerfile: Dockerfile
+    command: celery -A app.core.celery_app:celery_app beat --loglevel=info
     working_dir: /app
     environment:
       - PYTHONPATH=/app
     volumes:
+      - ../src:/app
       - booking_beat_data:/app
     depends_on:
       rabbitmq:
@@ -99,15 +102,16 @@ services:
     container_name: booking_flower
     env_file: ../.env
     build:
-      context: ..
-      dockerfile: src/Dockerfile
-    command: celery -A src.app.core.celery_app:celery_app flower --port=5555
+      context: ../src
+      dockerfile: Dockerfile
+    command: celery -A app.core.celery_app:celery_app flower --port=5555
     working_dir: /app
     environment:
       - PYTHONPATH=/app
     ports:
       - "5555:5555"
     volumes:
+      - ../src:/app
       - booking_flower_data:/data
     depends_on:
       rabbitmq:

@@ -8,15 +8,15 @@ from typing import Any, Dict, List, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.app.api.v1.users.repository import UserRepository
-from src.app.api.v1.users.schemas import (
+from app.api.v1.users.repository import UserRepository
+from app.api.v1.users.schemas import (
     UserCreate,
     UserInfo,
     UserShortInfo,
     UserUpdate,
 )
-from src.app.core.constants import ErrorCode, Limits
-from src.app.core.exceptions import (
+from app.core.constants import ErrorCode, Limits
+from app.core.exceptions import (
     AuthenticationException,
     AuthorizationException,
     ConflictException,
@@ -24,8 +24,8 @@ from src.app.core.exceptions import (
     NotFoundException,
     ValidationException,
 )
-from src.app.core.security import create_tokens_pair, verify_password
-from src.app.models.models import User
+from app.core.security import create_tokens_pair, verify_password
+from app.models.models import User
 
 
 class UserService:

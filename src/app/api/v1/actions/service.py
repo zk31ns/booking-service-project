@@ -2,9 +2,9 @@ from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.app.api.v1.actions.constants import DEFAULT_LIMIT, DEFAULT_SKIP
-from src.app.api.v1.actions.repository import ActionRepository
-from src.app.api.v1.actions.schemas import (
+from app.api.v1.actions.constants import DEFAULT_LIMIT, DEFAULT_SKIP
+from app.api.v1.actions.repository import ActionRepository
+from app.api.v1.actions.schemas import (
     ActionCreate,
     ActionInfo,
     ActionUpdate,

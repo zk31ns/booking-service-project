@@ -6,7 +6,7 @@
 - Валидации и обработки исключений
 """
 
-from typing import Annotated, AsyncGenerator, Optional
+from typing import Annotated, Optional
 
 from fastapi import Depends, HTTPException, Security
 from fastapi.security import (
@@ -15,34 +15,24 @@ from fastapi.security import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
-# from src.app.api.v1.cafes.models import cafe_managers
+from app.api.dependencies import get_db
+
+# from app.api.v1.cafes.models import cafe_managers
 # Модуль отсутствует, импорт закомментирован для устранения ошибки
-from src.app.api.v1.users.repository import UserRepository
-from src.app.core.constants import ErrorCode
-from src.app.core.exceptions import (
+from app.api.v1.users.repository import UserRepository
+from app.core.constants import ErrorCode
+from app.core.exceptions import (
     AuthenticationException,
     AuthorizationException,
 )
-from src.app.core.security import (
+from app.core.security import (
     get_current_user_id_from_token,
     get_current_username_from_token,
     verify_refresh_token,
 )
-from src.app.db.session import get_session
-from src.app.models.models import User
+from app.models.models import User
 
 security = HTTPBearer(auto_error=False)
-
-
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """Получает асинхронную сессию базы данных.
-
-    Yields:
-        AsyncSession: Асинхронная сессия SQLAlchemy
-
-    """
-    async with get_session() as session:
-        yield session
 
 
 def get_user_repository() -> UserRepository:

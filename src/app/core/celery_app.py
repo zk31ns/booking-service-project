@@ -7,9 +7,9 @@ from celery.schedules import crontab
 from celery.signals import setup_logging as celery_setup_logging
 from celery.signals import task_postrun, task_prerun
 
-from src.app.core.config import settings
-from src.app.core.constants import EventType, Times
-from src.app.core.logging import logger, setup_logging
+from app.core.config import settings
+from app.core.constants import EventType, Times
+from app.core.logging import logger, setup_logging
 
 celery_app = Celery(
     'booking',
@@ -45,6 +45,8 @@ celery_app.conf.update(
 )
 
 # Настройка расписания для Celery Beat
+# NOTE: cleanup_expired_bookings - заглушка для тестирования
+# работоспособности Celery Beat. Реализуется после вввода бронирований.
 celery_app.conf.beat_schedule = {
     'periodically_cleanup_expired_bookings': {
         'task': 'cleanup_expired_bookings',
@@ -107,4 +109,4 @@ def task_postrun_handler(
     )
 
 
-celery_app.autodiscover_tasks(['src.app.core.celery_tasks'])
+celery_app.autodiscover_tasks(['app.core.celery_tasks'])

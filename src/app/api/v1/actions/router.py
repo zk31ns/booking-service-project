@@ -3,14 +3,14 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.app.api.v1.actions.constants import DEFAULT_LIMIT, DEFAULT_SKIP
-from src.app.api.v1.actions.schemas import (
+from app.api.v1.actions.constants import DEFAULT_LIMIT, DEFAULT_SKIP
+from app.api.v1.actions.schemas import (
     ActionCreate,
     ActionInfo,
     ActionUpdate,
 )
-from src.app.api.v1.actions.service import ActionService
-from src.app.db import get_session
+from app.api.v1.actions.service import ActionService
+from app.db import get_session
 
 router = APIRouter(prefix='/actions', tags=['actions'])
 

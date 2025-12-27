@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.app.core.constants import Limits
+from app.core.constants import Limits
 
 
 class CafeBase(BaseModel):
@@ -38,7 +38,6 @@ class CafeCreate(CafeBase):
         default=None,
         description='ID фотографии кафе',
     )
-    pass
 
 
 class CafeUpdate(BaseModel):

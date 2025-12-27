@@ -3,11 +3,11 @@ from datetime import time
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.app.api.v1.slots.repository import SlotRepository
-from src.app.core.constants import ErrorCode
-from src.app.core.exceptions import ConflictException, ValidationException
-from src.app.models.slot import Slot
-from src.app.repositories.cafe import CafeRepository
+from app.api.v1.slots.repository import SlotRepository
+from app.core.constants import ErrorCode
+from app.core.exceptions import ConflictException, ValidationException
+from app.models.slots import Slot
+from app.repositories.cafes import CafeRepository
 
 
 class SlotService:

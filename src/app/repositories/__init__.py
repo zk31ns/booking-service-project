@@ -1,5 +1,5 @@
-from .cafe import CafeRepository
-from .table import TableRepository
+from .cafes import CafeRepository
+from .tables import TableRepository
 
 __all__ = [
     'CafeRepository',

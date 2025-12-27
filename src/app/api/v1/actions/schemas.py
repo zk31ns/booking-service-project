@@ -2,7 +2,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from src.app.api.v1.actions.constants import (
+from app.api.v1.actions.constants import (
     ACTION_DESCRIPTION_MAX_LENGTH,
     ACTION_NAME_MAX_LENGTH,
     ACTION_NAME_MIN_LENGTH,

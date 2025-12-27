@@ -4,7 +4,7 @@ from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.app.models.slot import Slot
+from app.models.slots import Slot
 
 
 class SlotRepository:
@@ -93,7 +93,7 @@ class SlotRepository:
 
         query = query.order_by(Slot.start_time)
         result = await self.session.execute(query)
-        slots = result.scalars().all()
+        slots = list(result.scalars().all())
 
         logger.info(
             f'Получено {len(slots)} слотов для кафе cafe_id={cafe_id} '

@@ -8,11 +8,11 @@ from typing import Any, Dict
 import aiohttp
 from celery import Task
 
-from src.app.core.celery_app import celery_app
-from src.app.core.celery_base import BaseTask
-from src.app.core.config import settings
-from src.app.core.constants import EventType, Times
-from src.app.core.logging import logger
+from app.core.celery_app import celery_app
+from app.core.celery_base import BaseTask
+from app.core.config import settings
+from app.core.constants import EventType, Times
+from app.core.logging import logger
 
 
 @celery_app.task(

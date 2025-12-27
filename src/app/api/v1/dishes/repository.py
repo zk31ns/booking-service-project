@@ -3,8 +3,8 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.app.api.v1.dishes.schemas import DishCreate, DishUpdate
-from src.app.models import Dish
+from app.api.v1.dishes.schemas import DishCreate, DishUpdate
+from app.models import Dish
 
 
 class DishRepository:

@@ -89,8 +89,8 @@ def create_access_token(
     try:
         return jwt.encode(
             to_encode,
-            settings.jwt_secret_key,
-            algorithm=settings.jwt_algorithm,
+            settings.JWT_SECRET_KEY,
+            algorithm=settings.JWT_ALGORITHM,
         )
     except JWTError as e:
         raise ValueError(f'Ошибка создания токена: {e}') from e
@@ -109,8 +109,8 @@ def decode_access_token(token: str) -> Optional[dict[str, Any]]:
     try:
         payload = jwt.decode(
             token,
-            settings.jwt_secret_key,
-            algorithms=[settings.jwt_algorithm],
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM],
         )
 
         if payload.get('type') != 'access':
@@ -152,8 +152,8 @@ def create_refresh_token(
     try:
         return jwt.encode(
             to_encode,
-            settings.jwt_secret_key,
-            algorithm=settings.jwt_algorithm,
+            settings.JWT_SECRET_KEY,
+            algorithm=settings.JWT_ALGORITHM,
         )
     except JWTError as e:
         raise ValueError(f'Ошибка создания refresh токена: {e}') from e
@@ -172,8 +172,8 @@ def decode_refresh_token(token: str) -> Optional[dict[str, Any]]:
     try:
         payload = jwt.decode(
             token,
-            settings.jwt_secret_key,
-            algorithms=[settings.jwt_algorithm],
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM],
         )
 
         if payload.get('type') != 'refresh':

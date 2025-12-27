@@ -73,7 +73,7 @@ class Booking(Base):
         Date,
         nullable=False,
     )
-    status: Mapped[int] = mapped_column(
+    status: Mapped[str] = mapped_column(
         Integer,
         nullable=False,
         default=BookingStatus.BOOKING,

@@ -5,12 +5,13 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from .base import BaseCRUD
 from src.app.api.v1.booking.schemas import BookingCreate, BookingUpdate
 from src.app.core.constants import BookingStatus
 from src.app.models import Booking, Slot, TableSlot, User
 
 
-class BookingRepository:
+class BookingRepository(BaseCRUD[Booking]):
     """Репозиторий для работы с бронированиями столиков в кафе.
 
     Предоставляет методы для CRUD операций с бронированиями,
@@ -22,26 +23,9 @@ class BookingRepository:
 
         Args:
             session: Асинхронная сессия SQLAlchemy для работы с БД
+
         """
-        self.session = session
-        self.model = Booking
-
-    async def get(
-        self,
-        booking_id: int,
-    ) -> Booking | None:
-        """Получить бронирование по ID.
-
-        Args:
-            booking_id: ID бронирования
-
-        Returns:
-            Найденное бронирование или None если не найдено
-        """
-        booking = await self.session.execute(
-            select(self.model).where(self.model.id == booking_id)
-        )
-        return booking.scalars().first()
+        super().__init__(session, Booking)
 
     async def is_occupied(
         self,
@@ -60,6 +44,7 @@ class BookingRepository:
 
         Returns:
             True если стол занят, False если свободен
+
         """
         stmt = (
             select(TableSlot)
@@ -101,6 +86,7 @@ class BookingRepository:
 
         Returns:
             True если пользователь занят, False если свободен
+
         """
         stmt = (
             select(Booking.id)
@@ -138,6 +124,7 @@ class BookingRepository:
 
         Returns:
             Список бронирований
+
         """
         query = select(Booking).options(
             selectinload(Booking.table_slots),
@@ -170,6 +157,7 @@ class BookingRepository:
 
         Raises:
             IntegrityError: При нарушении ограничений базы данных
+
         """
         data = obj_in.dict(exclude={'table_slots'})
 
@@ -214,6 +202,7 @@ class BookingRepository:
 
         Raises:
             IntegrityError: При нарушении ограничений базы данных
+
         """
         if data:
             stmt = (

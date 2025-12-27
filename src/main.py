@@ -6,16 +6,16 @@ Main entry point приложения.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.app.api.v1 import health
-from src.app.api.v1.actions import router as actions_router
-from src.app.api.v1.dishes import router as dishes_router
-from src.app.api.v1.media import router as media_router
-from src.app.api.v1.slots import router as slots_router
-from src.app.api.v1.users import router as users_router
-from src.app.core.config import settings
-from src.app.core.constants import API
-from src.app.core.lifespan import lifespan
-from src.app.core.logging import setup_logging
+from app.api.v1 import health
+from app.api.v1.actions import router as actions_router
+from app.api.v1.dishes import router as dishes_router
+from app.api.v1.media import router as media_router
+from app.api.v1.slots import router as slots_router
+from app.api.v1.users import router as users_router
+from app.core.config import settings
+from app.core.constants import API
+from app.core.lifespan import lifespan
+from app.core.logging import setup_logging
 
 # Инициализировать логирование
 setup_logging()

@@ -69,10 +69,10 @@ except Exception as e:
     print(f'   ❌ ОШИБКА: {type(e).__name__}: {e}')
 
 print('\n[Тест 5] Проверка старого стиля (должен НЕ работать)')
-print('   from src.app.core.config import settings')
+print('   from app.core.config import settings')
 try:
     # Не добавляем src в путь специально
-    from src.app.core.config import settings
+    from app.core.config import settings
 
     print(
         '⚠️  ВНИМАНИЕ: Старый стиль все еще работает!'
@@ -117,7 +117,7 @@ print('=' * 60)
 print("""
 1. Все импорты теперь должны быть вида:
    ✅ from app.core.config import settings
-   ❌ from src.app.core.config import settings
+   ❌ from app.core.config import settings
 
 2. Для запуска приложения из корня:
    python -m uvicorn src.main:app --reload

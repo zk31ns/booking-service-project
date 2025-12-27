@@ -11,10 +11,18 @@ from src.app.models import Booking, Slot, TableSlot, User
 
 
 class BookingRepository:
-    """CRUD для бронирования столиков в кафе."""
+    """Репозиторий для работы с бронированиями столиков в кафе.
+
+    Предоставляет методы для CRUD операций с бронированиями,
+    проверки доступности столов и занятости пользователей.
+    """
 
     def __init__(self, session: AsyncSession) -> None:
-        """Инициализирует репозиторий."""
+        """Инициализирует репозиторий.
+
+        Args:
+            session: Асинхронная сессия SQLAlchemy для работы с БД
+        """
         self.session = session
         self.model = Booking
 
@@ -22,7 +30,14 @@ class BookingRepository:
         self,
         booking_id: int,
     ) -> Booking | None:
-        """Получить бронь."""
+        """Получить бронирование по ID.
+
+        Args:
+            booking_id: ID бронирования
+
+        Returns:
+            Найденное бронирование или None если не найдено
+        """
         booking = await self.session.execute(
             select(self.model).where(self.model.id == booking_id)
         )
@@ -35,7 +50,17 @@ class BookingRepository:
         date: date,
         exclude_booking_id: Optional[int] = None,
     ) -> bool:
-        """Проверить, свободен ли стол в слот на эту дату."""
+        """Проверить занят ли стол в указанный слот на дату.
+
+        Args:
+            table_id: ID стола
+            slot_id: ID временного слота
+            date: Дата бронирования
+            exclude_booking_id: ID бронирования для исключения из проверки
+
+        Returns:
+            True если стол занят, False если свободен
+        """
         stmt = (
             select(TableSlot)
             .join(self.model)
@@ -65,7 +90,18 @@ class BookingRepository:
         booking_date: date,
         exclude_booking_id: Optional[int] = None,
     ) -> bool:
-        """Проверить свободен ли пользователь в это время."""
+        """Проверить занят ли пользователь в указанный временной интервал.
+
+        Args:
+            user_id: ID пользователя
+            start_time: Время начала проверяемого интервала
+            end_time: Время окончания проверяемого интервала
+            booking_date: Дата бронирования
+            exclude_booking_id: ID бронирования для исключения из проверки
+
+        Returns:
+            True если пользователь занят, False если свободен
+        """
         stmt = (
             select(Booking.id)
             .join(TableSlot, Booking.id == TableSlot.booking_id)
@@ -94,7 +130,15 @@ class BookingRepository:
         user_id: Optional[int] = None,
         cafe_id: Optional[int] = None,
     ) -> List[Booking]:
-        """Получение всех бронирований с фильтрацией."""
+        """Получить список бронирований с фильтрацией.
+
+        Args:
+            user_id: ID пользователя для фильтрации
+            cafe_id: ID кафе для фильтрации
+
+        Returns:
+            Список бронирований
+        """
         query = select(Booking).options(
             selectinload(Booking.table_slots),
             selectinload(Booking.cafe),
@@ -115,7 +159,18 @@ class BookingRepository:
         obj_in: BookingCreate,
         user: Optional[User] = None
     ) -> Booking:
-        """Создание нового бронирования."""
+        """Создать новое бронирование.
+
+        Args:
+            obj_in: Данные для создания бронирования
+            user: Пользователь, создающий бронирование
+
+        Returns:
+            Созданное бронирование
+
+        Raises:
+            IntegrityError: При нарушении ограничений базы данных
+        """
         data = obj_in.dict(exclude={'table_slots'})
 
         if user is not None:
@@ -143,12 +198,22 @@ class BookingRepository:
         update_booking: BookingUpdate,
         data: dict[str, Union[int, str, date, bool]],
     ) -> Booking:
-        """Обновить бронь.
+        """Обновить существующее бронирование.
 
-        update_booking: Схема с данными от пользователя
-        (все поля, включая None)
-        data: Уже валидированные и обработанные данные для простого UPDATE
-               (исключает table_slots и поля со значением None)
+        Обрабатывает обновление простых полей через UPDATE запрос
+        и связей table_slots через ORM отношения.
+
+        Args:
+            booking: Обновляемое бронирование
+            update_booking: Схема с данными от пользователя (все поля)
+            data: Валидированные данные для простого UPDATE
+                  (исключает table_slots и поля со значением None)
+
+        Returns:
+            Обновленное бронирование
+
+        Raises:
+            IntegrityError: При нарушении ограничений базы данных
         """
         if data:
             stmt = (

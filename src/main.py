@@ -48,6 +48,22 @@ app.add_middleware(
 )
 
 
+# ========== Root Route ==========
+@app.get('/', tags=['root'])
+async def read_root() -> dict[str, str]:
+    """Корневой endpoint приложения.
+
+    Возвращает приветствие и информацию о приложении.
+    """
+    return {
+        'message': 'Добро пожаловать в API бронирования мест в кафе!',
+        'version': settings.app_version,
+        'title': settings.app_title,
+        'docs': '/docs',
+        'redoc': '/redoc',
+    }
+
+
 # ========== Routers ==========
 # Health check
 app.include_router(health.router, prefix=API.V1_PREFIX, tags=API.HEALTH)
@@ -75,4 +91,4 @@ app.include_router(booking_router, prefix=API.V1_PREFIX, tags=API.BOOKING)
 
 # TODO: Tables router (Павел)
 # app.include_router(tables_router, prefix=API.V1_PREFIX, tags=API.TABLES)
-# ============================
+# ===========================

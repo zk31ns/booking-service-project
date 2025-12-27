@@ -90,7 +90,7 @@ async def get_media_info(
         logger.warning(f'Медиа не найдено: id={media_id}')
         raise NotFoundException(
             ErrorCode.MEDIA_NOT_FOUND,
-            detail=Messages.errors[ErrorCode.MEDIA_NOT_FOUND]
+            detail=Messages.errors[ErrorCode.MEDIA_NOT_FOUND],
         )
 
     logger.info(f'Информация о медиа получена: id={media_id}')
@@ -125,7 +125,7 @@ async def download_media(
         logger.warning(f'Медиа для скачивания не найдено: id={media_id}')
         raise NotFoundException(
             ErrorCode.MEDIA_NOT_FOUND,
-            detail=Messages.errors[ErrorCode.MEDIA_NOT_FOUND]
+            detail=Messages.errors[ErrorCode.MEDIA_NOT_FOUND],
         )
 
     file_path = FsPath(media.file_path)
@@ -136,7 +136,7 @@ async def download_media(
         )
         raise NotFoundException(
             ErrorCode.MEDIA_NOT_FOUND,
-            detail=Messages.errors[ErrorCode.MEDIA_NOT_FOUND]
+            detail=Messages.errors[ErrorCode.MEDIA_NOT_FOUND],
         )
 
     logger.info(
@@ -176,7 +176,7 @@ async def delete_media(
         logger.warning(f'Медиа для удаления не найдено: id={media_id}')
         raise NotFoundException(
             ErrorCode.MEDIA_NOT_FOUND,
-            detail=Messages.errors[ErrorCode.MEDIA_NOT_FOUND]
+            detail=Messages.errors[ErrorCode.MEDIA_NOT_FOUND],
         )
 
     media.active = False

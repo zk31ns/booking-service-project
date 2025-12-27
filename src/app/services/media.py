@@ -42,7 +42,7 @@ class MediaService:
             )
             raise ValidationException(
                 ErrorCode.INVALID_FILE_TYPE,
-                detail=Messages.errors[ErrorCode.INVALID_FILE_TYPE]
+                detail=Messages.errors[ErrorCode.INVALID_FILE_TYPE],
             )
 
         file_size_mb = len(file_bytes) / (1024 * 1024)
@@ -54,7 +54,7 @@ class MediaService:
             )
             raise ValidationException(
                 ErrorCode.FILE_TOO_LARGE,
-                detail=Messages.errors[ErrorCode.FILE_TOO_LARGE]
+                detail=Messages.errors[ErrorCode.FILE_TOO_LARGE],
             )
         logger.info(
             f'Начало обработки изображения: размер={file_size_mb:.2f}MB'
@@ -190,7 +190,7 @@ class MediaService:
             logger.error(f'Ошибка открытия изображения: {str(e)}')
             raise ValidationException(
                 ErrorCode.INVALID_FILE_TYPE,
-                detail=Messages.errors[ErrorCode.INVALID_FILE_TYPE]
+                detail=Messages.errors[ErrorCode.INVALID_FILE_TYPE],
             )
 
         cls._validate_image_dimensions(image)

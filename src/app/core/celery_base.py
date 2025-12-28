@@ -6,7 +6,7 @@ import aiohttp
 from celery import Task
 from celery.app.trace import ExceptionInfo
 
-from app.core.constants import EventType
+from app.core.constants import EventType, Limits, Times
 from app.core.logging import logger
 
 
@@ -14,8 +14,8 @@ class BaseTask(Task):
     """Базовый класс для логирования ошибок в задачах Celery."""
 
     autoretry_for: Tuple[Type[Exception], ...] = (aiohttp.ClientError,)
-    max_retries: int = 3
-    default_retry_delay: int = 60
+    max_retries: int = Limits.TASK_MAX_RETRIES
+    default_retry_delay: int = Times.CELERY_TASK_RETRY_DELAY
     acks_late: bool = True
 
     def on_failure(

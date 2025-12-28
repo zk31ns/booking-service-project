@@ -31,6 +31,7 @@ class API:
     V1_PREFIX = '/api/v1'
 
     # Таги для OpenAPI документации
+    ROOT = ['greeting']
     HEALTH = ['health']
     USERS = ['users']
     AUTH = ['auth']
@@ -115,6 +116,8 @@ class Limits:
     # Минимальная длина строки поиска
     MIN_SEARCH_QUERY_LENGTH = 2
 
+    # Celery
+    TASK_MAX_RETRIES = 3
 
 # ========== Времена (в минутах/днях) ==========
 
@@ -133,10 +136,13 @@ class Times:
     BOOKING_REMINDER_MINUTES = 60  # Напомнить за 1 час до бронирования
     MIN_BOOKING_ADVANCE_MINUTES = 30  # Минимум за 30 минут до слота
     MAX_BOOKING_DAYS_AHEAD = 90  # Максимум на 90 дней вперёд
-    CLEANUP_EXPIRED_BOOKINGS_START = 22  # время запуска задачи в часах
+    CLEANUP_EXPIRED_BOOKINGS_START_HOUR = 22  # время запуска задачи (часы)
+    CLEANUP_EXPIRED_BOOKINGS_START_MINUTES = 0  # время запуска задачи (минуты)
 
     # Celery задачи
+    CELERY_TASK_RETRY_DELAY = 60  # 1 vbyenf
     CELERY_TASK_TIMEOUT = 300  # 5 минут
+    CELERY_BEAT_EXPIRED = 3600  # 1 час
 
     # Время хранения кэща Redis
     REDIS_CACHE_EXPIRE_TIME = 300
@@ -144,8 +150,9 @@ class Times:
     # Время хранения результатов в RabbitMQ
     RABBITMQ_RESULT_EXPIRE = 86400
 
-    # Telegram request timeout
+    # Telegram request and connection (in seconds)
     TELEGRAM_REQUEST_TIMEOUT = 30
+    TELEGRAM_CONNECT_TIMEOUT = 10
 
 
 # ========== Enum классы ==========
@@ -291,6 +298,7 @@ class ErrorCode(str, Enum):
     # General
     VALIDATION_ERROR = 'validation_error'
     INTERNAL_SERVER_ERROR = 'internal_server_error'
+    BAD_GATEWAY = 'bad_gateway'
 
 
 class EventType(str, Enum):
@@ -318,6 +326,9 @@ class EventType(str, Enum):
     # Media
     FILE_UPLOADED = 'file_uploaded'
     FILE_DELETED = 'file_deleted'
+
+    # Root
+    GREETING_SENT = 'greeting_sent'
 
     # Celery tasks
     TASK_STARTED = 'task_started'
@@ -396,6 +407,7 @@ class Messages:
         ErrorCode.TOKEN_REFRESH_FAILED: 'Ошибка обновления токена',
         ErrorCode.AUTHENTICATION_REQUIRED: 'Требуется аутентификация',
         ErrorCode.SERVICE_UNAVAILABLE: 'Сервис временно недоступен',
+        ErrorCode.BAD_GATEWAY: 'Некорректный ответ сервера',
         ErrorCode.INVALID_REFRESH_TOKEN: 'Неверный или истёкший refresh токен',
         ErrorCode.PASSWORD_SAME_AS_OLD: (
             'Новый пароль должен отличаться от старого'
@@ -418,6 +430,7 @@ class Messages:
         'booking_cancelled': 'Бронь отменена',
         'file_uploaded': 'Файл успешно загружен',
         'file_deleted': 'Файл удалён',
+        'greeting_sent': 'Сервис активен и приветствует вас!',
     }
 
     @classmethod
@@ -443,7 +456,8 @@ class CeleryTasks:
     CLEANUP_EXPIRED_BOOKINGS = (
         'src.app.core.celery_tasks.cleanup_expired_bookings'
     )
-
+    BOOKING_REMINDER_TASK_NAME = 'send_booking_reminder'
+    NOTIFY_MANAGER_TASK_NAME = 'send_notify_manager'
 
 # ========== Регулярные выражения ==========
 

@@ -302,3 +302,36 @@ class ServiceUnavailableException(AppException):
             headers=headers,
             extra=extra,
         )
+
+
+class TelegramApiException(AppException):
+    """Исключение 'Ошибка API Telegram'.
+
+    Используется при неожиданном ответе API Telegram.
+    Статус код: 502 Bad Gateway.
+
+    """
+
+    def __init__(
+        self,
+        error_code: ErrorCode = ErrorCode.BAD_GATEWAY,
+        detail: Optional[str] = None,
+        headers: Optional[Dict[str, str]] = None,
+        extra: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Инициализирует исключение 'Сервис недоступен'.
+
+        Args:
+            error_code: Код ошибки (по умолчанию SERVICE_UNAVAILABLE).
+            detail: Сообщение об ошибке.
+            headers: HTTP заголовки.
+            extra: Дополнительные данные.
+
+        """
+        super().__init__(
+            error_code=error_code,
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=detail,
+            headers=headers,
+            extra=extra,
+        )

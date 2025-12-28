@@ -12,7 +12,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1 import health
 from app.api.v1.actions import router as actions_router
 from app.api.v1.booking import router as booking_router
 from app.api.v1.cafes import router as cafes_router
@@ -25,6 +24,8 @@ from app.core.config import settings
 from app.core.constants import API
 from app.core.lifespan import lifespan
 from app.core.logging import setup_logging
+
+from src.app.api.v1 import root
 
 # Инициализировать логирование
 setup_logging()
@@ -68,7 +69,7 @@ async def read_root() -> dict[str, str]:
 
 # ========== Routers ==========
 # Health check
-app.include_router(health.router, prefix=API.V1_PREFIX, tags=API.HEALTH)
+app.include_router(root.router, prefix=API.V1_PREFIX, tags=API.HEALTH)
 
 # Users and Authentication
 app.include_router(users_router, prefix=API.V1_PREFIX)

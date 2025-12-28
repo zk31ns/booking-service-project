@@ -3,12 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from app.api.v1.dishes.constants import (
-    DISH_DESCRIPTION_MAX_LENGTH,
-    DISH_NAME_MAX_LENGTH,
-    DISH_NAME_MIN_LENGTH,
-    DISH_PRICE_MIN,
-)
+from app.core.constants import Limits
 
 
 class DishBase(BaseModel):
@@ -16,13 +11,13 @@ class DishBase(BaseModel):
 
     name: str = Field(
         ...,
-        min_length=DISH_NAME_MIN_LENGTH,
-        max_length=DISH_NAME_MAX_LENGTH,
+        min_length=Limits.DISH_NAME_MIN_LENGTH,
+        max_length=Limits.DISH_NAME_MAX_LENGTH,
     )
     description: Optional[str] = Field(
-        None, max_length=DISH_DESCRIPTION_MAX_LENGTH
+        None, max_length=Limits.DISH_DESCRIPTION_MAX_LENGTH
     )
-    price: Decimal = Field(..., gt=DISH_PRICE_MIN)
+    price: Decimal = Field(..., gt=Limits.DISH_PRICE_MIN)
     photo_id: Optional[str] = Field(None)
 
 
@@ -37,13 +32,13 @@ class DishUpdate(BaseModel):
 
     name: Optional[str] = Field(
         None,
-        min_length=DISH_NAME_MIN_LENGTH,
-        max_length=DISH_NAME_MAX_LENGTH,
+        min_length=Limits.DISH_NAME_MIN_LENGTH,
+        max_length=Limits.DISH_NAME_MAX_LENGTH,
     )
     description: Optional[str] = Field(
-        None, max_length=DISH_DESCRIPTION_MAX_LENGTH
+        None, max_length=Limits.DISH_DESCRIPTION_MAX_LENGTH
     )
-    price: Optional[Decimal] = Field(None, gt=DISH_PRICE_MIN)
+    price: Optional[Decimal] = Field(None, gt=Limits.DISH_PRICE_MIN)
     photo_id: Optional[str] = Field(None)
 
 

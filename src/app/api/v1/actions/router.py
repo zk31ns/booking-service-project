@@ -3,13 +3,13 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.actions.constants import DEFAULT_LIMIT, DEFAULT_SKIP
 from app.api.v1.actions.schemas import (
     ActionCreate,
     ActionInfo,
     ActionUpdate,
 )
 from app.api.v1.actions.service import ActionService
+from app.core.constants import Limits
 from app.db import get_session
 
 router = APIRouter(prefix='/actions', tags=['actions'])
@@ -24,8 +24,8 @@ async def get_action_service(
 
 @router.get('/', response_model=list[ActionInfo])
 async def get_actions(
-    skip: int = DEFAULT_SKIP,
-    limit: int = DEFAULT_LIMIT,
+    skip: int = Limits.DEFAULT_SKIP,
+    limit: int = Limits.DEFAULT_LIMIT,
     service: Annotated[ActionService, Depends(get_action_service)] = None,
 ) -> list[ActionInfo]:
     """Получить список всех акций."""

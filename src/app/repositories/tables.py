@@ -3,10 +3,10 @@ from typing import List, Optional
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.app.core.constants import Limits
-from src.app.models.tables import Table
-from src.app.repositories.base import BaseCRUD
-from src.app.schemas.tables import TableCreate, TableUpdate
+from app.core.constants import Limits
+from app.models.tables import Table
+from app.repositories.base import BaseCRUD
+from app.schemas.tables import TableCreate, TableUpdate
 
 
 class TableRepository(BaseCRUD[Table]):

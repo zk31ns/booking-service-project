@@ -2,11 +2,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from app.api.v1.actions.constants import (
-    ACTION_DESCRIPTION_MAX_LENGTH,
-    ACTION_NAME_MAX_LENGTH,
-    ACTION_NAME_MIN_LENGTH,
-)
+from app.core.constants import Limits
 
 
 class ActionBase(BaseModel):
@@ -14,11 +10,11 @@ class ActionBase(BaseModel):
 
     name: str = Field(
         ...,
-        min_length=ACTION_NAME_MIN_LENGTH,
-        max_length=ACTION_NAME_MAX_LENGTH,
+        min_length=Limits.ACTION_NAME_MIN_LENGTH,
+        max_length=Limits.ACTION_NAME_MAX_LENGTH,
     )
     description: Optional[str] = Field(
-        None, max_length=ACTION_DESCRIPTION_MAX_LENGTH
+        None, max_length=Limits.ACTION_DESCRIPTION_MAX_LENGTH
     )
     photo_id: Optional[str] = Field(None)
 
@@ -34,11 +30,11 @@ class ActionUpdate(BaseModel):
 
     name: Optional[str] = Field(
         None,
-        min_length=ACTION_NAME_MIN_LENGTH,
-        max_length=ACTION_NAME_MAX_LENGTH,
+        min_length=Limits.ACTION_NAME_MIN_LENGTH,
+        max_length=Limits.ACTION_NAME_MAX_LENGTH,
     )
     description: Optional[str] = Field(
-        None, max_length=ACTION_DESCRIPTION_MAX_LENGTH
+        None, max_length=Limits.ACTION_DESCRIPTION_MAX_LENGTH
     )
     photo_id: Optional[str] = Field(None)
 

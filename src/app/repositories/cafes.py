@@ -4,10 +4,10 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.app.core.constants import Limits
-from src.app.models.cafes import Cafe
-from src.app.repositories.base import BaseCRUD
-from src.app.schemas.cafes import CafeCreate, CafeUpdate
+from app.core.constants import Limits
+from app.models.cafes import Cafe
+from app.repositories.base import BaseCRUD
+from app.schemas.cafes import CafeCreate, CafeUpdate
 
 
 class CafeRepository(BaseCRUD[Cafe]):

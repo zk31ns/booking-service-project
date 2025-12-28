@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.app.core.constants import Limits
+from app.core.constants import Limits
 
 
 class TableBase(BaseModel):
@@ -45,7 +45,7 @@ class TableUpdate(BaseModel):
 class TableInDBBase(TableBase):
     """Базовая схема столика в БД."""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra='ignore')
 
     id: int
     cafe_id: int

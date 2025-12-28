@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.app.core.constants import Limits
+from app.core.constants import Limits
 
 
 class CafeBase(BaseModel):
@@ -67,7 +67,7 @@ class CafeUpdate(BaseModel):
 class CafeInDBBase(CafeBase):
     """Базовая схема кафе в БД."""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, extra='ignore')
     id: int
     photo_id: Optional[UUID] = None
     active: bool

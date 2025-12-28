@@ -2,13 +2,13 @@ from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.actions.constants import DEFAULT_LIMIT, DEFAULT_SKIP
 from app.api.v1.actions.repository import ActionRepository
 from app.api.v1.actions.schemas import (
     ActionCreate,
     ActionInfo,
     ActionUpdate,
 )
+from app.core.constants import Limits
 
 
 class ActionService:
@@ -19,7 +19,9 @@ class ActionService:
         self.repository = ActionRepository(session)
 
     async def get_all_actions(
-        self, skip: int = DEFAULT_SKIP, limit: int = DEFAULT_LIMIT
+        self,
+        skip: int = Limits.DEFAULT_SKIP,
+        limit: int = Limits.DEFAULT_LIMIT,
     ) -> list[ActionInfo]:
         """Получить все акции."""
         actions = await self.repository.get_all(skip, limit)

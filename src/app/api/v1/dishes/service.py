@@ -2,9 +2,9 @@ from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.dishes.constants import DEFAULT_LIMIT, DEFAULT_SKIP
 from app.api.v1.dishes.repository import DishRepository
 from app.api.v1.dishes.schemas import DishCreate, DishInfo, DishUpdate
+from app.core.constants import Limits
 
 
 class DishService:
@@ -15,7 +15,9 @@ class DishService:
         self.repository = DishRepository(session)
 
     async def get_all_dishes(
-        self, skip: int = DEFAULT_SKIP, limit: int = DEFAULT_LIMIT
+        self,
+        skip: int = Limits.DEFAULT_SKIP,
+        limit: int = Limits.DEFAULT_LIMIT,
     ) -> list[DishInfo]:
         """Получить все блюда."""
         dishes = await self.repository.get_all(skip, limit)

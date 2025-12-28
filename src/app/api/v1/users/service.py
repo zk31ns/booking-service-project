@@ -31,14 +31,9 @@ from app.models.models import User
 class UserService:
     """Сервис для работы с пользователями."""
 
-    def __init__(self, repository: UserRepository) -> None:
-        """Инициализирует сервис с репозиторием.
-
-        Args:
-            repository: Репозиторий пользователей
-
-        """
-        self.repository = repository
+    def __init__(self) -> None:
+        """Инициализирует сервис."""
+        self.repository_class = UserRepository
 
     async def get_user_by_id(
         self,
@@ -58,7 +53,8 @@ class UserService:
             UserInfo: Информация о пользователе
 
         """
-        user = await self.repository.get(session, user_id, active_only=True)
+        repository = self.repository_class(session)
+        user = await repository.get_user(user_id, active_only=True)
         if not user:
             raise NotFoundException(
                 ErrorCode.USER_NOT_FOUND, extra={'user_id': user_id}
@@ -95,8 +91,8 @@ class UserService:
         if not self._is_superuser_or_none(current_user):
             raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
 
-        users = await self.repository.get_multi(
-            session,
+        repository = self.repository_class(session)
+        users = await repository.get_multi(
             skip=skip,
             limit=limit,
             active_only=active_only,
@@ -123,8 +119,9 @@ class UserService:
             UserInfo: Созданный пользователь
 
         """
-        if await self.repository.get_by_username(
-            session,
+        repository = self.repository_class(session)
+
+        if await repository.get_by_username(
             user_create.username,
             active_only=False,
         ):
@@ -133,8 +130,7 @@ class UserService:
                 extra={'username': user_create.username},
             )
 
-        if user_create.email and await self.repository.get_by_email(
-            session,
+        if user_create.email and await repository.get_by_email(
             user_create.email,
             active_only=False,
         ):
@@ -143,8 +139,7 @@ class UserService:
                 extra={'email': user_create.email},
             )
 
-        if user_create.phone and await self.repository.get_by_phone(
-            session,
+        if user_create.phone and await repository.get_by_phone(
             user_create.phone,
             active_only=False,
         ):
@@ -155,7 +150,7 @@ class UserService:
 
         try:
             user_data = user_create.model_dump()
-            user = await self.repository.create(session, user_data)
+            user = await repository.create_user(user_data)
             return UserInfo.from_orm(user)
         except Exception as e:
             raise InternalServerException(
@@ -170,59 +165,37 @@ class UserService:
         user_update: UserUpdate,
         current_user: Optional[User] = None,
     ) -> UserInfo:
-        """Обновляет информацию о пользователе.
-
-        from sqlalchemy.exc import IntegrityError
-        try:
-            user_data = user_create.model_dump()
-            user = await self.repository.create(session, user_data)
-            await session.commit()
-            return UserInfo.from_orm(user)
-        except IntegrityError as e:
-            await session.rollback()
-            raise ConflictException(
-                ErrorCode.USER_ALREADY_EXISTS,
-                extra={'original_error': str(e)},
-            )
-        except Exception as e:
-            await session.rollback()
-            raise InternalServerException(
-                ErrorCode.INTERNAL_SERVER_ERROR,
-                extra={'original_error': str(e)},
-            )
-        """
+        """Обновляет информацию о пользователе."""
         from sqlalchemy.exc import IntegrityError
 
         try:
-            user = await self.repository.get(
-                session, user_id, active_only=False
-            )
+            repository = self.repository_class(session)
+            user = await repository.get_user(user_id, active_only=False)
             if not user:
                 raise NotFoundException(
                     ErrorCode.USER_NOT_FOUND, extra={'user_id': user_id}
                 )
 
             await self._check_user_access(user, current_user, 'обновление')
-            await self._validate_update_uniqueness(session, user, user_update)
+            await self._validate_update_uniqueness(
+                repository, user, user_update
+            )
             update_data = user_update.model_dump(exclude_unset=True)
+
             if 'password' in update_data:
                 if verify_password(
                     update_data['password'], user.password_hash
                 ):
                     raise ValidationException(ErrorCode.PASSWORD_SAME_AS_OLD)
-                updated_user = await self.repository.update(
-                    session, user, update_data
-                )
-            await session.commit()
+
+            updated_user = await repository.update_user(user, update_data)
             return UserInfo.from_orm(updated_user)
         except IntegrityError as e:
-            await session.rollback()
             raise ConflictException(
                 ErrorCode.USER_ALREADY_EXISTS,
                 extra={'original_error': str(e)},
             )
         except Exception as e:
-            await session.rollback()
             raise InternalServerException(
                 ErrorCode.INTERNAL_SERVER_ERROR,
                 extra={'original_error': str(e)},
@@ -248,9 +221,8 @@ class UserService:
         from sqlalchemy.exc import IntegrityError
 
         try:
-            user = await self.repository.get(
-                session, user_id, active_only=False
-            )
+            repository = self.repository_class(session)
+            user = await repository.get_user(user_id, active_only=False)
             if not user:
                 raise NotFoundException(
                     ErrorCode.USER_NOT_FOUND, extra={'user_id': user_id}
@@ -258,17 +230,14 @@ class UserService:
             await self._check_user_access(user, current_user, 'удаление')
             if current_user and user.id == current_user.id:
                 raise ValidationException(ErrorCode.CANNOT_DELETE_OWN_ACCOUNT)
-            deleted_user = await self.repository.delete(session, user_id)
-            await session.commit()
+            deleted_user = await repository.delete_user(user_id)
             return UserInfo.from_orm(deleted_user)
         except IntegrityError as e:
-            await session.rollback()
             raise ConflictException(
                 ErrorCode.USER_ALREADY_EXISTS,
                 extra={'original_error': str(e)},
             )
         except Exception as e:
-            await session.rollback()
             raise InternalServerException(
                 ErrorCode.INTERNAL_SERVER_ERROR,
                 extra={'original_error': str(e)},
@@ -291,7 +260,8 @@ class UserService:
             Dict[str, Any]: Словарь с пользователем и токенами
 
         """
-        user = await self.repository.authenticate(session, login, password)
+        repository = self.repository_class(session)
+        user = await repository.authenticate(login, password)
 
         if not user:
             raise AuthenticationException(ErrorCode.INVALID_CREDENTIALS)
@@ -330,8 +300,8 @@ class UserService:
         if not token_data or not token_data.user_id:
             raise AuthenticationException(ErrorCode.INVALID_REFRESH_TOKEN)
 
-        user = await self.repository.get(
-            session,
+        repository = self.repository_class(session)
+        user = await repository.get_user(
             token_data.user_id,
             active_only=True,
         )
@@ -369,7 +339,8 @@ class UserService:
             UserInfo: Пользователь с обновлённым паролем
 
         """
-        user = await self.repository.get(session, user_id, active_only=True)
+        repository = self.repository_class(session)
+        user = await repository.get_user(user_id, active_only=True)
         if not user:
             raise NotFoundException(
                 ErrorCode.USER_NOT_FOUND, extra={'user_id': user_id}
@@ -383,8 +354,7 @@ class UserService:
         if verify_password(new_password, user.password_hash):
             raise ValidationException(ErrorCode.PASSWORD_SAME_AS_OLD)
 
-        updated_user = await self.repository.update_password(
-            session,
+        updated_user = await repository.update_password(
             user,
             new_password,
         )
@@ -415,8 +385,8 @@ class UserService:
         if not self._is_superuser_or_none(current_user):
             raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
 
-        users = await self.repository.search(
-            session,
+        repository = self.repository_class(session)
+        users = await repository.search(
             query,
             skip=skip,
             limit=limit,
@@ -442,7 +412,8 @@ class UserService:
             UserShortInfo: Краткая информация о пользователе или None
 
         """
-        user = await self.repository.get(session, user_id, active_only=True)
+        repository = self.repository_class(session)
+        user = await repository.get_user(user_id, active_only=True)
         if not user:
             return None
 
@@ -492,14 +463,14 @@ class UserService:
 
     async def _validate_update_uniqueness(
         self,
-        session: AsyncSession,
+        repository: UserRepository,
         user: User,
         user_update: UserUpdate,
     ) -> None:
         """Проверяет уникальность обновляемых данных.
 
         Args:
-            session: Асинхронная сессия БД
+            repository: Репозиторий пользователей
             user: Текущий пользователь
             user_update: Данные для обновления
 
@@ -507,8 +478,7 @@ class UserService:
         update_data = user_update.model_dump(exclude_unset=True)
 
         if 'username' in update_data:
-            existing = await self.repository.get_by_username(
-                session,
+            existing = await repository.get_by_username(
                 update_data['username'],
                 active_only=False,
             )
@@ -519,8 +489,7 @@ class UserService:
                 )
 
         if 'email' in update_data and update_data['email']:
-            existing = await self.repository.get_by_email(
-                session,
+            existing = await repository.get_by_email(
                 update_data['email'],
                 active_only=False,
             )
@@ -531,8 +500,7 @@ class UserService:
                 )
 
         if 'phone' in update_data and update_data['phone']:
-            existing = await self.repository.get_by_phone(
-                session,
+            existing = await repository.get_by_phone(
                 update_data['phone'],
                 active_only=False,
             )
@@ -550,4 +518,4 @@ def get_user_service() -> UserService:
         UserService: Экземпляр сервиса пользователей
 
     """
-    return UserService(UserRepository())
+    return UserService()

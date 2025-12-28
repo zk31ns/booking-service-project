@@ -1,54 +1,72 @@
 from typing import List, Optional
 
-from sqlalchemy import and_, select, update
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.tables import Table
-from app.schemas.tables import TableCreate, TableUpdate
+from src.app.core.constants import Limits
+from src.app.models.tables import Table
+from src.app.repositories.base import BaseCRUD
+from src.app.schemas.tables import TableCreate, TableUpdate
 
 
-class TableRepository:
+class TableRepository(BaseCRUD[Table]):
     """Репозиторий для работы со столиками."""
 
     def __init__(
         self,
         session: AsyncSession,
     ) -> None:
-        """Инициализация репозитория столы."""
-        self.session = session
+        """Инициализация репозитория столиков.
+
+        Args:
+            session: Асинхронная сессия SQLAlchemy.
+
+        """
+        super().__init__(session, Table)
 
     async def get_all_for_cafe(
         self,
         cafe_id: int,
-        skip: int = 0,
-        limit: int = 100,
+        skip: int = Limits.DEFAULT_SKIP,
+        limit: int = Limits.DEFAULT_LIMIT,
         active_only: bool = True,
     ) -> List[Table]:
-        """Получить все столики для кафе."""
-        query = select(Table).where(Table.cafe_id == cafe_id)
+        """Получить все столики для кафе.
+
+        Args:
+            cafe_id: Идентификатор кафе.
+            skip: Количество записей для пропуска.
+            limit: Максимальное количество записей.
+            active_only: Флаг для фильтрации только активных столиков.
+
+        Returns:
+            List[Table]: Список столиков кафе.
+
+        """
+        query = select(self.model).where(self.model.cafe_id == cafe_id)
         if active_only:
-            query = query.where(Table.active)
+            query = query.where(self.model.active)
         query = query.offset(skip).limit(limit)
         result = await self.session.execute(query)
         return list(result.scalars().all())
-
-    async def get_by_id(
-        self,
-        table_id: int,
-    ) -> Optional[Table]:
-        """Получить столик по ID."""
-        query = select(Table).where(Table.id == table_id)
-        result = await self.session.execute(query)
-        return result.scalar_one_or_none()
 
     async def get_by_cafe_and_id(
         self,
         cafe_id: int,
         table_id: int,
     ) -> Optional[Table]:
-        """Получить столик по ID кафе и ID столика."""
-        query = select(Table).where(
-            and_(Table.id == table_id, Table.cafe_id == cafe_id),
+        """Получить столик по ID кафе и ID столика.
+
+        Args:
+            cafe_id: Идентификатор кафе.
+            table_id: Идентификатор столика.
+
+        Returns:
+            Optional[Table]: Столик или None, если не найден.
+
+        """
+        query = select(self.model).where(
+            and_(self.model.id == table_id, self.model.cafe_id == cafe_id),
         )
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
@@ -57,9 +75,16 @@ class TableRepository:
         self,
         table_create: TableCreate,
     ) -> Table:
-        """Создать новый столик."""
-        table = Table(**table_create.model_dump())
-        self.session.add(table)
+        """Создать новый столик.
+
+        Args:
+            table_create: Данные для создания столика.
+
+        Returns:
+            Table: Созданный столик.
+
+        """
+        table = await super().create(table_create)
         await self.session.commit()
         await self.session.refresh(table)
         return table
@@ -69,32 +94,44 @@ class TableRepository:
         table_id: int,
         table_update: TableUpdate,
     ) -> Optional[Table]:
-        """Обновить столик."""
-        table = await self.get_by_id(table_id)
+        """Обновить столик.
+
+        Args:
+            table_id: Идентификатор столика.
+            table_update: Данные для обновления столика.
+
+        Returns:
+            Optional[Table]: Обновленный столик или None, если не найден.
+
+        """
+        table = await self.get(table_id)
         if not table:
             return None
 
-        update_data = table_update.model_dump(exclude_unset=True)
-        if update_data:
-            stmt = (
-                update(Table).where(Table.id == table_id).values(**update_data)
-            )
-            await self.session.execute(stmt)
-            await self.session.commit()
-            await self.session.refresh(table)
-        return table
+        updated_table = await super().update(table, table_update)
+        await self.session.commit()
+        await self.session.refresh(updated_table)
+        return updated_table
 
     async def delete(
         self,
         table_id: int,
     ) -> bool:
-        """Логическое удаление столика."""
-        table = await self.get_by_id(table_id)
+        """Удалить столик (логическое удаление).
+
+        Args:
+            table_id: Идентификатор столика.
+
+        Returns:
+            bool: True, если удаление успешно, иначе False.
+
+        """
+        table = await self.get(table_id)
         if not table:
             return False
 
-        stmt = update(Table).where(Table.id == table_id).values(active=False)
-        await self.session.execute(stmt)
+        table.active = False
+        self.session.add(table)
         await self.session.commit()
         return True
 
@@ -102,9 +139,17 @@ class TableRepository:
         self,
         cafe_id: int,
     ) -> int:
-        """Количество столиков в кафе."""
-        query = select(Table).where(
-            and_(Table.cafe_id == cafe_id, Table.active),
+        """Количество столиков в кафе.
+
+        Args:
+            cafe_id: Идентификатор кафе.
+
+        Returns:
+            int: Количество активных столиков в кафе.
+
+        """
+        query = select(self.model).where(
+            and_(self.model.cafe_id == cafe_id, self.model.active),
         )
         result = await self.session.execute(query)
         return len(result.scalars().all())
@@ -113,7 +158,14 @@ class TableRepository:
         self,
         table_id: int,
     ) -> bool:
-        """Проверить существование столика."""
-        query = select(Table.id).where(Table.id == table_id)
-        result = await self.session.execute(query)
-        return result.scalar() is not None
+        """Проверить существование столика.
+
+        Args:
+            table_id: Идентификатор столика.
+
+        Returns:
+            bool: True, если столик существует, иначе False.
+
+        """
+        table = await self.get(table_id)
+        return table is not None

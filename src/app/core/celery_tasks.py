@@ -1,22 +1,41 @@
 """Создание задач Celery."""
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import date, datetime
 from http import HTTPStatus
 from typing import Any, Dict
 
 import aiohttp
 from celery import Task
+from pydantic import BaseModel
 
+from app.api.v1.users.repository import UserRepository
 from app.core.celery_app import celery_app
 from app.core.celery_base import BaseTask
 from app.core.config import settings
-from app.core.constants import EventType, Times
+from app.core.constants import CeleryTasks, ErrorCode, EventType, Times
+from app.core.exceptions import TelegramApiException
 from app.core.logging import logger
+from app.db.session import async_session_maker
+from app.repositories import (
+    BookingRepository,
+    CafeRepository,
+    TableRepository,
+)
+from app.repositories.slot import SlotRepository
+from app.services.booking import BookingService
+
+
+class TelegramAPIResponse(BaseModel):
+    """Схема ответа Telegram Bot API."""
+
+    ok: bool
+    description: str | None = None
+    result: dict | None = None
 
 
 @celery_app.task(
-    name='send_booking_reminder',
+    name=CeleryTasks.BOOKING_REMINDER_TASK_NAME,
     bind=True,
     base=BaseTask,
 )
@@ -25,6 +44,7 @@ def send_booking_reminder(
     booking_id: int,
     telegram_id: str,
     cafe_name: str,
+    cafe_address: str,
     booking_date: datetime,
     start_time: str,
 ) -> None:
@@ -38,13 +58,21 @@ def send_booking_reminder(
         booking_id: ID бронирования
         telegram_id: ID пользователя в Telegram
         cafe_name: название кафе
+        cafe_address: адрес кафе
         booking_date: дата бронирования
         start_time: дата начала слота бронирования
+
+    returns: None
 
     """
     asyncio.run(
         _send_reminder_async(
-            booking_id, telegram_id, cafe_name, booking_date, start_time
+            booking_id,
+            telegram_id,
+            cafe_name,
+            cafe_address,
+            booking_date,
+            start_time
         )
     )
 
@@ -53,6 +81,7 @@ async def _send_reminder_async(
     booking_id: int,
     telegram_id: str,
     cafe_name: str,
+    cafe_address: str,
     booking_date: datetime,
     start_time: str,
 ) -> None:
@@ -62,14 +91,18 @@ async def _send_reminder_async(
         booking_id: ID бронирования
         telegram_id: ID пользователя в Telegram
         cafe_name: название кафе
+        cafe_address: адрес кафе
         booking_date: дата бронирования
         start_time: дата начала слота бронирования
+
+    returns: None
 
     """
     date_formatted = booking_date.strftime('%d.%m.%Y')
     message_text = f"""🔔 <b>Напоминание о бронировании</b>
     📅 <b>Дата:</b> {date_formatted}
     🏠 <b>Заведение:</b> {cafe_name}
+    🗺️ <b>Адрес:</b> {cafe_address}
     ⏰ <b>Время бронирования:</b> {start_time}
     Ждём вас!"""
 
@@ -82,7 +115,7 @@ async def _send_reminder_async(
 
 
 @celery_app.task(
-    name='send_notify_manager',
+    name=CeleryTasks.NOTIFY_MANAGER_TASK_NAME,
     bind=True,
     base=BaseTask,
 )
@@ -115,6 +148,7 @@ def notify_manager(
         end_time: время окончания слота бронирования
         cancellation: признак отмены бронирования
 
+    returns: None
 
     """
     asyncio.run(
@@ -156,6 +190,8 @@ async def _notify_manager_async(
         end_time: время окончания слота бронирования
         cancellation: признак отмены бронирования
 
+    returns: None
+
     """
     message_type = '🔔 <b>Напоминание о новом бронировании</b>'
     if cancellation:
@@ -172,7 +208,7 @@ async def _notify_manager_async(
     await _send_telegram_message(telegram_id=telegram_id, text=message_text)
     logger.info(
         f'SYSTEM: {EventType.REMINDER_SENT} for manager on '
-        f'booking {booking_id} (telegram_id: {telegram_id})'
+        f'booking: {booking_id} telegram_id: {telegram_id}'
     )
 
 
@@ -210,10 +246,22 @@ async def _cleanup_expired_bookings_async() -> Dict[str, Any]:
         dict: Статистика выполнения
 
     """
-    # заготовка функции
-    now = datetime.now(timezone.utc)
-    expired_count = 0
-
+    async with async_session_maker() as session:
+        booking_repo = BookingRepository(session)
+        cafe_repo = CafeRepository(session)
+        user_repo = UserRepository()
+        table_repo = TableRepository(session)
+        slot_repo = SlotRepository(session)
+        booking_service = BookingService(
+            booking_repo=booking_repo,
+            cafe_repo=cafe_repo,
+            user_repo=user_repo,
+            table_repo=table_repo,
+            slot_repo=slot_repo,
+        )
+        now = date.today()
+        expired_count = await booking_service.cleanup_expired_bookings(now=now)
+        await session.commit()
     return {'expired_count': expired_count, 'timestamp': now.isoformat()}
 
 
@@ -227,10 +275,12 @@ async def _send_telegram_message(
         telegram_id: ID пользователя в Telegram
         text: текст сообщения
 
+    returns: None
+
     """
     url = (
-        f'{settings.TELEGRAM_API_URL}/bot'
-        f'{settings.TELEGRAM_BOT_TOKEN}/sendMessage'
+        f'{settings.telegram_api_url}/bot'
+        f'{settings.telegram_bot_token}/sendMessage'
     )
 
     payload = {
@@ -240,25 +290,21 @@ async def _send_telegram_message(
     }
 
     timeout = aiohttp.ClientTimeout(
-        total=Times.TELEGRAM_REQUEST_TIMEOUT, connect=10
+        total=Times.TELEGRAM_REQUEST_TIMEOUT,
+        connect=Times.TELEGRAM_CONNECT_TIMEOUT
     )
 
     async with aiohttp.ClientSession(timeout=timeout) as session:
         async with session.post(url, json=payload) as response:
-            response_data = await response.json()
+            response_json_data = await response.json()
+            response_data = TelegramAPIResponse(**response_json_data)
 
-            if response.status != HTTPStatus.OK or not response_data.get('ok'):
-                error_description = response_data.get(
-                    'description', 'Unknown error'
-                )
+            if response.status != HTTPStatus.OK or not response_data.ok:
+                error_description = response_data.description
                 logger.error(
                     f'Telegram API error: {error_description} '
-                    f'(status: {response.status})'
+                    f'status: {response.status}'
                 )
-                raise aiohttp.ClientResponseError(
-                    request_info=response.request_info,
-                    history=response.history,
-                    status=response.status,
-                    message=f'Telegram API error: {error_description}',
-                    headers=response.headers,
+                raise TelegramApiException(
+                    detail=ErrorCode.BAD_GATEWAY,
                 )

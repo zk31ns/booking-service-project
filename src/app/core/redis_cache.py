@@ -46,34 +46,31 @@ class RedisCache:
     def _serialize_value(cls, value: Any) -> str:
         """Сериализация значения в JSON.
 
-        Поддерживает:
-        - Pydantic модели
-        - SQLAlchemy модели
-        - Списки моделей
-        - Dict и базовые типы
+        Args:
+            value: набор данных для сериализации
+            Может принимать списки, списки моделей Pydantic,
+            списки моделей SQLAlchemy, одиночные модели Pydantic,
+            одиночные модели SQLAlchemy
+
+        Returns:
+            Сериализованные данные
+
         """
-        # Списки:
         if isinstance(value, list):
             if len(value) == 0:
                 return json.dumps([])
             first_item = value[0]
-            # Список моделей Pydantic
             if isinstance(first_item, BaseModel):
                 return json.dumps([item.model_dump() for item in value])
-            # Список моделей SQLAlchemy
             if isinstance(first_item.__class__, DeclarativeMeta):
                 return json.dumps([
                     cls._sqlalchemy_to_dict(item) for item in value
                 ])
-            # Простой список
             return json.dumps(value)
-        # Одиночная модель Pydantic
         if isinstance(value, BaseModel):
             return json.dumps(value.model_dump())
-        # Одиночная модель SQLAlchemy
         if isinstance(value.__class__, DeclarativeMeta):
             return json.dumps(cls._sqlalchemy_to_dict(value))
-        # Обычные типы данных
         return json.dumps(value)
 
     @staticmethod
@@ -90,7 +87,6 @@ class RedisCache:
         result = {}
         for column in obj.__table__.columns:
             value = getattr(obj, column.name)
-            # сериализация объектов даты и времени
             if hasattr(value, 'isoformat'):
                 result[column.name] = value.isoformat()
             else:
@@ -107,6 +103,9 @@ class RedisCache:
             key: ключ для хранения
             value: данные для кэширования
             expire: время жизни в секундах
+
+        Returns:
+            None
 
         """
         if not cls.redis:

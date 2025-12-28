@@ -6,7 +6,6 @@ from app.api.v1.booking.schemas import (
     BookingUpdate,
     TableSlotSchema,
 )
-from app.api.v1.slots.repository import SlotRepository
 from app.api.v1.users.repository import UserRepository
 from app.core.constants import (
     BookingRules,
@@ -26,6 +25,7 @@ from app.repositories import (
     CafeRepository,
     TableRepository,
 )
+from app.repositories.slot import SlotRepository
 
 
 class BookingService:

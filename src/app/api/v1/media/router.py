@@ -7,13 +7,13 @@ from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.media.schemas import MediaInfo, MediaResponse
 from app.api.v1.users.dependencies import get_current_user
-from app.core.constants import ErrorCode
+from app.core.constants import ErrorCode, Messages
 from app.core.exceptions import AuthorizationException, NotFoundException
 from app.db.session import get_session
 from app.models import User
 from app.models.media import Media
+from app.schemas.media import MediaInfo, MediaResponse
 from app.services.media import MediaService
 
 router = APIRouter(prefix='/media')
@@ -29,7 +29,17 @@ async def upload_media(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> MediaResponse:
-    """Загрузить медиа-файл."""
+    """Загрузить медиа-файл.
+
+    Args:
+        file: Загружаемый файл.
+        session: Асинхронная сессия БД.
+        current_user: Текущий авторизованный пользователь.
+
+    Returns:
+        MediaResponse: Информация о загруженном медиа.
+
+    """
     if not current_user.is_superuser:
         raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
 
@@ -57,7 +67,19 @@ async def get_media_info(
     media_id: UUID,
     session: AsyncSession = Depends(get_session),
 ) -> MediaInfo:
-    """Получить информацию о медиа-файле."""
+    """Получить информацию о медиа-файле.
+
+    Args:
+        media_id: Уникальный идентификатор медиа.
+        session: Асинхронная сессия БД.
+
+    Returns:
+        MediaInfo: Информация о медиа-файле.
+
+    Raises:
+        NotFoundException: Если медиа не найдено.
+
+    """
     logger.info(f'Запрос информации о медиа: id={media_id}')
     result = await session.execute(
         select(Media).where(Media.id == media_id, Media.active)
@@ -67,7 +89,8 @@ async def get_media_info(
     if not media:
         logger.warning(f'Медиа не найдено: id={media_id}')
         raise NotFoundException(
-            ErrorCode.MEDIA_NOT_FOUND, detail='Изображение не найдено'
+            ErrorCode.MEDIA_NOT_FOUND,
+            detail=Messages.errors[ErrorCode.MEDIA_NOT_FOUND],
         )
 
     logger.info(f'Информация о медиа получена: id={media_id}')
@@ -79,7 +102,19 @@ async def download_media(
     media_id: UUID,
     session: AsyncSession = Depends(get_session),
 ) -> FileResponse:
-    """Скачать медиа-файл."""
+    """Скачать медиа-файл.
+
+    Args:
+        media_id: Уникальный идентификатор медиа.
+        session: Асинхронная сессия БД.
+
+    Returns:
+        FileResponse: Медиа-файл для скачивания.
+
+    Raises:
+        NotFoundException: Если медиа или файл на диске не найдены.
+
+    """
     logger.info(f'Запрос на скачивание медиа: id={media_id}')
     result = await session.execute(
         select(Media).where(Media.id == media_id, Media.active)
@@ -89,10 +124,10 @@ async def download_media(
     if not media:
         logger.warning(f'Медиа для скачивания не найдено: id={media_id}')
         raise NotFoundException(
-            ErrorCode.MEDIA_NOT_FOUND, detail='Изображение не найдено'
+            ErrorCode.MEDIA_NOT_FOUND,
+            detail=Messages.errors[ErrorCode.MEDIA_NOT_FOUND],
         )
 
-    # Проверка существования файла на диске
     file_path = FsPath(media.file_path)
     if not file_path.exists():
         logger.warning(
@@ -100,7 +135,8 @@ async def download_media(
             f'путь={media.file_path}'
         )
         raise NotFoundException(
-            ErrorCode.MEDIA_NOT_FOUND, detail='Изображение не найдено'
+            ErrorCode.MEDIA_NOT_FOUND,
+            detail=Messages.errors[ErrorCode.MEDIA_NOT_FOUND],
         )
 
     logger.info(
@@ -115,7 +151,18 @@ async def delete_media(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> None:
-    """Удалить медиа-файл."""
+    """Удалить медиа-файл.
+
+    Args:
+        media_id: Уникальный идентификатор медиа.
+        session: Асинхронная сессия БД.
+        current_user: Текущий авторизованный пользователь.
+
+    Raises:
+        AuthorizationException: Если пользователь не суперпользователь.
+        NotFoundException: Если медиа не найдено.
+
+    """
     if not current_user.is_superuser:
         raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
 
@@ -128,7 +175,8 @@ async def delete_media(
     if not media:
         logger.warning(f'Медиа для удаления не найдено: id={media_id}')
         raise NotFoundException(
-            ErrorCode.MEDIA_NOT_FOUND, detail='Изображение не найдено'
+            ErrorCode.MEDIA_NOT_FOUND,
+            detail=Messages.errors[ErrorCode.MEDIA_NOT_FOUND],
         )
 
     media.active = False

@@ -5,7 +5,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class MediaResponse(BaseModel):
-    """Ответ при загрузке файла."""
+    """Схема ответа при загрузке файла.
+
+    Содержит информацию о загруженном медиа-файле.
+    """
 
     id: UUID = Field(..., description='Уникальный идентификатор файла')
     file_path: str = Field(..., description='Путь к файлу на сервере')
@@ -26,7 +29,10 @@ class MediaResponse(BaseModel):
 
 
 class MediaInfo(BaseModel):
-    """Информация о файле."""
+    """Схема информации о медиа-файле.
+
+    Используется для получения информации об уже загруженном файле.
+    """
 
     id: UUID = Field(..., description='Уникальный идентификатор файла')
     mime_type: str = Field(..., description='MIME тип файла')

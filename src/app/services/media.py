@@ -8,7 +8,7 @@ from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.constants import ErrorCode, Limits
+from app.core.constants import ErrorCode, Limits, Messages
 from app.core.exceptions import (
     InternalServerException,
     ValidationException,
@@ -25,7 +25,16 @@ class MediaService:
 
     @classmethod
     def _validate_file(cls, file_bytes: bytes, content_type: str) -> None:
-        """Валидация типа и размера файла."""
+        """Валидировать тип и размер файла.
+
+        Args:
+            file_bytes: Содержимое файла в байтах.
+            content_type: MIME-тип файла.
+
+        Raises:
+            ValidationException: Если файл не прошёл валидацию.
+
+        """
         if content_type not in cls.ALLOWED_MIMETYPES:
             logger.error(
                 f'Недопустимый тип файла: получен={content_type}, '
@@ -33,7 +42,7 @@ class MediaService:
             )
             raise ValidationException(
                 ErrorCode.INVALID_FILE_TYPE,
-                detail='Недопустимый тип файла (разрешены JPG, PNG)',
+                detail=Messages.errors[ErrorCode.INVALID_FILE_TYPE],
             )
 
         file_size_mb = len(file_bytes) / (1024 * 1024)
@@ -45,7 +54,7 @@ class MediaService:
             )
             raise ValidationException(
                 ErrorCode.FILE_TOO_LARGE,
-                detail='Файл слишком большой (макс. 5MB)',
+                detail=Messages.errors[ErrorCode.FILE_TOO_LARGE],
             )
         logger.info(
             f'Начало обработки изображения: размер={file_size_mb:.2f}MB'
@@ -53,7 +62,15 @@ class MediaService:
 
     @classmethod
     def _validate_image_dimensions(cls, image: Image.Image) -> None:
-        """Валидация размеров изображения."""
+        """Валидировать размеры изображения.
+
+        Args:
+            image: Объект изображения PIL.
+
+        Raises:
+            ValidationException: Если размеры выходят за границы лимитов.
+
+        """
         if (
             image.width < Limits.MIN_IMAGE_WIDTH
             or image.height < Limits.MIN_IMAGE_HEIGHT
@@ -65,9 +82,7 @@ class MediaService:
             )
             raise ValidationException(
                 ErrorCode.IMAGE_TOO_SMALL,
-                detail=f'Изображение слишком маленькое. '
-                f'Минимальный размер: {Limits.MIN_IMAGE_WIDTH}'
-                f'x{Limits.MIN_IMAGE_HEIGHT}px',
+                detail=Messages.errors[ErrorCode.IMAGE_TOO_SMALL],
             )
 
         if (
@@ -82,9 +97,7 @@ class MediaService:
             )
             raise ValidationException(
                 ErrorCode.IMAGE_TOO_LARGE_DIMENSIONS,
-                detail=f'Изображение слишком большое. '
-                f'Максимальный размер: {Limits.MAX_IMAGE_WIDTH}'
-                f'x{Limits.MAX_IMAGE_HEIGHT}px',
+                detail=Messages.errors[ErrorCode.IMAGE_TOO_LARGE_DIMENSIONS],
             )
         logger.info(
             f'Размеры изображения валидны: {image.width}x{image.height}px'
@@ -94,7 +107,19 @@ class MediaService:
     def _process_and_save_image(
         cls, image: Image.Image, file_id: uuid.UUID
     ) -> tuple[Path, int]:
-        """Обработка и сохранение изображения."""
+        """Обработить и сохранить изображение.
+
+        Args:
+            image: Объект изображения PIL.
+            file_id: Уникальный идентификатор файла.
+
+        Returns:
+            tuple[Path, int]: Путь к сохранённому файлу и его размер в байтах.
+
+        Raises:
+            InternalServerException: При ошибке сохранения или обработки.
+
+        """
         try:
             original_mode = image.mode
 
@@ -138,7 +163,21 @@ class MediaService:
         file_bytes: bytes,
         content_type: str,
     ) -> Media:
-        """Загрузить и сохранить файл."""
+        """Загрузить, обработать и сохранить файл.
+
+        Args:
+            session: Асинхронная сессия БД.
+            file_bytes: Содержимое файла в байтах.
+            content_type: MIME-тип файла.
+
+        Returns:
+            Media: Созданный объект медиа в БД.
+
+        Raises:
+            ValidationException: Если файл не прошёл валидацию.
+            InternalServerException: При ошибке сохранения.
+
+        """
         cls._validate_file(file_bytes, content_type)
 
         try:
@@ -147,7 +186,7 @@ class MediaService:
             logger.error(f'Ошибка открытия изображения: {str(e)}')
             raise ValidationException(
                 ErrorCode.INVALID_FILE_TYPE,
-                detail='Не удалось открыть изображение',
+                detail=Messages.errors[ErrorCode.INVALID_FILE_TYPE],
             )
 
         cls._validate_image_dimensions(image)

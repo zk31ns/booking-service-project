@@ -6,8 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.slots import Slot
 
+from .base import BaseCRUD
 
-class SlotRepository:
+
+class SlotRepository(BaseCRUD[Slot]):
     """Repository для CRUD операций со слотами."""
 
     def __init__(self, session: AsyncSession) -> None:
@@ -17,7 +19,7 @@ class SlotRepository:
             session: Сессия БД.
 
         """
-        self.session = session
+        super().__init__(session, Slot)
 
     async def create(
         self,
@@ -48,27 +50,6 @@ class SlotRepository:
             f'Создан слот id={slot.id} для кафе cafe_id={cafe_id}, '
             f'время: {start_time}-{end_time}'
         )
-        return slot
-
-    async def get_by_id(self, slot_id: int) -> Slot | None:
-        """Получение слота по ID.
-
-        Args:
-            slot_id: Идентификатор слота.
-
-        Returns:
-            Slot | None: Слот или None если не найден.
-
-        """
-        query = select(Slot).where(Slot.id == slot_id)
-        result = await self.session.execute(query)
-        slot = result.scalar_one_or_none()
-
-        if slot:
-            logger.info(f'Получен слот id={slot_id}')
-        else:
-            logger.warning(f'Слот id={slot_id} не найден')
-
         return slot
 
     async def get_all_by_cafe(
@@ -122,7 +103,7 @@ class SlotRepository:
             Slot | None: Обновленный слот или None если слот не найден.
 
         """
-        slot = await self.get_by_id(slot_id)
+        slot = await self.get(slot_id)
         if not slot or slot.cafe_id != cafe_id:
             return None
 
@@ -147,7 +128,7 @@ class SlotRepository:
             bool: True если слот успешно удален, False если не найден.
 
         """
-        slot = await self.get_by_id(slot_id)
+        slot = await self.get(slot_id)
         if not slot or slot.cafe_id != cafe_id:
             return False
 

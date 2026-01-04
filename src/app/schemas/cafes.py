@@ -1,10 +1,10 @@
-from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 from app.core.constants import Limits
+from app.schemas.base import AuditedSchema
 
 
 class CafeBase(BaseModel):
@@ -64,15 +64,29 @@ class CafeUpdate(BaseModel):
     active: Optional[bool] = None
 
 
-class CafeInDBBase(CafeBase):
+class CafeInDBBase(AuditedSchema):
     """Базовая схема кафе в БД."""
 
-    model_config = ConfigDict(from_attributes=True, extra='ignore')
-    id: int
+    name: str = Field(
+        min_length=Limits.MIN_CAFE_NAME_LENGTH,
+        max_length=Limits.MAX_CAFE_NAME_LENGTH,
+        description='Название кафе',
+    )
+    address: str = Field(
+        max_length=Limits.MAX_DESCRIPTION_LENGTH,
+        description='Адрес кафе',
+    )
+    phone: str = Field(
+        min_length=Limits.MIN_PHONE_LENGTH,
+        max_length=Limits.MAX_PHONE_LENGTH,
+        description='Телефон кафе',
+    )
+    description: Optional[str] = Field(
+        default=None,
+        max_length=Limits.MAX_DESCRIPTION_LENGTH,
+        description='Описание кафе',
+    )
     photo_id: Optional[UUID] = None
-    active: bool
-    created_at: datetime
-    updated_at: datetime
 
 
 class Cafe(CafeInDBBase):

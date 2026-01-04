@@ -8,9 +8,10 @@ from app.models.cafes import Cafe
 from app.repositories.cafes import CafeRepository
 from app.repositories.tables import TableRepository
 from app.schemas.cafes import CafeCreate, CafeUpdate
+from app.services.base import EntityValidationMixin
 
 
-class CafeService:
+class CafeService(EntityValidationMixin[Cafe]):
     """Сервис для работы с кафе."""
 
     def __init__(
@@ -66,17 +67,12 @@ class CafeService:
 
         """
         cafe = await self.cafe_repository.get_by_id(cafe_id)
-        if not cafe:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=Messages.errors[ErrorCode.CAFE_NOT_FOUND],
-            )
-        if not cafe.active:
-            raise HTTPException(
-                status_code=status.HTTP_410_GONE,
-                detail=Messages.errors[ErrorCode.CAFE_INACTIVE],
-            )
-        return cafe
+        return await self._validate_exists_and_active(
+            cafe,
+            'Cafe',
+            ErrorCode.CAFE_NOT_FOUND,
+            ErrorCode.CAFE_INACTIVE,
+        )
 
     async def create_cafe(self, cafe_create: CafeCreate) -> Cafe:
         """Создать новое кафе.
@@ -89,17 +85,14 @@ class CafeService:
 
         Raises:
             HTTPException: Если кафе с таким названием уже существует
-            (статус 400).
+            (статус 409).
 
         """
         existing_cafe = await self.cafe_repository.get_by_name(
             cafe_create.name,
         )
         if existing_cafe:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=Messages.errors[ErrorCode.CAFE_ALREADY_EXISTS],
-            )
+            await self._raise_conflict(ErrorCode.CAFE_ALREADY_EXISTS)
         return await self.cafe_repository.create(cafe_create)
 
     async def update_cafe(self, cafe_id: int, cafe_update: CafeUpdate) -> Cafe:

@@ -1,19 +1,18 @@
 import uuid
-from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Index, Integer, String, func
+from sqlalchemy import Index, Integer, String
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base
+from app.db.base import TimestampedModel
 
 if TYPE_CHECKING:
     from app.models.cafes import Cafe
 
 
-class Media(Base):
+class Media(TimestampedModel):
     """Модель для хранения метаданных загруженных файлов."""
 
     __tablename__ = 'media'
@@ -31,19 +30,6 @@ class Media(Base):
         nullable=False,
     )
     file_size: Mapped[int] = mapped_column(Integer, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        default=func.now(),
-        nullable=False,
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        default=func.now(),
-        onupdate=func.now(),
-        nullable=False,
-    )
-    active: Mapped[bool] = mapped_column(
-        default=True,
-        nullable=False,
-    )
 
     cafe_photos: Mapped[list['Cafe']] = relationship(
         'Cafe',

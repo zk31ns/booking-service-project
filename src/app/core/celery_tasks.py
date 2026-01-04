@@ -61,7 +61,8 @@ def send_booking_reminder(
         booking_date: дата бронирования
         start_time: дата начала слота бронирования
 
-    returns: None
+    Returns:
+        None
 
     """
     asyncio.run(
@@ -71,7 +72,7 @@ def send_booking_reminder(
             cafe_name,
             cafe_address,
             booking_date,
-            start_time
+            start_time,
         )
     )
 
@@ -94,7 +95,8 @@ async def _send_reminder_async(
         booking_date: дата бронирования
         start_time: дата начала слота бронирования
 
-    returns: None
+    Returns:
+        None
 
     """
     date_formatted = booking_date.strftime('%d.%m.%Y')
@@ -147,7 +149,8 @@ def notify_manager(
         end_time: время окончания слота бронирования
         cancellation: признак отмены бронирования
 
-    returns: None
+    Returns:
+        None
 
     """
     asyncio.run(
@@ -189,7 +192,8 @@ async def _notify_manager_async(
         end_time: время окончания слота бронирования
         cancellation: признак отмены бронирования
 
-    returns: None
+    Returns:
+        None
 
     """
     message_type = '🔔 <b>Напоминание о новом бронировании</b>'
@@ -254,7 +258,7 @@ async def _cleanup_expired_bookings_async() -> int:
     async with async_session_maker() as session:
         booking_repo = BookingRepository(session)
         cafe_repo = CafeRepository(session)
-        user_repo = UserRepository(session)
+        user_repo = UserRepository()
         table_repo = TableRepository(session)
         slot_repo = SlotRepository(session)
         booking_service = BookingService(
@@ -267,7 +271,7 @@ async def _cleanup_expired_bookings_async() -> int:
         now = date.today()
         expired_count = await booking_service.cleanup_expired_bookings(now=now)
         await session.commit()
-    return expired_count
+    return {'expired_count': expired_count, 'timestamp': now.isoformat()}
 
 
 async def _send_telegram_message(
@@ -280,7 +284,8 @@ async def _send_telegram_message(
         telegram_id: ID пользователя в Telegram
         text: текст сообщения
 
-    Returns: None
+    Returns:
+        None
 
     """
     url = (
@@ -296,7 +301,7 @@ async def _send_telegram_message(
 
     timeout = aiohttp.ClientTimeout(
         total=Times.TELEGRAM_REQUEST_TIMEOUT,
-        connect=Times.TELEGRAM_CONNECT_TIMEOUT
+        connect=Times.TELEGRAM_CONNECT_TIMEOUT,
     )
 
     async with aiohttp.ClientSession(timeout=timeout) as session:

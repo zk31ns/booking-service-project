@@ -266,10 +266,16 @@ class BookingService:
             update_data['note'] = update_booking.note
 
         cafe = await self._validate_cafe(booking.cafe_id)
+<<<<<<< HEAD
         await self._trigger_celery_tasks(booking,
                                          current_user,
                                          cafe,
                                          create=False)
+=======
+        await self._trigger_celery_tasks(
+            booking, current_user, cafe, create=False
+        )
+>>>>>>> a29be83129950b10a2abb3a32d8c1721c6a562b5
 
         return await self.booking_repo.update(
             booking=booking, update_booking=update_booking, data=update_data
@@ -592,30 +598,32 @@ class BookingService:
         """
         first_slot = min(
             booking.table_slots,
-            key=lambda table_slot: table_slot.slot.start_time
+            key=lambda table_slot: table_slot.slot.start_time,
         )
         last_slot = max(
             booking.table_slots,
-            key=lambda table_slot: table_slot.slot.end_time
+            key=lambda table_slot: table_slot.slot.end_time,
         )
         start_time = first_slot.slot.start_time
         end_time = last_slot.slot.end_time
         remind_at = datetime.combine(
-            booking.booking_date,
-            start_time
+            booking.booking_date, start_time
         ) - timedelta(hours=1)
         table = first_slot.table
         table_seats = table.seats
         table_description = table.description or 'Без описания'
         user_task_id = f'{CeleryTasks.BOOKING_REMINDER_TASK_NAME}_{booking.id}'
-        cancellation = (True if booking.status == BookingStatus.CANCELLED
-                        else False)
+        cancellation = (
+            True if booking.status == BookingStatus.CANCELLED else False
+        )
 
         if not create:
             celery_app.control.revoke(user_task_id, terminate=True)
 
-        if (booking.status != BookingStatus.CANCELLED and
-                remind_at > datetime.now()):
+        if (
+            booking.status != BookingStatus.CANCELLED
+            and remind_at > datetime.now()
+        ):
             send_booking_reminder.apply_async(
                 kwargs={
                     'booking_id': booking.id,
@@ -626,7 +634,7 @@ class BookingService:
                     'start_time': start_time.strftime('%H:%M'),
                 },
                 eta=remind_at,
-                task_id=user_task_id
+                task_id=user_task_id,
             )
 
         for manager in cafe.managers:
@@ -644,7 +652,7 @@ class BookingService:
                         'end_time': end_time.strftime('%H:%M'),
                         'cancellation': cancellation,
                     },
-                    task_id=None
+                    task_id=None,
                 )
 
     async def cleanup_expired_bookings(

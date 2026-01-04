@@ -12,6 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.v1 import root
 from app.api.v1.actions import router as actions_router
 from app.api.v1.booking import router as booking_router
 from app.api.v1.cafes import router as cafes_router

@@ -124,6 +124,8 @@ class Settings(BaseSettings):
         env_file = str(env_path / '.env')
         env_file_encoding = 'utf-8'
         case_sensitive = False
+        # Allow extra env vars for Celery and external services.
+        extra = 'allow'
 
     @property
     def celery_broker(self) -> str:

@@ -1,7 +1,7 @@
 from datetime import date, time
 from typing import List, Optional, Union
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -221,3 +221,52 @@ class BookingRepository(BaseCRUD[Booking]):
 
         await self.session.refresh(booking)
         return booking
+
+    async def get_expired_bookings(
+        self,
+        now: date,
+    ) -> int:
+        """Поиск истёкших бронирований.
+
+        Args:
+            now: дата сравнения с датой бронирования
+
+        Returns:
+            Количество найденных записей
+
+        """
+        query = select(func.count(Booking.id)).where(
+            Booking.booking_date < now,
+            Booking.status.in_([
+                BookingStatus.PENDING,
+                BookingStatus.CONFIRMED,
+            ]),
+        )
+        result = await self.session.execute(query)
+        return result.scalar()
+
+    async def cleanup_expired_bookings(
+        self,
+        now: date,
+    ) -> None:
+        """Очистка истёкших бронирований.
+
+        Args:
+            now: дата сравнения с датой бронирования
+
+        Returns:
+            None
+
+        """
+        query = (
+            update(Booking)
+            .where(
+                Booking.booking_date < now,
+                Booking.status.in_([
+                    BookingStatus.PENDING,
+                    BookingStatus.CONFIRMED,
+                ]),
+            )
+            .values(status=BookingStatus.COMPLETED, is_active=False)
+        )
+        await self.session.execute(query)

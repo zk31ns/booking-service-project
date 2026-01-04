@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timedelta
 from typing import Any, List, Optional, Tuple, Union
 
 from app.api.v1.booking.schemas import (
@@ -7,9 +7,12 @@ from app.api.v1.booking.schemas import (
     TableSlotSchema,
 )
 from app.api.v1.users.repository import UserRepository
+from app.core.celery_app import celery_app
+from app.core.celery_tasks import notify_manager, send_booking_reminder
 from app.core.constants import (
     BookingRules,
     BookingStatus,
+    CeleryTasks,
     ErrorCode,
     UserRole,
 )
@@ -100,7 +103,7 @@ class BookingService:
             user=user,
         )
 
-        await self._trigger_celery_tasks(booking, user, cafe)
+        await self._trigger_celery_tasks(booking, user, cafe, create=True)
 
         return booking
 
@@ -261,6 +264,11 @@ class BookingService:
 
         if update_booking.note is not None:
             update_data['note'] = update_booking.note
+
+        cafe = await self._validate_cafe(booking.cafe_id)
+        await self._trigger_celery_tasks(
+            booking, current_user, cafe, create=False
+        )
 
         return await self.booking_repo.update(
             booking=booking, update_booking=update_booking, data=update_data
@@ -570,7 +578,7 @@ class BookingService:
         update_data['is_active'] = requested_active
 
     async def _trigger_celery_tasks(
-        self, booking: Booking, user: User, cafe: Cafe
+        self, booking: Booking, user: User, cafe: Cafe, create: bool = False
     ) -> None:
         """Запустить фоновые Celery задачи.
 
@@ -578,7 +586,82 @@ class BookingService:
             booking: Созданное бронирование
             user: Пользователь, создавший бронирование
             cafe: Кафе, для которого создано бронирование
+            create: признак создания нового бронирования
 
         """
-        # Здесь можно добавить вызов Celery задач
-        pass
+        first_slot = min(
+            booking.table_slots,
+            key=lambda table_slot: table_slot.slot.start_time,
+        )
+        last_slot = max(
+            booking.table_slots,
+            key=lambda table_slot: table_slot.slot.end_time,
+        )
+        start_time = first_slot.slot.start_time
+        end_time = last_slot.slot.end_time
+        remind_at = datetime.combine(
+            booking.booking_date, start_time
+        ) - timedelta(hours=1)
+        table = first_slot.table
+        table_seats = table.seats
+        table_description = table.description or 'Без описания'
+        user_task_id = f'{CeleryTasks.BOOKING_REMINDER_TASK_NAME}_{booking.id}'
+        cancellation = (
+            True if booking.status == BookingStatus.CANCELLED else False
+        )
+
+        if not create:
+            celery_app.control.revoke(user_task_id, terminate=True)
+
+        if (
+            booking.status != BookingStatus.CANCELLED
+            and remind_at > datetime.now()
+        ):
+            send_booking_reminder.apply_async(
+                kwargs={
+                    'booking_id': booking.id,
+                    'telegram_id': user.tg_id,
+                    'cafe_name': cafe.name,
+                    'cafe_address': cafe.address,
+                    'booking_date': booking.booking_date,
+                    'start_time': start_time.strftime('%H:%M'),
+                },
+                eta=remind_at,
+                task_id=user_task_id,
+            )
+
+        for manager in cafe.managers:
+            if manager.tg_id:
+                notify_manager.apply_async(
+                    kwargs={
+                        'booking_id': booking.id,
+                        'telegram_id': manager.tg_id,
+                        'cafe_name': cafe.name,
+                        'user_name': user.username,
+                        'table_seats': table_seats,
+                        'table_description': table_description,
+                        'booking_date': booking.booking_date,
+                        'start_time': start_time.strftime('%H:%M'),
+                        'end_time': end_time.strftime('%H:%M'),
+                        'cancellation': cancellation,
+                    },
+                    task_id=None,
+                )
+
+    async def cleanup_expired_bookings(
+        self,
+        now: date,
+    ) -> int:
+        """Очистка истёкших бронирований.
+
+        Args:
+            now: дата сравнения с датой бронирования
+
+        Returns:
+            Количество обработанных записей
+
+        """
+        expired_count = await self.booking_repo.get_expired_bookings(now=now)
+        if expired_count > 0:
+            await self.booking_repo.cleanup_expired_bookings(now=now)
+        return expired_count

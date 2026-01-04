@@ -11,6 +11,9 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from app.core.constants import ErrorCode
+from app.core.logging import logger
+
 from ..core.config import settings
 
 # Создать асинхронный движок
@@ -34,7 +37,13 @@ async_session_maker = async_sessionmaker(
 async def get_session() -> AsyncGenerator:
     """Dependency для FastAPI — получить сессию БД."""
     async with async_session_maker() as session:
-        yield session
+        try:
+            yield session
+            await session.commit()
+        except Exception as e:
+            await session.rollback()
+            logger.error(f'{ErrorCode.INTERNAL_SERVER_ERROR}: {e}')
+            raise
 
 
 __all__ = ['engine', 'async_session_maker', 'get_session']

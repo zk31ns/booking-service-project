@@ -19,42 +19,35 @@ celery_app = Celery(
 
 # Настройка Celery
 celery_app.conf.update(
-    # часовой пояс
     timezone=Times.TIME_ZONE,
     enable_utc=True,
-    # параметры сериализации
     task_serializer='json',
     accept_content=['json'],
     result_serializer='json',
-    # параметры персистентности задач
     task_acks_late=True,
     task_reject_on_worker_lost=True,
     task_default_delivery_mode='persistent',
-    # параметры отложенных задач
     task_time_limit=None,
     task_soft_time_limit=None,
     worker_prefetch_multiplier=1,
-    # параметры хранения задач для RabbitMQ backend
     result_backend_transport_options={
         'result_chord_ordered': True,
     },
     task_ignore_result=False,
     result_expires=Times.RABBITMQ_RESULT_EXPIRE,
-    # Отключение перехвата логирования
     worker_hijack_root_logger=False,
 )
 
 # Настройка расписания для Celery Beat
-# NOTE: cleanup_expired_bookings - заглушка для тестирования
-# работоспособности Celery Beat. Реализуется после вввода бронирований.
 celery_app.conf.beat_schedule = {
     'periodically_cleanup_expired_bookings': {
         'task': 'cleanup_expired_bookings',
         'schedule': crontab(
-            hour=Times.CLEANUP_EXPIRED_BOOKINGS_START, minute=0
+            hour=Times.CLEANUP_EXPIRED_BOOKINGS_START_HOUR,
+            minute=Times.CLEANUP_EXPIRED_BOOKINGS_START_MINUTES,
         ),
         'options': {
-            'expires': 3600,
+            'expires': Times.CELERY_BEAT_EXPIRED,
         },
     },
 }
@@ -64,7 +57,7 @@ celery_app.conf.beat_schedule = {
 def configure_loguru_for_celery(**kwargs: Any) -> None:
     """Настройка Loguru при запуске Celery worker."""
     setup_logging()
-    logger.info('Loguru was configured for Celery worker.')
+    logger.info('SYSTEM: Loguru was configured for Celery worker.')
 
 
 @task_prerun.connect
@@ -78,7 +71,7 @@ def task_prerun_handler(
 ) -> None:
     """Логирование старта задачи."""
     logger.info(
-        f'SYSTEM: {EventType.TASK_STARTED} Task {task.name} (id: {task_id})',
+        f'SYSTEM: {EventType.TASK_STARTED} Task: {task.name} ID: {task_id}',
         extra={
             'task_id': task_id,
             'task_name': task.name,
@@ -99,7 +92,7 @@ def task_postrun_handler(
 ) -> None:
     """Логирование завершения задачи."""
     logger.info(
-        f'SYSTEM: {EventType.TASK_FINISHED} Task {task.name} (id: {task_id})',
+        f'SYSTEM: {EventType.TASK_FINISHED} Task: {task.name} ID: {task_id}',
         extra={
             'task_id': task_id,
             'task_name': task.name,

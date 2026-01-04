@@ -1,9 +1,9 @@
-from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 from app.core.constants import Limits
+from app.schemas.base import AuditedSchema
 
 
 class TableBase(BaseModel):
@@ -42,16 +42,20 @@ class TableUpdate(BaseModel):
     active: Optional[bool] = None
 
 
-class TableInDBBase(TableBase):
+class TableInDBBase(AuditedSchema):
     """Базовая схема столика в БД."""
 
-    model_config = ConfigDict(from_attributes=True, extra='ignore')
-
-    id: int
     cafe_id: int
-    active: bool
-    created_at: datetime
-    updated_at: datetime
+    seats: int = Field(
+        ge=Limits.MIN_SEATS,
+        le=Limits.MAX_SEATS,
+        description='Количество мест за столиком',
+    )
+    description: Optional[str] = Field(
+        default=None,
+        max_length=Limits.MAX_DESCRIPTION_LENGTH,
+        description='Описание столика (например, "VIP стол", "у окна")',
+    )
 
 
 class Table(TableInDBBase):

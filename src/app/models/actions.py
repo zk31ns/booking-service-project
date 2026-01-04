@@ -1,11 +1,9 @@
-from datetime import datetime
-
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import Base
+from app.db.base import TimestampedModel
 
 
-class Action(Base):
+class Action(TimestampedModel):
     """Модель акции и специального предложения кафе."""
 
     __tablename__ = 'actions'
@@ -14,8 +12,3 @@ class Action(Base):
     name: Mapped[str] = mapped_column(nullable=False)
     description: Mapped[str] = mapped_column(nullable=True)
     photo_id: Mapped[str] = mapped_column(nullable=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow, onupdate=datetime.utcnow
-    )
-    active: Mapped[bool] = mapped_column(default=True)

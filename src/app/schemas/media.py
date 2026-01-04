@@ -1,7 +1,8 @@
-from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from app.schemas.base import TimestampedSchema
 
 
 class MediaResponse(BaseModel):
@@ -29,7 +30,7 @@ class MediaResponse(BaseModel):
     )
 
 
-class MediaInfo(BaseModel):
+class MediaInfo(TimestampedSchema):
     """Схема информации о медиа-файле.
 
     Используется для получения информации об уже загруженном файле.
@@ -38,7 +39,6 @@ class MediaInfo(BaseModel):
     id: UUID = Field(..., description='Уникальный идентификатор файла')
     mime_type: str = Field(..., description='MIME тип файла')
     file_size: int = Field(..., description='Размер файла в байтах')
-    created_at: datetime = Field(..., description='Дата создания')
 
     model_config = ConfigDict(
         from_attributes=True,

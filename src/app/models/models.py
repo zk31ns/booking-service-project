@@ -3,7 +3,6 @@
 Модуль содержит ORM-модели SQLAlchemy 2.0 для работы с таблицей пользователей.
 """
 
-from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy import (
@@ -13,18 +12,17 @@ from sqlalchemy import (
     Integer,
     String,
     Table,
-    func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.constants import Limits
-from app.db.base import Base
+from app.db.base import Base, TimestampedModel
 
 if TYPE_CHECKING:
     from app.models import Booking
 
 
-class User(Base):
+class User(TimestampedModel):
     """Модель пользователя системы.
 
     Хранит информацию о пользователях: клиентах, менеджерах и администраторах.
@@ -81,12 +79,6 @@ class User(Base):
     )
     is_blocked: Mapped[bool] = mapped_column(Boolean, default=False)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(),
-        onupdate=func.now(),
-    )
-    active: Mapped[bool] = mapped_column(default=True)
 
     bookings: Mapped[List['Booking']] = relationship(
         'Booking',

@@ -1,6 +1,8 @@
-from datetime import datetime, time
+from datetime import time
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
+
+from app.schemas.base import AuditedSchema
 
 
 class SlotCreate(BaseModel):
@@ -31,7 +33,7 @@ class SlotUpdate(BaseModel):
     active: bool | None = Field(None, description='Активен ли слот')
 
 
-class SlotInfo(BaseModel):
+class SlotInfo(AuditedSchema):
     """Выходные данные слота.
 
     Attributes:
@@ -45,12 +47,6 @@ class SlotInfo(BaseModel):
 
     """
 
-    id: int
     cafe_id: int
     start_time: time
     end_time: time
-    active: bool
-    created_at: datetime
-    updated_at: datetime
-
-    model_config = ConfigDict(from_attributes=True, extra='ignore')

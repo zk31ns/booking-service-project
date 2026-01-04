@@ -1,12 +1,12 @@
-from datetime import datetime, time
+from datetime import time
 
 from sqlalchemy import ForeignKey, Time
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import Base
+from app.db.base import TimestampedModel
 
 
-class Slot(Base):
+class Slot(TimestampedModel):
     """Модель слота для временных интервалов кафе.
 
     Attributes:
@@ -28,8 +28,3 @@ class Slot(Base):
     )
     start_time: Mapped[time] = mapped_column(Time, nullable=False)
     end_time: Mapped[time] = mapped_column(Time, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow, onupdate=datetime.utcnow
-    )
-    active: Mapped[bool] = mapped_column(default=True)

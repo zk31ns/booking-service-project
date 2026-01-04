@@ -1,17 +1,15 @@
-from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.sql import func
 
 from app.core.constants import Limits
-from app.db.base import Base
+from app.db.base import TimestampedModel
 from app.models.media import Media
 from app.models.tables import Table
 
 
-class Cafe(Base):
+class Cafe(TimestampedModel):
     """Модель кафе/ресторана."""
 
     __tablename__ = 'cafes'
@@ -44,16 +42,6 @@ class Cafe(Base):
         ForeignKey('media.id', ondelete='SET NULL'),
         nullable=True,
     )
-    created_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(),
-        nullable=False,
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(),
-        onupdate=func.now(),
-        nullable=False,
-    )
-    active: Mapped[bool] = mapped_column(default=True)
     tables: Mapped[list['Table']] = relationship(
         'Table',
         back_populates='cafe',

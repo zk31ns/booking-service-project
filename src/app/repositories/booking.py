@@ -258,14 +258,15 @@ class BookingRepository(BaseCRUD[Booking]):
             None
 
         """
-        query = update(Booking).where(
-            Booking.booking_date < now,
-            Booking.status.in_([
-                BookingStatus.PENDING,
-                BookingStatus.CONFIRMED,
+        query = (
+            update(Booking)
+            .where(
+                Booking.booking_date < now,
+                Booking.status.in_([
+                    BookingStatus.PENDING,
+                    BookingStatus.CONFIRMED,
                 ]),
-            ).values(
-                status=BookingStatus.COMPLETED,
-                is_active=False
             )
+            .values(status=BookingStatus.COMPLETED, is_active=False)
+        )
         await self.session.execute(query)

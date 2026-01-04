@@ -23,7 +23,6 @@ from app.repositories import (
     TableRepository,
 )
 from app.repositories.slot import SlotRepository
-from app.services.booking import BookingService
 
 
 class TelegramAPIResponse(BaseModel):
@@ -246,6 +245,8 @@ async def _cleanup_expired_bookings_async() -> Dict[str, Any]:
         dict: Статистика выполнения
 
     """
+    from app.services.booking import BookingService
+
     async with async_session_maker() as session:
         booking_repo = BookingRepository(session)
         cafe_repo = CafeRepository(session)

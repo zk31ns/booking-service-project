@@ -195,7 +195,7 @@ class UserInfo(UserBase):
     @classmethod
     def from_orm(cls, obj: User) -> 'UserInfo':
         """Создает UserInfo из ORM объекта User.
-        
+
         Этот метод нужен для совместимости с Pydantic v2.
         Преобразует ORM объект в словарь перед валидацией.
         """

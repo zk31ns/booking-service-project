@@ -1,7 +1,7 @@
 """Initial schema with relationships
 
 Revision ID: 9a1b49f6a430
-Revises: 
+Revises:
 Create Date: 2026-01-05 14:51:20.746473
 
 """

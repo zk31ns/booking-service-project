@@ -241,6 +241,7 @@ async def update_current_user(
     ) as e:
         raise e
 
+
 @router.get(
     '/users/{user_id}',
     response_model=UserInfo,
@@ -296,8 +297,6 @@ async def update_user(
         ConflictException,
     ) as e:
         raise e
-
-
 
 
 @router.post(

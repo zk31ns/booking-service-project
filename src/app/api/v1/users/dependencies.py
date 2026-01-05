@@ -13,12 +13,10 @@ from fastapi.security import (
     HTTPAuthorizationCredentials,
     HTTPBearer,
 )
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_db
-
-# from app.api.v1.cafes.models import cafe_managers
-# Модуль отсутствует, импорт закомментирован для устранения ошибки
 from app.api.v1.users.repository import UserRepository
 from app.core.constants import ErrorCode
 from app.core.exceptions import (
@@ -30,7 +28,7 @@ from app.core.security import (
     get_current_username_from_token,
     verify_refresh_token,
 )
-from app.models.models import User
+from app.models.models import User, cafe_managers
 
 security = HTTPBearer(auto_error=False)
 
@@ -198,24 +196,24 @@ async def require_cafe_manager(
         HTTPException: 403 если пользователь не менеджер этого кафе
 
     """
+    # Суперпользователь имеет доступ ко всем кафе
     if current_user.is_superuser:
         return current_user
 
-    # query = select(cafe_managers).where(
-    #     and_(
-    #         cafe_managers.c.cafe_id == cafe_id,
-    #         cafe_managers.c.user_id == current_user.id,
-    #     ),
-    # )
+    # Проверяем, является ли пользователь менеджером этого кафе
+    query = select(cafe_managers).where(
+        and_(
+            cafe_managers.c.cafe_id == cafe_id,
+            cafe_managers.c.user_id == current_user.id,
+        ),
+    )
 
-    # result = await db.execute(query)
-    # is_manager = result.scalar() is not None
+    result = await db.execute(query)
+    is_manager = result.scalar() is not None
 
-    # if not is_manager:
-    #     raise AuthorizationException(ErrorCode.NOT_CAFE_MANAGER)
+    if not is_manager:
+        raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
 
-    # TODO: Реализовать проверку менеджера кафе
-    # когда появится модель cafe_managers
     return current_user
 
 

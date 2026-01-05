@@ -6,14 +6,15 @@ from logging.config import fileConfig
 from pathlib import Path
 from typing import Any
 
+from sqlalchemy import pool
+from sqlalchemy.ext.asyncio import create_async_engine
+
+from alembic import context
+
 # Добавить корневую папку в путь для импорта (исправляет проблему с абсолютными
 # импортами). env.py находится в src/app/alembic/, поэтому нужно подняться
 # на 4 уровня до корня: alembic -> app -> src -> (parent) -> корень
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
-
-from alembic import context
-from sqlalchemy import pool
-from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.db.base import Base
 

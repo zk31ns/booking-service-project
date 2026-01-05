@@ -1,9 +1,13 @@
 from datetime import time
+from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, Time
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import TimestampedModel
+
+if TYPE_CHECKING:
+    from app.models.cafes import Cafe
 
 
 class Slot(TimestampedModel):
@@ -28,3 +32,7 @@ class Slot(TimestampedModel):
     )
     start_time: Mapped[time] = mapped_column(Time, nullable=False)
     end_time: Mapped[time] = mapped_column(Time, nullable=False)
+    cafe: Mapped['Cafe'] = relationship(
+        'Cafe',
+        foreign_keys=[cafe_id],
+    )

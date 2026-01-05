@@ -9,7 +9,6 @@ import aiohttp
 from celery import Task
 from pydantic import BaseModel
 
-from app.api.v1.users.repository import UserRepository
 from app.core.celery_app import celery_app
 from app.core.celery_base import BaseTask
 from app.core.config import settings
@@ -23,6 +22,8 @@ from app.repositories import (
     TableRepository,
 )
 from app.repositories.slot import SlotRepository
+
+from src.app.repositories.users import UserRepository
 
 
 class TelegramAPIResponse(BaseModel):
@@ -258,7 +259,7 @@ async def _cleanup_expired_bookings_async() -> int:
     async with async_session_maker() as session:
         booking_repo = BookingRepository(session)
         cafe_repo = CafeRepository(session)
-        user_repo = UserRepository()
+        user_repo = UserRepository(session)
         table_repo = TableRepository(session)
         slot_repo = SlotRepository(session)
         booking_service = BookingService(
@@ -271,7 +272,7 @@ async def _cleanup_expired_bookings_async() -> int:
         now = date.today()
         expired_count = await booking_service.cleanup_expired_bookings(now=now)
         await session.commit()
-    return {'expired_count': expired_count, 'timestamp': now.isoformat()}
+    return expired_count
 
 
 async def _send_telegram_message(

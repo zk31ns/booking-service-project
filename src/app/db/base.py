@@ -34,11 +34,13 @@ class TimestampedModel(Base):
     __abstract__ = True
 
     created_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(),
+        # server_default=func.now(),
+        default=func.now(),  # временный фикс для тестирования
         nullable=False,
     )
     updated_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(),
+        # server_default=func.now(),
+        default=func.now(),  # временный фикс для тестирования
         onupdate=func.now(),
         nullable=False,
     )

@@ -6,7 +6,6 @@ from app.api.v1.booking.schemas import (
     BookingUpdate,
     TableSlotSchema,
 )
-from app.api.v1.users.repository import UserRepository
 from app.core.celery_app import celery_app
 from app.core.celery_tasks import notify_manager, send_booking_reminder
 from app.core.constants import (
@@ -29,6 +28,8 @@ from app.repositories import (
     TableRepository,
 )
 from app.repositories.slot import SlotRepository
+
+from src.app.repositories.users import UserRepository
 
 
 class BookingService:
@@ -266,16 +267,9 @@ class BookingService:
             update_data['note'] = update_booking.note
 
         cafe = await self._validate_cafe(booking.cafe_id)
-<<<<<<< HEAD
-        await self._trigger_celery_tasks(booking,
-                                         current_user,
-                                         cafe,
-                                         create=False)
-=======
         await self._trigger_celery_tasks(
             booking, current_user, cafe, create=False
         )
->>>>>>> a29be83129950b10a2abb3a32d8c1721c6a562b5
 
         return await self.booking_repo.update(
             booking=booking, update_booking=update_booking, data=update_data

@@ -24,6 +24,21 @@ class TableRepository(BaseCRUD[Table]):
         """
         super().__init__(session, Table)
 
+    async def get_by_id(
+        self,
+        table_id: int,
+    ) -> Optional[Table]:
+        """Получить столик по ID.
+
+        Args:
+            table_id: Идентификатор столика.
+
+        Returns:
+            Optional[Table]: Столик или None, если не найден.
+
+        """
+        return await super().get(table_id)
+
     async def get_all_for_cafe(
         self,
         cafe_id: int,
@@ -43,11 +58,11 @@ class TableRepository(BaseCRUD[Table]):
             List[Table]: Список столиков кафе.
 
         """
-        query = select(self.model).where(self.model.cafe_id == cafe_id)
+        stmt = select(self.model).where(self.model.cafe_id == cafe_id)
         if active_only:
-            query = query.where(self.model.active)
-        query = query.offset(skip).limit(limit)
-        result = await self.session.execute(query)
+            stmt = stmt.where(self.model.active)
+        stmt = stmt.offset(skip).limit(limit)
+        result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
     async def get_by_cafe_and_id(
@@ -65,10 +80,10 @@ class TableRepository(BaseCRUD[Table]):
             Optional[Table]: Столик или None, если не найден.
 
         """
-        query = select(self.model).where(
+        stmt = select(self.model).where(
             and_(self.model.id == table_id, self.model.cafe_id == cafe_id),
         )
-        result = await self.session.execute(query)
+        result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
     async def create(
@@ -104,10 +119,9 @@ class TableRepository(BaseCRUD[Table]):
             Optional[Table]: Обновленный столик или None, если не найден.
 
         """
-        table = await self.get(table_id)
+        table = await super().get(table_id)
         if not table:
             return None
-
         updated_table = await super().update(table, table_update)
         await self.session.commit()
         await self.session.refresh(updated_table)
@@ -126,7 +140,7 @@ class TableRepository(BaseCRUD[Table]):
             bool: True, если удаление успешно, иначе False.
 
         """
-        table = await self.get(table_id)
+        table = await super().get(table_id)
         if not table:
             return False
 
@@ -148,10 +162,10 @@ class TableRepository(BaseCRUD[Table]):
             int: Количество активных столиков в кафе.
 
         """
-        query = select(self.model).where(
+        stmt = select(self.model).where(
             and_(self.model.cafe_id == cafe_id, self.model.active),
         )
-        result = await self.session.execute(query)
+        result = await self.session.execute(stmt)
         return len(result.scalars().all())
 
     async def exists(
@@ -167,5 +181,4 @@ class TableRepository(BaseCRUD[Table]):
             bool: True, если столик существует, иначе False.
 
         """
-        table = await self.get(table_id)
-        return table is not None
+        return await super().get(table_id) is not None

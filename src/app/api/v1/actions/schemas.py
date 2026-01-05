@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.constants import Limits
 
@@ -45,7 +45,4 @@ class ActionInfo(ActionBase):
     id: int
     active: bool
 
-    class Config:
-        """Configure schema."""
-
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

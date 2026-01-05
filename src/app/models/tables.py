@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import ForeignKey, Index, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from app.core.constants import Limits
@@ -33,6 +33,11 @@ class Table(Base):
         nullable=False,
     )
     active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    
+    cafe: Mapped['Cafe'] = relationship(
+        'Cafe',
+        back_populates='tables',
+    )
 
     def __repr__(self) -> str:
         return (

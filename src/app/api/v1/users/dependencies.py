@@ -35,14 +35,19 @@ from app.models.models import User
 security = HTTPBearer(auto_error=False)
 
 
-def get_user_repository() -> UserRepository:
+def get_user_repository(
+    session: Annotated[AsyncSession, Depends(get_db)],
+) -> UserRepository:
     """Получает репозиторий пользователей.
+
+    Args:
+        session: Async SQLAlchemy сессия
 
     Returns:
         UserRepository: Экземпляр репозитория пользователей
 
     """
-    return UserRepository()
+    return UserRepository(session)
 
 
 async def get_current_user(
@@ -83,9 +88,11 @@ async def get_current_user(
                 ErrorCode.INVALID_TOKEN,
                 headers={'WWW-Authenticate': 'Bearer'},
             )
-        user = await repo.get_by_username(db, username, active_only=True)
+        user = await repo.get_by_username(username, active_only=True)
     else:
-        user = await repo.get(db, user_id, active_only=True)
+        user = await repo.get(user_id)
+        if user and not user.active:
+            user = None
 
     if not user:
         raise AuthenticationException(
@@ -235,8 +242,8 @@ async def validate_refresh_token(
     if not token_data or not token_data.user_id:
         raise AuthenticationException(ErrorCode.TOKEN_EXPIRED)
 
-    user = await repo.get(db, token_data.user_id, active_only=True)
-    if not user:
+    user = await repo.get(token_data.user_id)
+    if not user or not user.active:
         raise AuthenticationException(ErrorCode.USER_NOT_FOUND)
 
     if user.is_blocked:

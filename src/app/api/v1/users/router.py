@@ -199,6 +199,49 @@ async def create_user(
 
 
 @router.get(
+    '/users/me',
+    response_model=UserInfo,
+    summary='Получение информации о текущем пользователе',
+    description='Возвращает информацию о текущем пользователе. '
+    'Только для авторизированных пользователей.',
+)
+async def get_current_user_info(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+) -> UserInfo:
+    """Получает информацию о текущем пользователе."""
+    return UserInfo.from_orm(current_user)
+
+
+@router.patch(
+    '/users/me',
+    response_model=UserInfo,
+    summary='Обновление информации о текущем пользователе',
+    description='Возвращает обновленную информацию о пользователе. '
+    'Только для авторизированных пользователей.',
+)
+async def update_current_user(
+    user_update: UserUpdate,
+    session: Annotated[AsyncSession, Depends(get_db)],
+    service: Annotated[UserService, Depends(get_user_service)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
+) -> UserInfo:
+    """Обновляет информацию о текущем пользователе."""
+    try:
+        return await service.update_user(
+            session=session,
+            user_id=current_user.id,
+            user_update=user_update,
+            current_user=current_user,
+        )
+
+    except (
+        AuthorizationException,
+        ValidationException,
+        ConflictException,
+    ) as e:
+        raise e
+
+@router.get(
     '/users/{user_id}',
     response_model=UserInfo,
     summary='Получение информации о пользователе по его ID',
@@ -255,48 +298,6 @@ async def update_user(
         raise e
 
 
-@router.get(
-    '/users/me',
-    response_model=UserInfo,
-    summary='Получение информации о текущем пользователе',
-    description='Возвращает информацию о текущем пользователе. '
-    'Только для авторизированных пользователей.',
-)
-async def get_current_user_info(
-    current_user: Annotated[User, Depends(get_current_active_user)],
-) -> UserInfo:
-    """Получает информацию о текущем пользователе."""
-    return UserInfo.from_orm(current_user)
-
-
-@router.patch(
-    '/users/me',
-    response_model=UserInfo,
-    summary='Обновление информации о текущем пользователе',
-    description='Возвращает обновленную информацию о пользователе. '
-    'Только для авторизированных пользователей.',
-)
-async def update_current_user(
-    user_update: UserUpdate,
-    session: Annotated[AsyncSession, Depends(get_db)],
-    service: Annotated[UserService, Depends(get_user_service)],
-    current_user: Annotated[User, Depends(get_current_active_user)],
-) -> UserInfo:
-    """Обновляет информацию о текущем пользователе."""
-    try:
-        return await service.update_user(
-            session=session,
-            user_id=current_user.id,
-            user_update=user_update,
-            current_user=current_user,
-        )
-
-    except (
-        AuthorizationException,
-        ValidationException,
-        ConflictException,
-    ) as e:
-        raise e
 
 
 @router.post(

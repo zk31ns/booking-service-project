@@ -5,7 +5,7 @@
 
 from pathlib import Path
 
-from pydantic import Field, computed_field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings
 
 from app.core.constants import (
@@ -87,21 +87,36 @@ class Settings(BaseSettings):
     frontend_url: str = Field(
         ..., env='FRONTEND_URL', description='URL фронтенда'
     )
-    allowed_origins_str: str = Field(
-        default='http://localhost:3000,http://localhost:8000',
-        env='ALLOWED_ORIGINS',
-        exclude=True,
+    allowed_origins: list[str] = Field(
+        default=['http://localhost:3000', 'http://localhost:8000'],
+        description='Allowed CORS origins',
     )
 
-    @computed_field
-    @property
-    def allowed_origins(self) -> list[str]:
-        """Parse allowed_origins from comma-separated string."""
-        return [
-            origin.strip()
-            for origin in self.allowed_origins_str.split(',')
-            if origin.strip()
-        ]
+    @model_validator(mode='before')
+    @classmethod
+    def parse_allowed_origins(cls, data: dict | object) -> dict | object:
+        """Parse ALLOWED_ORIGINS from comma-separated string."""
+        if isinstance(data, dict):
+            # Check both uppercase (env) and lowercase (normalized) keys
+            origins_key = None
+            if 'ALLOWED_ORIGINS' in data:
+                origins_key = 'ALLOWED_ORIGINS'
+            elif 'allowed_origins' in data:
+                origins_key = 'allowed_origins'
+
+            if origins_key:
+                origins_value = data[origins_key]
+                if isinstance(origins_value, str):
+                    # Parse comma-separated string into list
+                    data['allowed_origins'] = [
+                        origin.strip()
+                        for origin in origins_value.split(',')
+                        if origin.strip()
+                    ]
+                    # Remove original key if different
+                    if origins_key != 'allowed_origins':
+                        del data[origins_key]
+        return data
 
     # ========== Email (опционально) ==========
     smtp_server: str = Field(

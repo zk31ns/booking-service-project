@@ -11,15 +11,21 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from alembic import context
 
-# Добавить корневую папку в путь для импорта (исправляет проблему с абсолютными
-# импортами). env.py находится в src/app/alembic/, поэтому нужно подняться
-# на 4 уровня до корня: alembic -> app -> src -> (parent) -> корень
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
+# Добавить корневую папку в путь для импорта (исправляет проблему с
+# абсолютными импортами).
+# В Docker: env.py находится в /app/app/alembic/, нужно добавить /app
+# В локальной разработке: env.py находится в src/app/alembic/,
+# нужно добавить корень проекта
+# Используем более надежный способ - поднимаемся до директории,
+# где находится app/
+app_dir = Path(__file__).resolve().parent.parent  # /app/app или src/app
+root_dir = app_dir.parent  # /app или src
+sys.path.insert(0, str(root_dir))
 
-from app.db.base import Base
+from app.db.base import Base  # noqa: E402
 
 # Import all models to register them with Base.metadata for autogenerate
-from app.models import (  # noqa: F401
+from app.models import (  # noqa: F401, E402
     Action,
     Cafe,
     Dish,

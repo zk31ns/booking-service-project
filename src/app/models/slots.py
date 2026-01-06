@@ -1,0 +1,38 @@
+from datetime import time
+from typing import TYPE_CHECKING
+
+from sqlalchemy import ForeignKey, Time
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db.base import TimestampedModel
+
+if TYPE_CHECKING:
+    from app.models.cafes import Cafe
+
+
+class Slot(TimestampedModel):
+    """Модель слота для временных интервалов кафе.
+
+    Attributes:
+        id: Уникальный идентификатор слота (первичный ключ).
+        cafe_id: Идентификатор кафе (внешний ключ).
+        start_time: Время начала слота.
+        end_time: Время окончания слота.
+        created_at: Дата и время создания записи.
+        updated_at: Дата и время последнего обновления.
+        active: Флаг активности слота (по умолчанию True).
+
+    """
+
+    __tablename__ = 'slots'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    cafe_id: Mapped[int] = mapped_column(
+        ForeignKey('cafes.id', ondelete='CASCADE'), nullable=False, index=True
+    )
+    start_time: Mapped[time] = mapped_column(Time, nullable=False)
+    end_time: Mapped[time] = mapped_column(Time, nullable=False)
+    cafe: Mapped['Cafe'] = relationship(
+        'Cafe',
+        foreign_keys=[cafe_id],
+    )

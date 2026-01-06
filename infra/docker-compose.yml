@@ -1,14 +1,19 @@
-name: insert_project_name
+name: booking_seats_team_project
+
+volumes:
+  booking_redis_data:
+  booking_flower_data:
+  booking_beat_data:
 
 services:
   db:
     image: postgres:17-alpine
     env_file:
-      - ./.env
+      - ../.env
     environment:
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     volumes:
       - "./pgdata:/var/lib/postgresql/data/pgdata"
     command: >
@@ -20,8 +25,108 @@ services:
                -c wal_buffers=16MB
                -c default_statistics_target=100
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB" ]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-booking_db}"]
       interval: 30s
       timeout: 10s
       retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    container_name: booking_redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - booking_redis_data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: booking_rabbitmq
+    env_file: ../.env
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  app:
+    container_name: booking_app
+    env_file: ../.env
+    image: ${DOCKER_IMAGE:?set DOCKER_IMAGE env}:${IMAGE_TAG:-latest}
+    command: uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app
+    ports:
+      - "${PORT:-8000}:${PORT:-8000}"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8000}/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  worker:
+    container_name: booking_worker
+    env_file: ../.env
+    image: ${DOCKER_IMAGE:?set DOCKER_IMAGE env}:${IMAGE_TAG:-latest}
+    command: celery -A app.core.celery_app:celery_app worker --loglevel=info
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  beat:
+    container_name: booking_beat
+    env_file: ../.env
+    image: ${DOCKER_IMAGE:?set DOCKER_IMAGE env}:${IMAGE_TAG:-latest}
+    command: celery -A app.core.celery_app:celery_app beat --loglevel=info
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  flower:
+    container_name: booking_flower
+    env_file: ../.env
+    image: ${DOCKER_IMAGE:?set DOCKER_IMAGE env}:${IMAGE_TAG:-latest}
+    command: celery -A app.core.celery_app:celery_app flower --port=${FLOWER_PORT:-5555}
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app
+    ports:
+      - "${FLOWER_PORT:-5555}:${FLOWER_PORT:-5555}"
+    volumes:
+      - booking_flower_data:/data
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      worker:
+        condition: service_started
     restart: unless-stopped

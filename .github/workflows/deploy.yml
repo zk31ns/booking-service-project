@@ -143,8 +143,11 @@ jobs:
                 echo "⏳ Container is restarting... (${ELAPSED}s elapsed)"
                 # Show logs every 30 seconds to debug
                 if [ $((ELAPSED % 30)) -eq 0 ]; then
-                  echo "📋 Recent container logs:"
-                  docker logs --tail 30 "$CONTAINER_NAME" 2>/dev/null || true
+                  echo "📋 Recent container logs (last 50 lines):"
+                  docker logs --tail 50 "$CONTAINER_NAME" 2>&1 || true
+                  echo ""
+                  echo "📋 Docker-compose logs (app, last 30 lines):"
+                  docker-compose logs --tail 30 app 2>&1 || true
                 fi
               else
                 STABLE_COUNT=0
@@ -158,11 +161,18 @@ jobs:
             if [ $STABLE_COUNT -lt $REQUIRED_STABLE ]; then
               echo "❌ Container did not become stable!"
               echo "Container status: $STATUS"
-              echo "Container logs (last 100 lines):"
-              docker logs --tail 100 "$CONTAINER_NAME" 2>/dev/null || true
               echo ""
-              echo "Container inspect (State section):"
+              echo "=== Container logs (last 100 lines) ==="
+              docker logs --tail 100 "$CONTAINER_NAME" 2>&1 || true
+              echo ""
+              echo "=== Docker-compose logs (app service) ==="
+              docker-compose logs --tail 100 app 2>&1 || true
+              echo ""
+              echo "=== Container inspect (State section) ==="
               docker inspect "$CONTAINER_NAME" 2>/dev/null | grep -A 30 "State" || true
+              echo ""
+              echo "=== Last exit code ==="
+              docker inspect -f '{{.State.ExitCode}}' "$CONTAINER_NAME" 2>/dev/null || true
               exit 1
             fi
 

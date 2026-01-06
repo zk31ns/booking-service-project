@@ -53,10 +53,11 @@ jobs:
         run: |
           DEPLOY_PATH="/home/yc-user/booking_seats_team_project"
           ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "mkdir -p $DEPLOY_PATH"
-          rsync -avz --delete --delete-excluded -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+          rsync -avz -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
             --exclude '.git' \
             --exclude '.github' \
             --exclude '.env' \
+            --exclude 'infra/pgdata' \
             --exclude 'node_modules' \
             --exclude '__pycache__' \
             ./ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:$DEPLOY_PATH/
@@ -96,29 +97,29 @@ jobs:
             exit 1
           EOF
 
-      - name: Notify Telegram (Success)
-        if: success()
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_CHAT_ID }}
-          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          message: |
-            ✅ Production Deployment Successful!
-            Repository: Booking Seats API
-            Branch: main
-            Commit: ${{ github.sha }}
-            Server: ${{ secrets.DEPLOY_HOST }}
+      # - name: Notify Telegram (Success)
+        # if: success()
+        # uses: appleboy/telegram-action@master
+        # with:
+        #   to: ${{ secrets.TELEGRAM_CHAT_ID }}
+        #   token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        #   message: |
+        #     ✅ Production Deployment Successful!
+        #     Repository: Booking Seats API
+        #     Branch: main
+        #     Commit: ${{ github.sha }}
+        #     Server: ${{ secrets.DEPLOY_HOST }}
 
-      - name: Notify Telegram (Failure)
-        if: failure()
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_CHAT_ID }}
-          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          message: |
-            ❌ Production Deployment Failed!
-            Repository: Booking Seats API
-            Branch: main
-            Commit: ${{ github.sha }}
-            Error: Check GitHub Actions logs for details
-            Server: ${{ secrets.DEPLOY_HOST }}
+      # - name: Notify Telegram (Failure)
+        # if: failure()
+        # uses: appleboy/telegram-action@master
+        # with:
+        #   to: ${{ secrets.TELEGRAM_CHAT_ID }}
+        #   token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        #   message: |
+        #     ❌ Production Deployment Failed!
+        #     Repository: Booking Seats API
+        #     Branch: main
+        #     Commit: ${{ github.sha }}
+        #     Error: Check GitHub Actions logs for details
+        #     Server: ${{ secrets.DEPLOY_HOST }}

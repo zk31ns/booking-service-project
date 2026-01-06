@@ -227,22 +227,31 @@ jobs:
             # Run migrations with retry
             echo "🔄 Running database migrations..."
             MAX_RETRIES=3
+            MIGRATION_SUCCESS=false
 
             for attempt in $(seq 1 $MAX_RETRIES); do
-              if docker-compose exec -T app alembic upgrade head 2>&1; then
+              echo "Attempt $attempt of $MAX_RETRIES..."
+              if docker-compose exec -T app alembic upgrade head; then
                 echo "✅ Migrations completed successfully!"
-                exit 0
+                MIGRATION_SUCCESS=true
+                break
               else
+                MIGRATION_EXIT_CODE=$?
+                echo "⚠️ Migration attempt $attempt failed with exit code $MIGRATION_EXIT_CODE"
                 if [ $attempt -lt $MAX_RETRIES ]; then
-                  echo "⚠️ Migration attempt $attempt failed, retrying in 5 seconds..."
+                  echo "Retrying in 5 seconds..."
                   sleep 5
                 else
                   echo "❌ Migrations failed after $MAX_RETRIES attempts"
+                  echo "Container logs:"
                   docker logs --tail 50 "$CONTAINER_NAME" 2>/dev/null || true
-                  exit 1
                 fi
               fi
             done
+
+            if [ "$MIGRATION_SUCCESS" = "false" ]; then
+              exit 1
+            fi
           MIGRATE_EOF
 
   health_check:

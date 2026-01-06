@@ -66,7 +66,8 @@ services:
     working_dir: /app
     environment:
       - PYTHONPATH=/app
-      # Override DATABASE_URL for Docker network (use service name 'db' instead of 'localhost')
+      # Override DATABASE_URL for Docker network (use service name 'db' and internal port 5432)
+      # Variables are read from .env file (docker-compose reads .env from same directory)
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-booking_db}
     ports:
       - "${PORT:-8000}:${PORT:-8000}"
@@ -92,7 +93,8 @@ services:
     working_dir: /app
     environment:
       - PYTHONPATH=/app
-      # Override DATABASE_URL for Docker network (use service name 'db' instead of 'localhost')
+      # Override DATABASE_URL for Docker network (use service name 'db' and internal port 5432)
+      # Variables are read from .env file (docker-compose reads .env from same directory)
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-booking_db}
     depends_on:
       rabbitmq:

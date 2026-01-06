@@ -91,6 +91,7 @@ async def run_migrations_online() -> None:
 
     """
     import os
+    from urllib.parse import quote_plus
 
     configuration = config.get_section(config.config_ini_section)
     # Prefer building DATABASE_URL from POSTGRES_* variables for Docker
@@ -103,8 +104,10 @@ async def run_migrations_online() -> None:
 
     if all([postgres_user, postgres_password, postgres_db, postgres_host]):
         # Build DATABASE_URL from individual variables (most reliable)
+        # URL-encode password to handle special characters (e.g., dashes)
+        encoded_password = quote_plus(postgres_password)
         database_url = (
-            f'postgresql+asyncpg://{postgres_user}:{postgres_password}'
+            f'postgresql+asyncpg://{postgres_user}:{encoded_password}'
             f'@{postgres_host}:{postgres_port or "5432"}/{postgres_db}'
         )
     else:

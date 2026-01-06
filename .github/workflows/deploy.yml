@@ -275,21 +275,25 @@ jobs:
 
             echo "🏥 Performing health check..."
             MAX_ATTEMPTS=30
+            HEALTH_CHECK_SUCCESS=false
 
             for i in $(seq 1 $MAX_ATTEMPTS); do
               if curl -sf http://localhost:8000/api/v1/health > /dev/null 2>&1; then
                 echo "✅ Application is healthy!"
-                exit 0
+                HEALTH_CHECK_SUCCESS=true
+                break
               fi
 
               echo "⏳ Waiting for application to be ready... ($i/$MAX_ATTEMPTS)"
               sleep 2
             done
 
-            echo "❌ Application health check failed"
-            echo "Container logs:"
-            docker logs --tail 50 "${{ env.CONTAINER_NAME }}" 2>/dev/null || true
-            exit 1
+            if [ "$HEALTH_CHECK_SUCCESS" = "false" ]; then
+              echo "❌ Application health check failed"
+              echo "Container logs:"
+              docker logs --tail 50 "${{ env.CONTAINER_NAME }}" 2>/dev/null || true
+              exit 1
+            fi
           HEALTH_EOF
 
   deployment_summary:
@@ -309,16 +313,17 @@ jobs:
       - name: Deployment summary
         run: |
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'SUMMARY_EOF'
+            set -euo pipefail || true
             echo "📋 Deployment Summary:"
             echo "===================="
             echo "Commit: ${{ github.sha }}"
             echo "Branch: ${{ github.ref_name }}"
             echo ""
             echo "Container Status:"
-            cd ${{ env.DEPLOY_PATH }}/infra
+            cd ${{ env.DEPLOY_PATH }}/infra || exit 0
             export IMAGE_TAG=${{ github.sha }}
             export DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}
-            docker-compose ps
+            docker-compose ps || echo "⚠️ Could not get container status"
           SUMMARY_EOF
 
       # - name: Notify Telegram (Success)

@@ -122,47 +122,96 @@ jobs:
             set -e
             cd /home/yc-user/booking_seats_team_project/infra
 
-            # Ensure container is running before executing migrations
+            # Ensure container is stable and running before executing migrations
             CONTAINER_NAME="booking_app"
-            MAX_WAIT=120
+            MAX_WAIT=300
             ELAPSED=0
+            STABLE_COUNT=0
+            REQUIRED_STABLE_CHECKS=3
 
-            echo "Checking container status before running migrations..."
+            echo "Waiting for container to be stable and running..."
             while [ $ELAPSED -lt $MAX_WAIT ]; do
               STATUS=$(docker inspect -f '{{.State.Status}}' "$CONTAINER_NAME" 2>/dev/null || echo "not_found")
 
               if [ "$STATUS" = "running" ]; then
-                echo "✅ Container is running, proceeding with migrations..."
-                break
+                STABLE_COUNT=$((STABLE_COUNT + 1))
+                echo "✅ Container is running (stable check: ${STABLE_COUNT}/${REQUIRED_STABLE_CHECKS})"
+
+                if [ $STABLE_COUNT -ge $REQUIRED_STABLE_CHECKS ]; then
+                  echo "✅ Container is stable, proceeding with migrations..."
+                  break
+                fi
               elif [ "$STATUS" = "restarting" ]; then
-                echo "⏳ Container is restarting, waiting... (${ELAPSED}s elapsed)"
+                STABLE_COUNT=0
+                echo "⏳ Container is restarting, resetting stability check... (${ELAPSED}s elapsed)"
               else
+                STABLE_COUNT=0
                 echo "⏳ Container status: $STATUS (${ELAPSED}s elapsed)"
               fi
 
-              sleep 3
-              ELAPSED=$((ELAPSED + 3))
+              sleep 5
+              ELAPSED=$((ELAPSED + 5))
             done
 
-            if [ "$STATUS" != "running" ]; then
-              echo "❌ Container is not running! Status: $STATUS"
+            if [ $STABLE_COUNT -lt $REQUIRED_STABLE_CHECKS ]; then
+              echo "❌ Container did not become stable! Status: $STATUS"
               echo "Container logs:"
-              docker logs --tail 50 "$CONTAINER_NAME" 2>/dev/null || true
+              docker logs --tail 100 "$CONTAINER_NAME" 2>/dev/null || true
+              echo "Container inspect:"
+              docker inspect "$CONTAINER_NAME" 2>/dev/null | grep -A 20 "State" || true
               exit 1
             fi
 
-            # Wait a bit more for the app to be fully ready
-            echo "Waiting 10 seconds for application to be fully ready..."
-            sleep 10
+            # Final check right before executing command
+            echo "Final check before running migrations..."
+            for i in {1..5}; do
+              FINAL_STATUS=$(docker inspect -f '{{.State.Status}}' "$CONTAINER_NAME" 2>/dev/null || echo "not_found")
+              if [ "$FINAL_STATUS" != "running" ]; then
+                echo "⚠️ Container status changed to: $FINAL_STATUS, waiting..."
+                sleep 3
+              else
+                echo "✅ Container confirmed running, executing migrations..."
+                break
+              fi
 
-            # Run migrations
+              if [ $i -eq 5 ]; then
+                echo "❌ Container not stable for final check!"
+                exit 1
+              fi
+            done
+
+            # Run migrations with retry logic
             echo "Running database migrations..."
-            IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api docker-compose exec -T app alembic upgrade head || {
-              echo "❌ Migrations failed! Retrying in 5 seconds..."
-              sleep 5
-              IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api docker-compose exec -T app alembic upgrade head
-            }
-            echo "✅ Migrations completed successfully!"
+            MAX_RETRIES=3
+            RETRY_COUNT=0
+
+            while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+              # Check status one more time before exec
+              CURRENT_STATUS=$(docker inspect -f '{{.State.Status}}' "$CONTAINER_NAME" 2>/dev/null || echo "not_found")
+              if [ "$CURRENT_STATUS" != "running" ]; then
+                echo "⚠️ Container status is $CURRENT_STATUS, waiting 5 seconds..."
+                sleep 5
+                RETRY_COUNT=$((RETRY_COUNT + 1))
+                continue
+              fi
+
+              if IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api docker-compose exec -T app alembic upgrade head 2>&1; then
+                echo "✅ Migrations completed successfully!"
+                exit 0
+              else
+                RETRY_COUNT=$((RETRY_COUNT + 1))
+                if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                  echo "❌ Migrations failed (attempt ${RETRY_COUNT}/${MAX_RETRIES}), checking container status..."
+                  docker inspect -f '{{.State.Status}}' "$CONTAINER_NAME" || true
+                  docker logs --tail 20 "$CONTAINER_NAME" 2>/dev/null || true
+                  echo "Waiting 10 seconds before retry..."
+                  sleep 10
+                fi
+              fi
+            done
+
+            echo "❌ Migrations failed after ${MAX_RETRIES} attempts"
+            exit 1
           EOF
 
       - name: Health check

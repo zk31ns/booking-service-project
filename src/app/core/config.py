@@ -87,7 +87,7 @@ class Settings(BaseSettings):
     frontend_url: str = Field(
         ..., env='FRONTEND_URL', description='URL фронтенда'
     )
-    _allowed_origins_str: str = Field(
+    allowed_origins_str: str = Field(
         default='http://localhost:3000,http://localhost:8000',
         env='ALLOWED_ORIGINS',
         exclude=True,
@@ -99,7 +99,7 @@ class Settings(BaseSettings):
         """Parse allowed_origins from comma-separated string."""
         return [
             origin.strip()
-            for origin in self._allowed_origins_str.split(',')
+            for origin in self.allowed_origins_str.split(',')
             if origin.strip()
         ]
 

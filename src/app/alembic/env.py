@@ -93,26 +93,26 @@ async def run_migrations_online() -> None:
     import os
 
     configuration = config.get_section(config.config_ini_section)
-    # Use DATABASE_URL from environment if available, otherwise use alembic.ini
-    database_url = os.getenv('DATABASE_URL')
-    if not database_url:
-        # Try to build DATABASE_URL from individual POSTGRES_* variables
-        # (useful for Docker where env_file loads variables but DATABASE_URL
-        # might not be set correctly)
-        postgres_user = os.getenv('POSTGRES_USER', 'postgres')
-        postgres_password = os.getenv('POSTGRES_PASSWORD', '')
-        postgres_db = os.getenv('POSTGRES_DB', 'booking_db')
-        postgres_host = os.getenv('POSTGRES_HOST', 'db')
-        postgres_port = os.getenv('POSTGRES_PORT', '5432')
+    # Prefer building DATABASE_URL from POSTGRES_* variables for Docker
+    # (more reliable than parsing DATABASE_URL which may have encoding issues)
+    postgres_user = os.getenv('POSTGRES_USER')
+    postgres_password = os.getenv('POSTGRES_PASSWORD')
+    postgres_db = os.getenv('POSTGRES_DB')
+    postgres_host = os.getenv('POSTGRES_HOST')
+    postgres_port = os.getenv('POSTGRES_PORT')
 
-        if postgres_password:
-            database_url = (
-                f'postgresql+asyncpg://{postgres_user}:{postgres_password}'
-                f'@{postgres_host}:{postgres_port}/{postgres_db}'
-            )
-        else:
-            # Fallback to alembic.ini
+    if all([postgres_user, postgres_password, postgres_db, postgres_host]):
+        # Build DATABASE_URL from individual variables (most reliable)
+        database_url = (
+            f'postgresql+asyncpg://{postgres_user}:{postgres_password}'
+            f'@{postgres_host}:{postgres_port or "5432"}/{postgres_db}'
+        )
+    else:
+        # Fallback to DATABASE_URL from environment or alembic.ini
+        database_url = os.getenv('DATABASE_URL')
+        if not database_url:
             database_url = config.get_main_option('sqlalchemy.url')
+
     configuration['sqlalchemy.url'] = database_url
 
     connectable = create_async_engine(

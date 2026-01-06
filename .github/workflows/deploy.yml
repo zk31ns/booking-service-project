@@ -141,6 +141,11 @@ jobs:
               elif [ "$STATUS" = "restarting" ]; then
                 STABLE_COUNT=0
                 echo "⏳ Container is restarting... (${ELAPSED}s elapsed)"
+                # Show logs every 30 seconds to debug
+                if [ $((ELAPSED % 30)) -eq 0 ]; then
+                  echo "📋 Recent container logs:"
+                  docker logs --tail 30 "$CONTAINER_NAME" 2>/dev/null || true
+                fi
               else
                 STABLE_COUNT=0
                 echo "⏳ Container status: $STATUS (${ELAPSED}s elapsed)"
@@ -152,8 +157,12 @@ jobs:
 
             if [ $STABLE_COUNT -lt $REQUIRED_STABLE ]; then
               echo "❌ Container did not become stable!"
-              echo "Container logs:"
+              echo "Container status: $STATUS"
+              echo "Container logs (last 100 lines):"
               docker logs --tail 100 "$CONTAINER_NAME" 2>/dev/null || true
+              echo ""
+              echo "Container inspect (State section):"
+              docker inspect "$CONTAINER_NAME" 2>/dev/null | grep -A 30 "State" || true
               exit 1
             fi
 

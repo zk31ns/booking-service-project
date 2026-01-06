@@ -50,11 +50,13 @@ jobs:
           ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Clone/Update repository on server
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << EOF
           set -e
           DEPLOY_PATH="/home/yc-user/booking_seats_team_project"
-          GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+          GITHUB_TOKEN="$GITHUB_TOKEN"
           if [ -d "$DEPLOY_PATH" ]; then
             cd "$DEPLOY_PATH"
             git pull origin main

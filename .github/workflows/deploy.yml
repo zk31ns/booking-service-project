@@ -52,14 +52,16 @@ jobs:
       - name: Clone/Update repository on server
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
-            set -e
-            if [ -d "${{ secrets.DEPLOY_PATH }}" ]; then
-              cd ${{ secrets.DEPLOY_PATH }}
-              git pull origin main
-            else
-              git clone https://github.com/Yandex-Practicum-Students/57_58_booking_seats_team_2.git ${{ secrets.DEPLOY_PATH }}
-              cd ${{ secrets.DEPLOY_PATH }}
-            fi
+          set -e
+          DEPLOY_PATH="${{ secrets.DEPLOY_PATH }}"
+          if [ -d "$DEPLOY_PATH" ]; then
+            cd "$DEPLOY_PATH"
+            git pull origin main
+          else
+            mkdir -p "$(dirname "$DEPLOY_PATH")"
+            git clone https://github.com/Yandex-Practicum-Students/57_58_booking_seats_team_2.git "$DEPLOY_PATH"
+            cd "$DEPLOY_PATH"
+          fi
           EOF
 
       - name: Start Docker containers

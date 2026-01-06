@@ -6,23 +6,14 @@
 from pathlib import Path
 from typing import Annotated
 
-from pydantic import BeforeValidator, Field
-from pydantic_settings import BaseSettings
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, NoDecode
 
 from app.core.constants import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     MAX_UPLOAD_SIZE_BYTES,
     REFRESH_TOKEN_EXPIRE_DAYS,
 )
-
-
-def _parse_origins(v: str | list[str]) -> list[str]:
-    """Parse ALLOWED_ORIGINS from comma-separated string or list."""
-    if isinstance(v, list):
-        return v
-    if isinstance(v, str):
-        return [origin.strip() for origin in v.split(',') if origin.strip()]
-    return v
 
 
 class Settings(BaseSettings):
@@ -99,7 +90,7 @@ class Settings(BaseSettings):
     )
     allowed_origins: Annotated[
         list[str],
-        BeforeValidator(_parse_origins),
+        NoDecode,
         Field(
             default=['http://localhost:3000', 'http://localhost:8000'],
             env='ALLOWED_ORIGINS',
@@ -108,6 +99,18 @@ class Settings(BaseSettings):
             ),
         ),
     ]
+
+    @field_validator('allowed_origins', mode='before')
+    @classmethod
+    def parse_allowed_origins(cls, v: str | list[str]) -> list[str]:
+        """Parse ALLOWED_ORIGINS from comma-separated string or list."""
+        if isinstance(v, list):
+            return v
+        if isinstance(v, str):
+            return [
+                origin.strip() for origin in v.split(',') if origin.strip()
+            ]
+        return v
 
     # ========== Email (опционально) ==========
     smtp_server: str = Field(

@@ -5,7 +5,7 @@
 
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 from app.core.constants import (
@@ -87,10 +87,20 @@ class Settings(BaseSettings):
     frontend_url: str = Field(
         ..., env='FRONTEND_URL', description='URL фронтенда'
     )
-    allowed_origins: list = Field(
+    allowed_origins: list[str] = Field(
         default=['http://localhost:3000', 'http://localhost:8000'],
         env='ALLOWED_ORIGINS',
     )
+
+    @field_validator('allowed_origins', mode='before')
+    @classmethod
+    def parse_allowed_origins(cls, v: str | list[str]) -> list[str]:
+        """Parse allowed_origins from comma-separated string or list."""
+        if isinstance(v, str):
+            return [
+                origin.strip() for origin in v.split(',') if origin.strip()
+            ]
+        return v if isinstance(v, list) else []
 
     # ========== Email (опционально) ==========
     smtp_server: str = Field(

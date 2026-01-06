@@ -1,4 +1,4 @@
-name: insert_project_name
+name: booking_seats_team_project
 
 volumes:
   booking_redis_data:
@@ -63,17 +63,13 @@ services:
   app:
     container_name: booking_app
     env_file: ../.env
-    build:
-      context: ../src
-      dockerfile: Dockerfile
+    image: ${DOCKER_IMAGE:?set DOCKER_IMAGE env}:${IMAGE_TAG:-latest}
     command: uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
     working_dir: /app
     environment:
       - PYTHONPATH=/app
     ports:
       - "${PORT:-8000}:${PORT:-8000}"
-    volumes:
-      - ../src:/app
     depends_on:
       db:
         condition: service_healthy
@@ -91,13 +87,9 @@ services:
   worker:
     container_name: booking_worker
     env_file: ../.env
-    build:
-      context: ../src
-      dockerfile: Dockerfile
+    image: ${DOCKER_IMAGE:?set DOCKER_IMAGE env}:${IMAGE_TAG:-latest}
     command: celery -A app.core.celery_app:celery_app worker --loglevel=info
     working_dir: /app
-    volumes:
-      - ../src:/app
     environment:
       - PYTHONPATH=/app
     depends_on:
@@ -110,16 +102,11 @@ services:
   beat:
     container_name: booking_beat
     env_file: ../.env
-    build:
-      context: ../src
-      dockerfile: Dockerfile
+    image: ${DOCKER_IMAGE:?set DOCKER_IMAGE env}:${IMAGE_TAG:-latest}
     command: celery -A app.core.celery_app:celery_app beat --loglevel=info
     working_dir: /app
     environment:
       - PYTHONPATH=/app
-    volumes:
-      - ../src:/app
-      - booking_beat_data:/app
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -128,9 +115,7 @@ services:
   flower:
     container_name: booking_flower
     env_file: ../.env
-    build:
-      context: ../src
-      dockerfile: Dockerfile
+    image: ${DOCKER_IMAGE:?set DOCKER_IMAGE env}:${IMAGE_TAG:-latest}
     command: celery -A app.core.celery_app:celery_app flower --port=${FLOWER_PORT:-5555}
     working_dir: /app
     environment:
@@ -138,7 +123,6 @@ services:
     ports:
       - "${FLOWER_PORT:-5555}:${FLOWER_PORT:-5555}"
     volumes:
-      - ../src:/app
       - booking_flower_data:/data
     depends_on:
       rabbitmq:

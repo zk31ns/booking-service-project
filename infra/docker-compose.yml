@@ -13,7 +13,7 @@ services:
     environment:
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - "5433:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     volumes:
       - "./pgdata:/var/lib/postgresql/data/pgdata"
     command: >
@@ -25,8 +25,7 @@ services:
                -c wal_buffers=16MB
                -c default_statistics_target=100
     healthcheck:
-      # test: [ "CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB" ]
-      test: ["CMD-SHELL", "pg_isready -U postgres -d booking_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-booking_db}"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -36,7 +35,7 @@ services:
     image: redis:alpine
     container_name: booking_redis
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - booking_redis_data:/data
     command: redis-server --appendonly yes
@@ -52,13 +51,41 @@ services:
     container_name: booking_rabbitmq
     env_file: ../.env
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
       timeout: 5s
+      retries: 3
+
+  app:
+    container_name: booking_app
+    env_file: ../.env
+    build:
+      context: ../src
+      dockerfile: Dockerfile
+    command: uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app
+    ports:
+      - "${PORT:-8000}:${PORT:-8000}"
+    volumes:
+      - ../src:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8000}/docs"]
+      interval: 30s
+      timeout: 10s
       retries: 3
 
   worker:
@@ -104,12 +131,12 @@ services:
     build:
       context: ../src
       dockerfile: Dockerfile
-    command: celery -A app.core.celery_app:celery_app flower --port=5555
+    command: celery -A app.core.celery_app:celery_app flower --port=${FLOWER_PORT:-5555}
     working_dir: /app
     environment:
       - PYTHONPATH=/app
     ports:
-      - "5555:5555"
+      - "${FLOWER_PORT:-5555}:${FLOWER_PORT:-5555}"
     volumes:
       - ../src:/app
       - booking_flower_data:/data

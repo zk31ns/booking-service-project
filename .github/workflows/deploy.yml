@@ -67,6 +67,7 @@ jobs:
           ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
             set -e
             cd /home/yc-user/booking_seats_team_project/infra
+            IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api docker-compose down
             IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api docker-compose pull
             IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api docker-compose up -d
             echo "Waiting for containers to be ready..."

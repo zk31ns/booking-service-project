@@ -5,7 +5,7 @@
 
 from pathlib import Path
 
-from pydantic import Field, model_validator
+from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings
 
 from app.core.constants import (
@@ -87,24 +87,21 @@ class Settings(BaseSettings):
     frontend_url: str = Field(
         ..., env='FRONTEND_URL', description='URL фронтенда'
     )
-    allowed_origins: list[str] = Field(
-        default=['http://localhost:3000', 'http://localhost:8000'],
+    _allowed_origins_str: str = Field(
+        default='http://localhost:3000,http://localhost:8000',
         env='ALLOWED_ORIGINS',
+        exclude=True,
     )
 
-    @model_validator(mode='before')
-    @classmethod
-    def parse_allowed_origins(cls, data: dict | list | str) -> dict:
+    @computed_field
+    @property
+    def allowed_origins(self) -> list[str]:
         """Parse allowed_origins from comma-separated string."""
-        if isinstance(data, dict) and 'allowed_origins' in data:
-            value = data['allowed_origins']
-            if isinstance(value, str):
-                data['allowed_origins'] = [
-                    origin.strip()
-                    for origin in value.split(',')
-                    if origin.strip()
-                ]
-        return data
+        return [
+            origin.strip()
+            for origin in self._allowed_origins_str.split(',')
+            if origin.strip()
+        ]
 
     # ========== Email (опционально) ==========
     smtp_server: str = Field(

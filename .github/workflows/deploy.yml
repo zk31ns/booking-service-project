@@ -51,7 +51,7 @@ jobs:
 
       - name: Clone/Update repository on server
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
+          ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << EOF
           set -e
           DEPLOY_PATH="/home/yc-user/booking_seats_team_project"
           GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"

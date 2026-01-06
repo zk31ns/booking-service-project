@@ -60,7 +60,10 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option('sqlalchemy.url')
+    import os
+
+    # Use DATABASE_URL from environment if available, otherwise use alembic.ini
+    url = os.getenv('DATABASE_URL') or config.get_main_option('sqlalchemy.url')
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -87,8 +90,17 @@ async def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    import os
+
     configuration = config.get_section(config.config_ini_section)
-    configuration['sqlalchemy.url'] = config.get_main_option('sqlalchemy.url')
+    # Use DATABASE_URL from environment if available, otherwise use alembic.ini
+    database_url = os.getenv('DATABASE_URL')
+    if database_url:
+        configuration['sqlalchemy.url'] = database_url
+    else:
+        configuration['sqlalchemy.url'] = config.get_main_option(
+            'sqlalchemy.url'
+        )
 
     connectable = create_async_engine(
         configuration['sqlalchemy.url'],

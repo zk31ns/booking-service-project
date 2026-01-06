@@ -72,15 +72,10 @@ jobs:
             IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api docker-compose up -d
             echo "Waiting for containers to start..."
             sleep 60
-            echo "Checking container status..."
-            for i in {1..30}; do
-              if IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api docker-compose ps | grep -q "app.*Up"; then
-                echo "✅ App container is running"
-                break
-              fi
-              echo "Waiting for app container... ($i/30)"
-              sleep 2
-            done
+            echo "Container status:"
+            IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api docker-compose ps
+            echo "App container logs:"
+            IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api docker-compose logs app || true
           EOF
 
       - name: Run database migrations

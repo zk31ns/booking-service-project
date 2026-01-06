@@ -5,11 +5,6 @@ on:
     branches:
       - main
 
-env:
-  DEPLOY_HOST: 89.169.183.91
-  DEPLOY_USER: yc-user
-  DEPLOY_PATH: /home/yc-user/booking_seats_team_project
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -24,24 +19,26 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ env.DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Clone/Update repository on server
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} << 'EOF'
-            if [ -d "${{ env.DEPLOY_PATH }}" ]; then
-              cd ${{ env.DEPLOY_PATH }}
+          ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
+            set -e
+            if [ -d "${{ secrets.DEPLOY_PATH }}" ]; then
+              cd ${{ secrets.DEPLOY_PATH }}
               git pull origin main
             else
-              git clone https://github.com/Yandex-Practicum-Students/57_58_booking_seats_team_2.git ${{ env.DEPLOY_PATH }}
-              cd ${{ env.DEPLOY_PATH }}
+              git clone https://github.com/Yandex-Practicum-Students/57_58_booking_seats_team_2.git ${{ secrets.DEPLOY_PATH }}
+              cd ${{ secrets.DEPLOY_PATH }}
             fi
           EOF
 
       - name: Start Docker containers
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} << 'EOF'
-            cd ${{ env.DEPLOY_PATH }}/infra
+          ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
+            set -e
+            cd ${{ secrets.DEPLOY_PATH }}/infra
             docker-compose pull
             docker-compose up -d
             sleep 10
@@ -49,14 +46,16 @@ jobs:
 
       - name: Run database migrations
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} << 'EOF'
-            cd ${{ env.DEPLOY_PATH }}
+          ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
+            set -e
+            cd ${{ secrets.DEPLOY_PATH }}
             docker-compose -f infra/docker-compose.yml exec -T app alembic upgrade head
           EOF
 
       - name: Health check
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }} << 'EOF'
+          ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
+            set -e
             for i in {1..30}; do
               if curl -s http://localhost:8000/docs > /dev/null; then
                 echo "✅ Application is healthy!"
@@ -68,3 +67,30 @@ jobs:
             echo "❌ Application failed to start"
             exit 1
           EOF
+
+      - name: Notify Telegram (Success)
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            ✅ Production Deployment Successful!
+            Repository: Booking Seats API
+            Branch: main
+            Commit: ${{ github.sha }}
+            Server: ${{ secrets.DEPLOY_HOST }}
+
+      - name: Notify Telegram (Failure)
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            ❌ Production Deployment Failed!
+            Repository: Booking Seats API
+            Branch: main
+            Commit: ${{ github.sha }}
+            Error: Check GitHub Actions logs for details
+            Server: ${{ secrets.DEPLOY_HOST }}

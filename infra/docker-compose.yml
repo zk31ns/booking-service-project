@@ -66,9 +66,9 @@ services:
     working_dir: /app
     environment:
       - PYTHONPATH=/app
-      # Override DATABASE_URL for Docker network (use service name 'db' and internal port 5432)
-      # Variables are read from .env file (docker-compose reads .env from same directory)
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-booking_db}
+      # Set POSTGRES_HOST for Docker network (Alembic will build DATABASE_URL from these vars)
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
     ports:
       - "${PORT:-8000}:${PORT:-8000}"
     depends_on:
@@ -93,9 +93,9 @@ services:
     working_dir: /app
     environment:
       - PYTHONPATH=/app
-      # Override DATABASE_URL for Docker network (use service name 'db' and internal port 5432)
-      # Variables are read from .env file (docker-compose reads .env from same directory)
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-booking_db}
+      # Set POSTGRES_HOST for Docker network (Alembic will build DATABASE_URL from these vars)
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
     depends_on:
       rabbitmq:
         condition: service_healthy

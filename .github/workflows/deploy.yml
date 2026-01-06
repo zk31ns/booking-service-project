@@ -53,13 +53,13 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
           set -e
-          DEPLOY_PATH="${{ secrets.DEPLOY_PATH }}"
+          DEPLOY_PATH="/home/yc-user/booking_seats_team_project"
           if [ -d "$DEPLOY_PATH" ]; then
             cd "$DEPLOY_PATH"
             git pull origin main
           else
             mkdir -p "$(dirname "$DEPLOY_PATH")"
-            git clone https://github.com/Yandex-Practicum-Students/57_58_booking_seats_team_2.git "$DEPLOY_PATH"
+            git clone git@github.com:Yandex-Practicum-Students/57_58_booking_seats_team_2.git "$DEPLOY_PATH"
             cd "$DEPLOY_PATH"
           fi
           EOF
@@ -68,7 +68,7 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
             set -e
-            cd ${{ secrets.DEPLOY_PATH }}/infra
+            cd /home/yc-user/booking_seats_team_project/infra
             IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api docker-compose pull
             IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api docker-compose up -d
             sleep 10
@@ -78,7 +78,7 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
             set -e
-            cd ${{ secrets.DEPLOY_PATH }}
+            cd /home/yc-user/booking_seats_team_project
             IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api docker-compose -f infra/docker-compose.yml exec -T app alembic upgrade head
           EOF
 

@@ -5,10 +5,15 @@ on:
     branches:
       - main
 
+env:
+  DOCKER_IMAGE_NAME: booking-seats-api
+  DEPLOY_PATH: /home/yc-user/booking_seats_team_project
+  CONTAINER_NAME: booking_app
+
 jobs:
   build_and_push:
     runs-on: ubuntu-latest
-    name: Build and Push Docker image
+    name: Build and Push Docker Image
 
     steps:
       - name: Checkout code
@@ -30,13 +35,16 @@ jobs:
           file: ./src/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:buildcache,mode=max
 
-  deploy:
+  sync_code:
     runs-on: ubuntu-latest
-    name: Deploy to Server
+    name: Sync Code to Server
     needs: build_and_push
+    if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout code
@@ -49,101 +57,90 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Clone/Update repository on server
+      - name: Sync code to server
         run: |
-          DEPLOY_PATH="/home/yc-user/booking_seats_team_project"
-          ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "mkdir -p $DEPLOY_PATH"
-          rsync -avz -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
             --exclude '.git' \
             --exclude '.github' \
             --exclude '.env' \
             --exclude 'infra/pgdata' \
             --exclude 'node_modules' \
             --exclude '__pycache__' \
-            ./ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:$DEPLOY_PATH/
+            --exclude '*.pyc' \
+            --exclude '.pytest_cache' \
+            ./ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}/
 
-      - name: Start Docker containers
+  deploy_containers:
+    runs-on: ubuntu-latest
+    name: Deploy Docker Containers
+    needs: sync_code
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Configure SSH
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
-            set -e
-            cd /home/yc-user/booking_seats_team_project/infra
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
-            # Stop and remove old containers
-            IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api docker-compose down || true
+      - name: Deploy application
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'DEPLOY_EOF'
+            set -euo pipefail
 
-            # Pull latest images
-            IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api docker-compose pull
+            cd ${{ env.DEPLOY_PATH }}/infra
 
-            # Start containers
-            IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api docker-compose up -d
+            # Export environment variables
+            export IMAGE_TAG=${{ github.sha }}
+            export DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}
 
-            echo "Waiting for containers to be running..."
+            echo "🔄 Stopping old containers..."
+            docker-compose down --remove-orphans || true
 
-            # Wait for app container to be running (max 5 minutes)
-            CONTAINER_NAME="booking_app"
-            MAX_WAIT=300
-            ELAPSED=0
-
-            while [ $ELAPSED -lt $MAX_WAIT ]; do
-              STATUS=$(docker inspect -f '{{.State.Status}}' "$CONTAINER_NAME" 2>/dev/null || echo "not_found")
-
-              if [ "$STATUS" = "running" ]; then
-                echo "✅ Container $CONTAINER_NAME is running!"
-                break
-              elif [ "$STATUS" = "restarting" ]; then
-                echo "⏳ Container $CONTAINER_NAME is restarting... (${ELAPSED}s elapsed)"
-              elif [ "$STATUS" = "not_found" ]; then
-                echo "❌ Container $CONTAINER_NAME not found!"
-                exit 1
-              else
-                echo "⏳ Container $CONTAINER_NAME status: $STATUS (${ELAPSED}s elapsed)"
-              fi
-
-              sleep 5
-              ELAPSED=$((ELAPSED + 5))
-            done
-
-            if [ $ELAPSED -ge $MAX_WAIT ]; then
-              echo "❌ Timeout waiting for container $CONTAINER_NAME to be running!"
-              echo "Container logs:"
-              docker logs --tail 50 "$CONTAINER_NAME" 2>/dev/null || true
+            echo "📥 Pulling latest Docker images..."
+            docker-compose pull || {
+              echo "❌ Failed to pull images"
               exit 1
-            fi
+            }
 
-            echo "Container status:"
-            IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api docker-compose ps
-            echo "App container logs (last 30 lines):"
-            IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api docker-compose logs --tail 30 app || true
-          EOF
+            echo "🚀 Starting containers..."
+            docker-compose up -d || {
+              echo "❌ Failed to start containers"
+              docker-compose logs --tail 50
+              exit 1
+            }
 
-      - name: Run database migrations
-        run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
-            set -e
-            cd /home/yc-user/booking_seats_team_project/infra
-
-            # Ensure container is stable and running before executing migrations
-            CONTAINER_NAME="booking_app"
+            # Wait for container to be healthy
+            echo "⏳ Waiting for container to be healthy..."
+            CONTAINER_NAME="${{ env.CONTAINER_NAME }}"
             MAX_WAIT=300
             ELAPSED=0
             STABLE_COUNT=0
-            REQUIRED_STABLE_CHECKS=3
+            REQUIRED_STABLE=3
 
-            echo "Waiting for container to be stable and running..."
             while [ $ELAPSED -lt $MAX_WAIT ]; do
               STATUS=$(docker inspect -f '{{.State.Status}}' "$CONTAINER_NAME" 2>/dev/null || echo "not_found")
 
               if [ "$STATUS" = "running" ]; then
-                STABLE_COUNT=$((STABLE_COUNT + 1))
-                echo "✅ Container is running (stable check: ${STABLE_COUNT}/${REQUIRED_STABLE_CHECKS})"
+                HEALTH=$(docker inspect -f '{{.State.Health.Status}}' "$CONTAINER_NAME" 2>/dev/null || echo "no-healthcheck")
 
-                if [ $STABLE_COUNT -ge $REQUIRED_STABLE_CHECKS ]; then
-                  echo "✅ Container is stable, proceeding with migrations..."
-                  break
+                if [ "$HEALTH" = "healthy" ] || [ "$HEALTH" = "no-healthcheck" ]; then
+                  STABLE_COUNT=$((STABLE_COUNT + 1))
+                  echo "✅ Container is running and healthy (${STABLE_COUNT}/${REQUIRED_STABLE})"
+
+                  if [ $STABLE_COUNT -ge $REQUIRED_STABLE ]; then
+                    echo "✅ Container is stable!"
+                    break
+                  fi
+                else
+                  STABLE_COUNT=0
+                  echo "⏳ Container running but health check: $HEALTH"
                 fi
               elif [ "$STATUS" = "restarting" ]; then
                 STABLE_COUNT=0
-                echo "⏳ Container is restarting, resetting stability check... (${ELAPSED}s elapsed)"
+                echo "⏳ Container is restarting... (${ELAPSED}s elapsed)"
               else
                 STABLE_COUNT=0
                 echo "⏳ Container status: $STATUS (${ELAPSED}s elapsed)"
@@ -153,82 +150,148 @@ jobs:
               ELAPSED=$((ELAPSED + 5))
             done
 
-            if [ $STABLE_COUNT -lt $REQUIRED_STABLE_CHECKS ]; then
-              echo "❌ Container did not become stable! Status: $STATUS"
+            if [ $STABLE_COUNT -lt $REQUIRED_STABLE ]; then
+              echo "❌ Container did not become stable!"
               echo "Container logs:"
               docker logs --tail 100 "$CONTAINER_NAME" 2>/dev/null || true
-              echo "Container inspect:"
-              docker inspect "$CONTAINER_NAME" 2>/dev/null | grep -A 20 "State" || true
               exit 1
             fi
 
-            # Final check right before executing command
-            echo "Final check before running migrations..."
-            for i in {1..5}; do
-              FINAL_STATUS=$(docker inspect -f '{{.State.Status}}' "$CONTAINER_NAME" 2>/dev/null || echo "not_found")
-              if [ "$FINAL_STATUS" != "running" ]; then
-                echo "⚠️ Container status changed to: $FINAL_STATUS, waiting..."
-                sleep 3
-              else
-                echo "✅ Container confirmed running, executing migrations..."
+            echo "📊 Container status:"
+            docker-compose ps
+          DEPLOY_EOF
+
+  run_migrations:
+    runs-on: ubuntu-latest
+    name: Run Database Migrations
+    needs: deploy_containers
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Run database migrations
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'MIGRATE_EOF'
+            set -euo pipefail
+
+            cd ${{ env.DEPLOY_PATH }}/infra
+
+            export IMAGE_TAG=${{ github.sha }}
+            export DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}
+
+            CONTAINER_NAME="${{ env.CONTAINER_NAME }}"
+
+            # Ensure container is running
+            for i in {1..10}; do
+              STATUS=$(docker inspect -f '{{.State.Status}}' "$CONTAINER_NAME" 2>/dev/null || echo "not_found")
+
+              if [ "$STATUS" = "running" ]; then
+                echo "✅ Container is running, proceeding with migrations..."
                 break
               fi
 
-              if [ $i -eq 5 ]; then
-                echo "❌ Container not stable for final check!"
+              if [ $i -eq 10 ]; then
+                echo "❌ Container is not running! Status: $STATUS"
                 exit 1
               fi
+
+              echo "⏳ Waiting for container... ($i/10)"
+              sleep 3
             done
 
-            # Run migrations with retry logic
-            echo "Running database migrations..."
+            # Run migrations with retry
+            echo "🔄 Running database migrations..."
             MAX_RETRIES=3
-            RETRY_COUNT=0
 
-            while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-              # Check status one more time before exec
-              CURRENT_STATUS=$(docker inspect -f '{{.State.Status}}' "$CONTAINER_NAME" 2>/dev/null || echo "not_found")
-              if [ "$CURRENT_STATUS" != "running" ]; then
-                echo "⚠️ Container status is $CURRENT_STATUS, waiting 5 seconds..."
-                sleep 5
-                RETRY_COUNT=$((RETRY_COUNT + 1))
-                continue
-              fi
-
-              if IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api docker-compose exec -T app alembic upgrade head 2>&1; then
+            for attempt in $(seq 1 $MAX_RETRIES); do
+              if docker-compose exec -T app alembic upgrade head 2>&1; then
                 echo "✅ Migrations completed successfully!"
                 exit 0
               else
-                RETRY_COUNT=$((RETRY_COUNT + 1))
-                if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-                  echo "❌ Migrations failed (attempt ${RETRY_COUNT}/${MAX_RETRIES}), checking container status..."
-                  docker inspect -f '{{.State.Status}}' "$CONTAINER_NAME" || true
-                  docker logs --tail 20 "$CONTAINER_NAME" 2>/dev/null || true
-                  echo "Waiting 10 seconds before retry..."
-                  sleep 10
+                if [ $attempt -lt $MAX_RETRIES ]; then
+                  echo "⚠️ Migration attempt $attempt failed, retrying in 5 seconds..."
+                  sleep 5
+                else
+                  echo "❌ Migrations failed after $MAX_RETRIES attempts"
+                  docker logs --tail 50 "$CONTAINER_NAME" 2>/dev/null || true
+                  exit 1
                 fi
               fi
             done
+          MIGRATE_EOF
 
-            echo "❌ Migrations failed after ${MAX_RETRIES} attempts"
-            exit 1
-          EOF
+  health_check:
+    runs-on: ubuntu-latest
+    name: Health Check
+    needs: run_migrations
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Health check
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
-            set -e
-            for i in {1..30}; do
-              if curl -s http://localhost:8000/docs > /dev/null; then
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'HEALTH_EOF'
+            set -euo pipefail
+
+            echo "🏥 Performing health check..."
+            MAX_ATTEMPTS=30
+
+            for i in $(seq 1 $MAX_ATTEMPTS); do
+              if curl -sf http://localhost:8000/api/v1/health > /dev/null 2>&1; then
                 echo "✅ Application is healthy!"
                 exit 0
               fi
-              echo "Waiting for application to be ready... ($i/30)"
+
+              echo "⏳ Waiting for application to be ready... ($i/$MAX_ATTEMPTS)"
               sleep 2
             done
-            echo "❌ Application failed to start"
+
+            echo "❌ Application health check failed"
+            echo "Container logs:"
+            docker logs --tail 50 "${{ env.CONTAINER_NAME }}" 2>/dev/null || true
             exit 1
-          EOF
+          HEALTH_EOF
+
+  deployment_summary:
+    runs-on: ubuntu-latest
+    name: Deployment Summary
+    needs: [deploy_containers, run_migrations, health_check]
+    if: always()
+
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deployment summary
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'SUMMARY_EOF'
+            echo "📋 Deployment Summary:"
+            echo "===================="
+            echo "Commit: ${{ github.sha }}"
+            echo "Branch: ${{ github.ref_name }}"
+            echo ""
+            echo "Container Status:"
+            cd ${{ env.DEPLOY_PATH }}/infra
+            export IMAGE_TAG=${{ github.sha }}
+            export DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}
+            docker-compose ps
+          SUMMARY_EOF
 
       # - name: Notify Telegram (Success)
         # if: success()
@@ -239,7 +302,7 @@ jobs:
         #   message: |
         #     ✅ Production Deployment Successful!
         #     Repository: Booking Seats API
-        #     Branch: main
+        #     Branch: ${{ github.ref_name }}
         #     Commit: ${{ github.sha }}
         #     Server: ${{ secrets.DEPLOY_HOST }}
 
@@ -252,7 +315,7 @@ jobs:
         #   message: |
         #     ❌ Production Deployment Failed!
         #     Repository: Booking Seats API
-        #     Branch: main
+        #     Branch: ${{ github.ref_name }}
         #     Commit: ${{ github.sha }}
         #     Error: Check GitHub Actions logs for details
         #     Server: ${{ secrets.DEPLOY_HOST }}

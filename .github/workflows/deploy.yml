@@ -326,29 +326,43 @@ jobs:
             docker-compose ps || echo "⚠️ Could not get container status"
           SUMMARY_EOF
 
-      # - name: Notify Telegram (Success)
-        # if: success()
-        # uses: appleboy/telegram-action@master
-        # with:
-        #   to: ${{ secrets.TELEGRAM_CHAT_ID }}
-        #   token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        #   message: |
-        #     ✅ Production Deployment Successful!
-        #     Repository: Booking Seats API
-        #     Branch: ${{ github.ref_name }}
-        #     Commit: ${{ github.sha }}
-        #     Server: ${{ secrets.DEPLOY_HOST }}
+      - name: Notify Telegram (Success)
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            ✅ Production Deployment Successful!
 
-      # - name: Notify Telegram (Failure)
-        # if: failure()
-        # uses: appleboy/telegram-action@master
-        # with:
-        #   to: ${{ secrets.TELEGRAM_CHAT_ID }}
-        #   token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        #   message: |
-        #     ❌ Production Deployment Failed!
-        #     Repository: Booking Seats API
-        #     Branch: ${{ github.ref_name }}
-        #     Commit: ${{ github.sha }}
-        #     Error: Check GitHub Actions logs for details
-        #     Server: ${{ secrets.DEPLOY_HOST }}
+            📦 Repository: Booking Seats API
+            🌿 Branch: ${{ github.ref_name }}
+            🔖 Commit: ${{ github.sha }}
+
+            🌐 Server: ${{ secrets.DEPLOY_HOST }}
+            📍 IP: ${{ secrets.DEPLOY_HOST }}
+            🔗 API Docs: http://${{ secrets.DEPLOY_HOST }}:8000/docs
+            🏥 Health: http://${{ secrets.DEPLOY_HOST }}:8000/api/v1/health
+
+            ⏰ Time: ${{ github.event.head_commit.timestamp }}
+
+      - name: Notify Telegram (Failure)
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            ❌ Production Deployment Failed!
+
+            📦 Repository: Booking Seats API
+            🌿 Branch: ${{ github.ref_name }}
+            🔖 Commit: ${{ github.sha }}
+
+            🌐 Server: ${{ secrets.DEPLOY_HOST }}
+            📍 IP: ${{ secrets.DEPLOY_HOST }}
+
+            ⚠️ Error: Check GitHub Actions logs for details
+            🔗 Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            ⏰ Time: ${{ github.event.head_commit.timestamp }}

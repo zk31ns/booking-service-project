@@ -52,23 +52,13 @@ jobs:
       - name: Clone/Update repository on server
         run: |
           DEPLOY_PATH="/home/yc-user/booking_seats_team_project"
-          GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
-          ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} bash -s "$GITHUB_TOKEN" "$DEPLOY_PATH" << 'SCRIPT'
-          GITHUB_TOKEN=$1
-          DEPLOY_PATH=$2
-          set -e
-          export GIT_ASKPASS='echo'
-          export GIT_USERNAME='oauth2'
-          export GIT_PASSWORD="$GITHUB_TOKEN"
-          if [ -d "$DEPLOY_PATH" ]; then
-            cd "$DEPLOY_PATH"
-            git pull origin main
-          else
-            mkdir -p "$(dirname "$DEPLOY_PATH")"
-            git clone https://github.com/Yandex-Practicum-Students/57_58_booking_seats_team_2.git "$DEPLOY_PATH"
-            cd "$DEPLOY_PATH"
-          fi
-          SCRIPT
+          ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "mkdir -p $DEPLOY_PATH"
+          rsync -avz --delete -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude 'node_modules' \
+            --exclude '__pycache__' \
+            ./ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:$DEPLOY_PATH/
 
       - name: Start Docker containers
         run: |

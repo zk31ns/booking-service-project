@@ -55,12 +55,13 @@ jobs:
           DEPLOY_PATH="/home/yc-user/booking_seats_team_project"
           ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
             set -e
+            git config --global url.\"https://$GITHUB_TOKEN@github.com/\".insteadOf \"https://github.com/\"
             if [ -d \"$DEPLOY_PATH\" ]; then
               cd \"$DEPLOY_PATH\"
               git pull origin main
             else
               mkdir -p \"\$(dirname \"$DEPLOY_PATH\")\"
-              git clone https://$GITHUB_TOKEN@github.com/Yandex-Practicum-Students/57_58_booking_seats_team_2.git \"$DEPLOY_PATH\"
+              git clone https://github.com/Yandex-Practicum-Students/57_58_booking_seats_team_2.git \"$DEPLOY_PATH\"
               cd \"$DEPLOY_PATH\"
             fi
           "

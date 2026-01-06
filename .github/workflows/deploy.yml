@@ -56,6 +56,7 @@ jobs:
           rsync -avz --delete -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
             --exclude '.git' \
             --exclude '.github' \
+            --exclude '.env' \
             --exclude 'node_modules' \
             --exclude '__pycache__' \
             ./ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:$DEPLOY_PATH/

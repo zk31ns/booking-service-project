@@ -1,5 +1,3 @@
-name: booking_seats_team_project
-
 volumes:
   booking_redis_data:
   booking_flower_data:

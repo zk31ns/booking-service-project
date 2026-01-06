@@ -5,7 +5,7 @@
 
 from pathlib import Path
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 from app.core.constants import (
@@ -89,34 +89,21 @@ class Settings(BaseSettings):
     )
     allowed_origins: list[str] = Field(
         default=['http://localhost:3000', 'http://localhost:8000'],
-        description='Allowed CORS origins',
+        env='ALLOWED_ORIGINS',
+        description='Allowed CORS origins (comma-separated string from env)',
     )
 
-    @model_validator(mode='before')
+    @field_validator('allowed_origins', mode='before')
     @classmethod
-    def parse_allowed_origins(cls, data: dict | object) -> dict | object:
-        """Parse ALLOWED_ORIGINS from comma-separated string."""
-        if isinstance(data, dict):
-            # Check both uppercase (env) and lowercase (normalized) keys
-            origins_key = None
-            if 'ALLOWED_ORIGINS' in data:
-                origins_key = 'ALLOWED_ORIGINS'
-            elif 'allowed_origins' in data:
-                origins_key = 'allowed_origins'
-
-            if origins_key:
-                origins_value = data[origins_key]
-                if isinstance(origins_value, str):
-                    # Parse comma-separated string into list
-                    data['allowed_origins'] = [
-                        origin.strip()
-                        for origin in origins_value.split(',')
-                        if origin.strip()
-                    ]
-                    # Remove original key if different
-                    if origins_key != 'allowed_origins':
-                        del data[origins_key]
-        return data
+    def parse_allowed_origins(cls, v: str | list[str]) -> list[str]:
+        """Parse ALLOWED_ORIGINS from comma-separated string or list."""
+        if isinstance(v, list):
+            return v
+        if isinstance(v, str):
+            return [
+                origin.strip() for origin in v.split(',') if origin.strip()
+            ]
+        return v
 
     # ========== Email (опционально) ==========
     smtp_server: str = Field(

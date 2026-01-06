@@ -4,10 +4,9 @@
 """
 
 from pathlib import Path
-from typing import Annotated
 
-from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, NoDecode
+from pydantic import Field
+from pydantic_settings import BaseSettings
 
 from app.core.constants import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
@@ -88,29 +87,21 @@ class Settings(BaseSettings):
     frontend_url: str = Field(
         ..., env='FRONTEND_URL', description='URL фронтенда'
     )
-    allowed_origins: Annotated[
-        list[str],
-        NoDecode,
-        Field(
-            default=['http://localhost:3000', 'http://localhost:8000'],
-            env='ALLOWED_ORIGINS',
-            description=(
-                'Allowed CORS origins (comma-separated string from env)'
-            ),
-        ),
-    ]
+    allowed_origins_str: str = Field(
+        default='http://localhost:3000,http://localhost:8000',
+        env='ALLOWED_ORIGINS',
+        description='Allowed CORS origins (comma-separated string)',
+        exclude=True,
+    )
 
-    @field_validator('allowed_origins', mode='before')
-    @classmethod
-    def parse_allowed_origins(cls, v: str | list[str]) -> list[str]:
-        """Parse ALLOWED_ORIGINS from comma-separated string or list."""
-        if isinstance(v, list):
-            return v
-        if isinstance(v, str):
-            return [
-                origin.strip() for origin in v.split(',') if origin.strip()
-            ]
-        return v
+    @property
+    def allowed_origins(self) -> list[str]:
+        """Parse allowed_origins from comma-separated string."""
+        return [
+            origin.strip()
+            for origin in self.allowed_origins_str.split(',')
+            if origin.strip()
+        ]
 
     # ========== Email (опционально) ==========
     smtp_server: str = Field(

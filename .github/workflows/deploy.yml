@@ -30,8 +30,8 @@ jobs:
           file: ./src/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/booking_app:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/booking_app:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api:${{ github.sha }}
 
   deploy:
     runs-on: ubuntu-latest
@@ -67,8 +67,8 @@ jobs:
           ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
             set -e
             cd ${{ secrets.DEPLOY_PATH }}/infra
-            IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking_app docker-compose pull
-            IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking_app docker-compose up -d
+            IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api docker-compose pull
+            IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api docker-compose up -d
             sleep 10
           EOF
 
@@ -77,7 +77,7 @@ jobs:
           ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
             set -e
             cd ${{ secrets.DEPLOY_PATH }}
-            IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking_app docker-compose -f infra/docker-compose.yml exec -T app alembic upgrade head
+            IMAGE_TAG=${{ github.sha }} DOCKER_IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/booking-seats-api docker-compose -f infra/docker-compose.yml exec -T app alembic upgrade head
           EOF
 
       - name: Health check

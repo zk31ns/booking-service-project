@@ -62,7 +62,7 @@ services:
     container_name: booking_app
     env_file: ../.env
     image: ${DOCKER_IMAGE:?set DOCKER_IMAGE env}:${IMAGE_TAG:-latest}
-    command: uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+    command: uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
     working_dir: /app
     environment:
       - PYTHONPATH=/app

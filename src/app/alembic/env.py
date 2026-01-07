@@ -6,19 +6,26 @@ from logging.config import fileConfig
 from pathlib import Path
 from typing import Any
 
-# Добавить корневую папку в путь для импорта (исправляет проблему с абсолютными
-# импортами). env.py находится в src/app/alembic/, поэтому нужно подняться
-# на 4 уровня до корня: alembic -> app -> src -> (parent) -> корень
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent))
-
-from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from app.db.base import Base
+from alembic import context
+
+# Добавить корневую папку в путь для импорта (исправляет проблему с
+# абсолютными импортами).
+# В Docker: env.py находится в /app/app/alembic/, нужно добавить /app
+# В локальной разработке: env.py находится в src/app/alembic/,
+# нужно добавить корень проекта
+# Используем более надежный способ - поднимаемся до директории,
+# где находится app/
+app_dir = Path(__file__).resolve().parent.parent  # /app/app или src/app
+root_dir = app_dir.parent  # /app или src
+sys.path.insert(0, str(root_dir))
+
+from app.db.base import Base  # noqa: E402
 
 # Import all models to register them with Base.metadata for autogenerate
-from app.models import (  # noqa: F401
+from app.models import (  # noqa: F401, E402
     Action,
     Cafe,
     Dish,
@@ -53,7 +60,10 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option('sqlalchemy.url')
+    import os
+
+    # Use DATABASE_URL from environment if available, otherwise use alembic.ini
+    url = os.getenv('DATABASE_URL') or config.get_main_option('sqlalchemy.url')
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -80,8 +90,33 @@ async def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    import os
+    from urllib.parse import quote_plus
+
     configuration = config.get_section(config.config_ini_section)
-    configuration['sqlalchemy.url'] = config.get_main_option('sqlalchemy.url')
+    # Prefer building DATABASE_URL from POSTGRES_* variables for Docker
+    # (more reliable than parsing DATABASE_URL which may have encoding issues)
+    postgres_user = os.getenv('POSTGRES_USER')
+    postgres_password = os.getenv('POSTGRES_PASSWORD')
+    postgres_db = os.getenv('POSTGRES_DB')
+    postgres_host = os.getenv('POSTGRES_HOST')
+    postgres_port = os.getenv('POSTGRES_PORT')
+
+    if all([postgres_user, postgres_password, postgres_db, postgres_host]):
+        # Build DATABASE_URL from individual variables (most reliable)
+        # URL-encode password to handle special characters (e.g., dashes)
+        encoded_password = quote_plus(postgres_password)
+        database_url = (
+            f'postgresql+asyncpg://{postgres_user}:{encoded_password}'
+            f'@{postgres_host}:{postgres_port or "5432"}/{postgres_db}'
+        )
+    else:
+        # Fallback to DATABASE_URL from environment or alembic.ini
+        database_url = os.getenv('DATABASE_URL')
+        if not database_url:
+            database_url = config.get_main_option('sqlalchemy.url')
+
+    configuration['sqlalchemy.url'] = database_url
 
     connectable = create_async_engine(
         configuration['sqlalchemy.url'],

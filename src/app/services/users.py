@@ -20,6 +20,7 @@ from app.core.exceptions import (
 )
 from app.core.security import create_tokens_pair, verify_password
 from app.db.session import get_session
+from app.models.users import User
 from app.repositories.users import UserRepository
 from app.schemas.users import (
     UserCreate,
@@ -27,8 +28,6 @@ from app.schemas.users import (
     UserShortInfo,
     UserUpdate,
 )
-
-from src.app.models.users import User
 
 
 class UserService:
@@ -466,8 +465,8 @@ class UserService:
 
 
 def get_user_service(
-            session: Annotated[AsyncSession, Depends(get_session)]
-        ) -> UserService:
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> UserService:
     """Создаёт экземпляр UserService.
 
     Returns:

@@ -28,8 +28,7 @@ from app.repositories import (
     TableRepository,
 )
 from app.repositories.slot import SlotRepository
-
-from src.app.repositories.users import UserRepository
+from app.repositories.users import UserRepository
 
 
 class BookingService:

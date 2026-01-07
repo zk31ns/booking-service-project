@@ -1,7 +1,7 @@
 from decimal import Decimal
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.constants import Limits
 
@@ -48,7 +48,4 @@ class DishInfo(DishBase):
     id: int
     active: bool
 
-    class Config:  # noqa: D106
-        """Pydantic config."""
-
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

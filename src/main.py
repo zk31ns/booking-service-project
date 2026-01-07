@@ -26,8 +26,6 @@ from app.core.constants import API
 from app.core.lifespan import lifespan
 from app.core.logging import setup_logging
 
-from src.app.api.v1 import root
-
 # Инициализировать логирование
 setup_logging()
 

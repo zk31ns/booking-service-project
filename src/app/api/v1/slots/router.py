@@ -24,13 +24,14 @@ async def get_all_slots(
         return [SlotInfo(**item) for item in cached_data]
     service = SlotService(session)
     slots = await service.get_cafe_slots(cafe_id, show_inactive)
+    slots_response = [SlotInfo.model_validate(slot) for slot in slots]
     logger.info(f'Получены слоты для кафе cafe_id={cafe_id}')
     await RedisCache.set(
         cache_key,
-        slots,
+        [s.model_dump(mode='json') for s in slots_response],
         expire=Times.REDIS_CACHE_EXPIRE_TIME,
     )
-    return slots
+    return slots_response
 
 
 @router.post('', response_model=SlotInfo, status_code=status.HTTP_201_CREATED)
@@ -98,11 +99,12 @@ async def update_slot(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=ErrorCode.SLOT_NOT_FOUND,
         )
+    slot_response = SlotInfo.model_validate(slot)
     await session.commit()
     cache_pattern = f'{RedisKey.CACHE_KEY_ALL_SLOTS}:{cafe_id}:*'
     await RedisCache.delete_pattern(cache_pattern)
     logger.info(f'Обновлен слот slot_id={slot_id}')
-    return slot
+    return slot_response
 
 
 @router.delete('/{slot_id}', status_code=status.HTTP_204_NO_CONTENT)

@@ -34,7 +34,7 @@ class SlotService:
 
         """
         cafe_repo = CafeRepository(self.session)
-        cafe = await cafe_repo.get_by_id(cafe_id)
+        cafe = await cafe_repo.get(cafe_id)
 
         if not cafe:
             raise ValidationException(
@@ -171,6 +171,7 @@ class SlotService:
             slot.active = active
 
         await self.session.flush()
+        await self.session.refresh(slot)
         logger.info(f'Обновлен слот id={slot_id}')
         return slot
 

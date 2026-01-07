@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -38,6 +40,11 @@ class Table(Base):
     )
     active: Mapped[bool] = mapped_column(default=True, nullable=False)
     cafe: Mapped['Cafe'] = relationship('Cafe', back_populates='tables')
+
+    cafe: Mapped['Cafe'] = relationship(
+        'Cafe',
+        back_populates='tables',
+    )
 
     def __repr__(self) -> str:
         return (

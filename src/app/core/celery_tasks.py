@@ -22,8 +22,7 @@ from app.repositories import (
     TableRepository,
 )
 from app.repositories.slot import SlotRepository
-
-from src.app.repositories.users import UserRepository
+from app.repositories.users import UserRepository
 
 
 class TelegramAPIResponse(BaseModel):
@@ -241,10 +240,7 @@ def cleanup_expired_bookings(self: Task) -> Dict[str, Any]:
         f'SYSTEM: {EventType.TASK_FINISHED} for bookings cleanup at '
         f'{cleanup_date.isoformat()} Expired: {expired_count}'
     )
-    return {
-        'Expired count': expired_count,
-        'Cleanup date': cleanup_date
-    }
+    return {'Expired count': expired_count, 'Cleanup date': cleanup_date}
 
 
 async def _cleanup_expired_bookings_async() -> int:

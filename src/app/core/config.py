@@ -87,10 +87,21 @@ class Settings(BaseSettings):
     frontend_url: str = Field(
         ..., env='FRONTEND_URL', description='URL фронтенда'
     )
-    allowed_origins: list = Field(
-        default=['http://localhost:3000', 'http://localhost:8000'],
+    allowed_origins_str: str = Field(
+        default='http://localhost:3000,http://localhost:8000',
         env='ALLOWED_ORIGINS',
+        description='Allowed CORS origins (comma-separated string)',
+        exclude=True,
     )
+
+    @property
+    def allowed_origins(self) -> list[str]:
+        """Parse allowed_origins from comma-separated string."""
+        return [
+            origin.strip()
+            for origin in self.allowed_origins_str.split(',')
+            if origin.strip()
+        ]
 
     # ========== Email (опционально) ==========
     smtp_server: str = Field(

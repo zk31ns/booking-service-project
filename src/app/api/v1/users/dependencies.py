@@ -13,12 +13,10 @@ from fastapi.security import (
     HTTPAuthorizationCredentials,
     HTTPBearer,
 )
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_db
-
-# from app.api.v1.cafes.models import cafe_managers
-# Модуль отсутствует, импорт закомментирован для устранения ошибки
 from app.api.v1.users.repository import UserRepository
 from app.core.constants import ErrorCode
 from app.core.exceptions import (
@@ -30,19 +28,24 @@ from app.core.security import (
     get_current_username_from_token,
     verify_refresh_token,
 )
-from app.models.models import User
+from app.models.models import User, cafe_managers
 
 security = HTTPBearer(auto_error=False)
 
 
-def get_user_repository() -> UserRepository:
+def get_user_repository(
+    session: Annotated[AsyncSession, Depends(get_db)],
+) -> UserRepository:
     """Получает репозиторий пользователей.
+
+    Args:
+        session: Async SQLAlchemy сессия
 
     Returns:
         UserRepository: Экземпляр репозитория пользователей
 
     """
-    return UserRepository()
+    return UserRepository(session)
 
 
 async def get_current_user(
@@ -83,9 +86,11 @@ async def get_current_user(
                 ErrorCode.INVALID_TOKEN,
                 headers={'WWW-Authenticate': 'Bearer'},
             )
-        user = await repo.get_by_username(db, username, active_only=True)
+        user = await repo.get_by_username(username, active_only=True)
     else:
-        user = await repo.get(db, user_id, active_only=True)
+        user = await repo.get(user_id)
+        if user and not user.active:
+            user = None
 
     if not user:
         raise AuthenticationException(
@@ -191,24 +196,24 @@ async def require_cafe_manager(
         HTTPException: 403 если пользователь не менеджер этого кафе
 
     """
+    # Суперпользователь имеет доступ ко всем кафе
     if current_user.is_superuser:
         return current_user
 
-    # query = select(cafe_managers).where(
-    #     and_(
-    #         cafe_managers.c.cafe_id == cafe_id,
-    #         cafe_managers.c.user_id == current_user.id,
-    #     ),
-    # )
+    # Проверяем, является ли пользователь менеджером этого кафе
+    query = select(cafe_managers).where(
+        and_(
+            cafe_managers.c.cafe_id == cafe_id,
+            cafe_managers.c.user_id == current_user.id,
+        ),
+    )
 
-    # result = await db.execute(query)
-    # is_manager = result.scalar() is not None
+    result = await db.execute(query)
+    is_manager = result.scalar() is not None
 
-    # if not is_manager:
-    #     raise AuthorizationException(ErrorCode.NOT_CAFE_MANAGER)
+    if not is_manager:
+        raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
 
-    # TODO: Реализовать проверку менеджера кафе
-    # когда появится модель cafe_managers
     return current_user
 
 
@@ -235,8 +240,8 @@ async def validate_refresh_token(
     if not token_data or not token_data.user_id:
         raise AuthenticationException(ErrorCode.TOKEN_EXPIRED)
 
-    user = await repo.get(db, token_data.user_id, active_only=True)
-    if not user:
+    user = await repo.get(token_data.user_id)
+    if not user or not user.active:
         raise AuthenticationException(ErrorCode.USER_NOT_FOUND)
 
     if user.is_blocked:

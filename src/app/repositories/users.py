@@ -13,9 +13,8 @@ from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from app.core.constants import Limits
 from app.core.security import get_password_hash, verify_password
+from app.models.users import User, cafe_managers
 from app.repositories.base import BaseCRUD
-
-from src.app.models.users import User, cafe_managers
 
 
 class UserRepository(BaseCRUD[User]):

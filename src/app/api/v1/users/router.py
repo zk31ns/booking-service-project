@@ -24,7 +24,7 @@ from app.core.exceptions import (
     ValidationException,
 )
 
-from src.app.models.users import User
+from src.app.models import User
 from src.app.schemas.users import (
     UserCreate,
     UserInfo,

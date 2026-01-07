@@ -2,7 +2,7 @@ from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends
 
-from app.api.v1.users.dependencies import get_current_active_user
+from app.api.dependencies import get_current_active_user
 from app.models import Booking, User
 from app.services.booking import BookingService
 

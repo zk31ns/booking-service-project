@@ -20,7 +20,7 @@ from app.core.security import (
 )
 from app.db.session import async_session_maker, get_session
 
-from src.app.models.users import User, cafe_managers
+from src.app.models import User, cafe_managers
 from src.app.repositories.users import UserRepository
 
 security = HTTPBearer(auto_error=False)

@@ -16,8 +16,6 @@ from fastapi.security import (
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_db
-from app.api.v1.users.repository import UserRepository
 from app.core.constants import ErrorCode
 from app.core.exceptions import (
     AuthenticationException,
@@ -28,18 +26,18 @@ from app.core.security import (
     get_current_username_from_token,
     verify_refresh_token,
 )
-from app.models.models import User, cafe_managers
+from app.db.session import get_session
+
+from src.app.models.users import User, cafe_managers
+from src.app.repositories.users import UserRepository
 
 security = HTTPBearer(auto_error=False)
 
 
-def get_user_repository(
-    session: Annotated[AsyncSession, Depends(get_db)],
+async def get_user_repository(
+    session: Annotated[AsyncSession, Depends(get_session)]
 ) -> UserRepository:
     """Получает репозиторий пользователей.
-
-    Args:
-        session: Async SQLAlchemy сессия
 
     Returns:
         UserRepository: Экземпляр репозитория пользователей
@@ -53,14 +51,14 @@ async def get_current_user(
         Optional[HTTPAuthorizationCredentials],
         Security(security),
     ],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    session: Annotated[AsyncSession, Depends(get_session)],
     repo: Annotated[UserRepository, Depends(get_user_repository)],
 ) -> User:
     """Получает текущего аутентифицированного пользователя из JWT токена.
 
     Args:
         credentials: HTTP Bearer токен из заголовка Authorization
-        db: Асинхронная сессия базы данных
+        session: Асинхронная сессия базы данных
         repo: Репозиторий пользователей
 
     Returns:
@@ -86,11 +84,9 @@ async def get_current_user(
                 ErrorCode.INVALID_TOKEN,
                 headers={'WWW-Authenticate': 'Bearer'},
             )
-        user = await repo.get_by_username(username, active_only=True)
+        user = await repo.get_by_username(session, username, active_only=True)
     else:
-        user = await repo.get(user_id)
-        if user and not user.active:
-            user = None
+        user = await repo.get(user_id, active_only=True)
 
     if not user:
         raise AuthenticationException(
@@ -156,7 +152,7 @@ async def get_optional_user(
         Optional[HTTPAuthorizationCredentials],
         Security(security),
     ],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    session: Annotated[AsyncSession, Depends(get_session)],
     repo: Annotated[UserRepository, Depends(get_user_repository)],
 ) -> Optional[User]:
     """Получает текущего пользователя, если токен передан.
@@ -172,7 +168,7 @@ async def get_optional_user(
         return None
 
     try:
-        return await get_current_user(credentials, db, repo)
+        return await get_current_user(credentials, session, repo)
     except HTTPException:
         return None
 
@@ -180,14 +176,14 @@ async def get_optional_user(
 async def require_cafe_manager(
     cafe_id: int,
     current_user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
+    session: Annotated[AsyncSession, Depends(get_session)],
 ) -> User:
     """Проверяет, является ли пользователь менеджером указанного кафе.
 
     Args:
         cafe_id: ID кафе для проверки
         current_user: Текущий пользователь
-        db: Сессия базы данных
+        session: Асинхронная сессия базы данных
 
     Returns:
         User: Пользователь если он менеджер кафе
@@ -196,7 +192,6 @@ async def require_cafe_manager(
         HTTPException: 403 если пользователь не менеджер этого кафе
 
     """
-    # Суперпользователь имеет доступ ко всем кафе
     if current_user.is_superuser:
         return current_user
 
@@ -208,7 +203,7 @@ async def require_cafe_manager(
         ),
     )
 
-    result = await db.execute(query)
+    result = await session.execute(query)
     is_manager = result.scalar() is not None
 
     if not is_manager:
@@ -219,14 +214,14 @@ async def require_cafe_manager(
 
 async def validate_refresh_token(
     refresh_token: str,
-    db: Annotated[AsyncSession, Depends(get_db)],
+    session: Annotated[AsyncSession, Depends(get_session)],
     repo: Annotated[UserRepository, Depends(get_user_repository)],
 ) -> User:
     """Валидирует refresh токен и возвращает пользователя.
 
     Args:
         refresh_token: JWT refresh токен
-        db: Сессия базы данных
+        session: Асинхронная сессия базы данных
         repo: Репозиторий пользователей
 
     Returns:
@@ -240,8 +235,8 @@ async def validate_refresh_token(
     if not token_data or not token_data.user_id:
         raise AuthenticationException(ErrorCode.TOKEN_EXPIRED)
 
-    user = await repo.get(token_data.user_id)
-    if not user or not user.active:
+    user = await repo.get(token_data.user_id, active_only=True)
+    if not user:
         raise AuthenticationException(ErrorCode.USER_NOT_FOUND)
 
     if user.is_blocked:

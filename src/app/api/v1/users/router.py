@@ -8,7 +8,7 @@ from typing import Annotated, Any, Dict, List, Optional
 from fastapi import APIRouter, Body, Depends, Query, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.api.v1.users.dependencies import (
+from app.api.dependencies import (
     get_current_active_user,
     get_current_superuser,
     get_current_user,

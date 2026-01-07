@@ -9,7 +9,6 @@ import aiohttp
 from celery import Task
 from pydantic import BaseModel
 
-from app.api.v1.users.repository import UserRepository
 from app.core.celery_app import celery_app
 from app.core.celery_base import BaseTask
 from app.core.config import settings
@@ -23,6 +22,7 @@ from app.repositories import (
     TableRepository,
 )
 from app.repositories.slot import SlotRepository
+from app.repositories.users import UserRepository
 
 
 class TelegramAPIResponse(BaseModel):
@@ -234,19 +234,20 @@ def cleanup_expired_bookings(self: Task) -> Dict[str, Any]:
 
     """
     logger.info(f'SYSTEM: {EventType.TASK_STARTED} for bookings cleanup ')
-    result = asyncio.run(_cleanup_expired_bookings_async())
+    expired_count = asyncio.run(_cleanup_expired_bookings_async())
+    cleanup_date = datetime.now()
     logger.info(
-        f'SYSTEM: {EventType.TASK_FINISHED} for bookings cleanup '
-        f'Expired: {result["expired_count"]}, '
+        f'SYSTEM: {EventType.TASK_FINISHED} for bookings cleanup at '
+        f'{cleanup_date.isoformat()} Expired: {expired_count}'
     )
-    return result
+    return {'Expired count': expired_count, 'Cleanup date': cleanup_date}
 
 
-async def _cleanup_expired_bookings_async() -> Dict[str, Any]:
+async def _cleanup_expired_bookings_async() -> int:
     """Асинхронная очистка истёкших бронирований.
 
     Returns:
-        dict: Статистика выполнения
+        Количество обработанных записей
 
     """
     from app.services.booking import BookingService
@@ -254,7 +255,7 @@ async def _cleanup_expired_bookings_async() -> Dict[str, Any]:
     async with async_session_maker() as session:
         booking_repo = BookingRepository(session)
         cafe_repo = CafeRepository(session)
-        user_repo = UserRepository()
+        user_repo = UserRepository(session)
         table_repo = TableRepository(session)
         slot_repo = SlotRepository(session)
         booking_service = BookingService(
@@ -267,7 +268,7 @@ async def _cleanup_expired_bookings_async() -> Dict[str, Any]:
         now = date.today()
         expired_count = await booking_service.cleanup_expired_bookings(now=now)
         await session.commit()
-    return {'expired_count': expired_count, 'timestamp': now.isoformat()}
+    return expired_count
 
 
 async def _send_telegram_message(

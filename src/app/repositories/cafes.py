@@ -13,7 +13,10 @@ from app.schemas.cafes import CafeCreate, CafeUpdate
 class CafeRepository(BaseCRUD[Cafe]):
     """Репозиторий для работы с кафе."""
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(
+            self,
+            session: AsyncSession
+    ) -> None:
         """Инициализация репозитория кафе.
 
         Args:
@@ -21,6 +24,21 @@ class CafeRepository(BaseCRUD[Cafe]):
 
         """
         super().__init__(session, Cafe)
+
+    async def get_by_id(
+        self,
+        cafe_id: int,
+    ) -> Optional[Cafe]:
+        """Получить кафе по ID.
+
+        Args:
+            cafe_id: Идентификатор кафе.
+
+        Returns:
+            Optional[Cafe]: Кафе или None, если не найдено.
+
+        """
+        return await super().get(cafe_id)
 
     async def get_all(
         self,
@@ -39,12 +57,10 @@ class CafeRepository(BaseCRUD[Cafe]):
             List[Cafe]: Список кафе.
 
         """
-        query = select(self.model)
+        all_cafes = await super().get_all(skip=skip, limit=limit)
         if active_only:
-            query = query.where(self.model.active)
-        query = query.offset(skip).limit(limit)
-        result = await self.session.execute(query)
-        return list(result.scalars().all())
+            return [cafe for cafe in all_cafes if cafe.active]
+        return all_cafes
 
     async def get_by_name(
         self,
@@ -59,8 +75,8 @@ class CafeRepository(BaseCRUD[Cafe]):
             Optional[Cafe]: Кафе или None, если не найдено.
 
         """
-        query = select(self.model).where(self.model.name == name)
-        result = await self.session.execute(query)
+        stmt = select(self.model).where(self.model.name == name)
+        result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
     async def create(
@@ -98,7 +114,6 @@ class CafeRepository(BaseCRUD[Cafe]):
         cafe = await self.get(cafe_id)
         if not cafe:
             return None
-
         updated_cafe = await super().update(cafe, cafe_update)
         await self.session.commit()
         return updated_cafe
@@ -119,7 +134,6 @@ class CafeRepository(BaseCRUD[Cafe]):
         cafe = await self.get(cafe_id)
         if not cafe:
             return False
-
         cafe.active = False
         self.session.add(cafe)
         await self.session.commit()
@@ -162,8 +176,7 @@ class CafeRepository(BaseCRUD[Cafe]):
             bool: True, если кафе существует, иначе False.
 
         """
-        cafe = await self.get(cafe_id)
-        return cafe is not None
+        return await self.get(cafe_id) is not None
 
     async def count_active(self) -> int:
         """Количество активных кафе.
@@ -172,6 +185,6 @@ class CafeRepository(BaseCRUD[Cafe]):
             int: Количество активных кафе.
 
         """
-        query = select(self.model).where(self.model.active)
-        result = await self.session.execute(query)
+        stmt = select(self.model).where(self.model.active)
+        result = await self.session.execute(stmt)
         return len(result.scalars().all())

@@ -43,6 +43,8 @@ async def get_session() -> AsyncGenerator:
         except Exception as e:
             await session.rollback()
             logger.error(f'{ErrorCode.INTERNAL_SERVER_ERROR}: {e}')
+            # на период тестирования проекта
+            logger.error(f'{type(e).__name__}: {str(e)}', exc_info=True)
             raise
 
 

@@ -5,9 +5,9 @@ from app.models.booking import Booking, TableSlot
 from app.models.cafes import Cafe
 from app.models.dishes import Dish
 from app.models.media import Media
-from app.models.models import User, cafe_managers
 from app.models.slots import Slot
 from app.models.tables import Table
+from app.models.users import User, cafe_managers
 
 __all__ = [
     'User',

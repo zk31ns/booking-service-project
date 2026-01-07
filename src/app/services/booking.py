@@ -6,7 +6,6 @@ from app.api.v1.booking.schemas import (
     BookingUpdate,
     TableSlotSchema,
 )
-from app.api.v1.users.repository import UserRepository
 from app.core.celery_app import celery_app
 from app.core.celery_tasks import notify_manager, send_booking_reminder
 from app.core.constants import (
@@ -29,6 +28,7 @@ from app.repositories import (
     TableRepository,
 )
 from app.repositories.slot import SlotRepository
+from app.repositories.users import UserRepository
 
 
 class BookingService:

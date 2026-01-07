@@ -1,18 +1,4 @@
-from typing import AsyncGenerator
-
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.db.session import async_session_maker
-
-"""Зависимости (Dependencies) для модуля пользователей и аутентификации.
-
-Содержит зависимости FastAPI для:
-- Получения текущего пользователя из JWT токена
-- Проверки прав доступа (ролей)
-- Валидации и обработки исключений
-"""
-
-from typing import Annotated, Optional
+from typing import Annotated, AsyncGenerator, Optional
 
 from fastapi import Depends, HTTPException, Security
 from fastapi.security import (
@@ -32,7 +18,7 @@ from app.core.security import (
     get_current_username_from_token,
     verify_refresh_token,
 )
-from app.db.session import get_session
+from app.db.session import async_session_maker, get_session
 
 from src.app.models.users import User, cafe_managers
 from src.app.repositories.users import UserRepository

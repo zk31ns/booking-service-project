@@ -119,6 +119,7 @@ class Limits:
     # Celery
     TASK_MAX_RETRIES = 3
 
+
 # ========== Времена (в минутах/днях) ==========
 
 
@@ -458,6 +459,7 @@ class CeleryTasks:
     )
     BOOKING_REMINDER_TASK_NAME = 'send_booking_reminder'
     NOTIFY_MANAGER_TASK_NAME = 'send_notify_manager'
+
 
 # ========== Регулярные выражения ==========
 

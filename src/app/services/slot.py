@@ -162,9 +162,11 @@ class SlotService:
             return None
 
         final_start = self._normalize_time(
-            start_time if start_time is not None else slot.start_time)
+            start_time if start_time is not None else slot.start_time
+        )
         final_end = self._normalize_time(
-            end_time if end_time is not None else slot.end_time)
+            end_time if end_time is not None else slot.end_time
+        )
 
         if final_start >= final_end:
             raise ValidationException(

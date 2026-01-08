@@ -20,7 +20,6 @@ from app.core.exceptions import (
     AuthorizationException,
     ConflictException,
     NotFoundException,
-    ServiceUnavailableException,
     ValidationException,
 )
 
@@ -383,24 +382,3 @@ async def delete_user(
         ValidationException,
     ) as e:
         raise e
-
-
-@router.get(
-    '/health',
-    summary='Проверка здоровья сервиса',
-    description='Проверяет работоспособность сервиса пользователей.',
-)
-async def health_check(
-    service: Annotated[UserService, Depends(get_user_service)],
-) -> dict:
-    """Проверка здоровья сервиса."""
-    try:
-        count = await service.user_repo.count()
-        return {
-            'status': 'healthy',
-            'database': 'connected',
-            'users_count': count,
-            'timestamp': '2024-01-01T00:00:00Z',
-        }
-    except Exception:
-        raise ServiceUnavailableException(ErrorCode.SERVICE_UNAVAILABLE)

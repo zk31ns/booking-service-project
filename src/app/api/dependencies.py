@@ -19,15 +19,14 @@ from app.core.security import (
     verify_refresh_token,
 )
 from app.db.session import async_session_maker, get_session
-
-from src.app.models import User, cafe_managers
-from src.app.repositories.users import UserRepository
+from app.models import User, cafe_managers
+from app.repositories.users import UserRepository
 
 security = HTTPBearer(auto_error=False)
 
 
 async def get_user_repository(
-    session: Annotated[AsyncSession, Depends(get_session)]
+    session: Annotated[AsyncSession, Depends(get_session)],
 ) -> UserRepository:
     """Получает репозиторий пользователей.
 

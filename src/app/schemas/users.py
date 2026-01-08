@@ -3,7 +3,6 @@ from typing import Optional
 
 from pydantic import (
     BaseModel,
-    ConfigDict,
     EmailStr,
     Field,
     field_validator,
@@ -11,7 +10,7 @@ from pydantic import (
 )
 
 from app.core.constants import Limits
-from app.models.models import User
+from app.models.users import User
 from app.utils.validators import validate_phone_format
 
 
@@ -89,8 +88,10 @@ class UserCreate(UserBase):
             raise ValueError('Укажите хотя бы email или телефон для связи.')
         return self
 
-    model_config = ConfigDict(
-        json_schema_extra={
+    class Config:
+        """Конфигурация Pydantic схемы."""
+
+        json_schema_extra = {
             'example': {
                 'username': 'ivanov',
                 'email': 'ivanov@example.com',
@@ -99,7 +100,6 @@ class UserCreate(UserBase):
                 'password': 'securepassword123',
             },
         }
-    )
 
 
 class UserUpdate(BaseModel):
@@ -194,29 +194,22 @@ class UserInfo(UserBase):
 
     @classmethod
     def from_orm(cls, obj: User) -> 'UserInfo':
-        """Создает UserInfo из ORM объекта User.
+        """Создает экземпляр UserInfo из ORM-объекта.
 
-        Этот метод нужен для совместимости с Pydantic v2.
-        Преобразует ORM объект в словарь перед валидацией.
+        Args:
+            obj: ORM-объект пользователя.
+
+        Returns:
+            UserInfo: Экземпляр UserInfo.
+
         """
-        data = {
-            'id': obj.id,
-            'username': obj.username,
-            'email': obj.email,
-            'phone': obj.phone,
-            'tg_id': obj.tg_id,
-            'is_superuser': obj.is_superuser,
-            'is_blocked': obj.is_blocked,
-            'active': obj.active,
-            'created_at': obj.created_at,
-            'updated_at': obj.updated_at,
-        }
-        return cls.model_validate(data, from_attributes=True)
+        return cls.model_validate(obj, from_attributes=True)
 
-    model_config = ConfigDict(
-        from_attributes=True,
-        extra='ignore',
-        json_schema_extra={
+    class Config:
+        """Конфигурация Pydantic схемы."""
+
+        from_attributes = True
+        json_schema_extra = {
             'example': {
                 'id': 1,
                 'username': 'ivanov',
@@ -229,8 +222,7 @@ class UserInfo(UserBase):
                 'created_at': '2024-01-15T10:30:00',
                 'updated_at': '2024-01-15T10:30:00',
             },
-        },
-    )
+        }
 
 
 class UserShortInfo(BaseModel):
@@ -259,4 +251,7 @@ class UserShortInfo(BaseModel):
     )
     tg_id: Optional[str] = Field(None, description='Идентификатор Telegram')
 
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        """Конфигурация Pydantic схемы."""
+
+        from_attributes = True

@@ -7,8 +7,8 @@ from sqlalchemy import ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
+from app.core.base import Base
 from app.core.constants import Limits
-from app.db.base import Base
 
 if TYPE_CHECKING:
     from app.models.cafes import Cafe
@@ -39,6 +39,7 @@ class Table(Base):
         nullable=False,
     )
     active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    cafe: Mapped['Cafe'] = relationship('Cafe', back_populates='tables')
 
     cafe: Mapped['Cafe'] = relationship(
         'Cafe',

@@ -19,7 +19,7 @@ from app.core.base import Base, TimestampedModel
 from app.core.constants import Limits
 
 if TYPE_CHECKING:
-    from app.models import Booking
+    from app.models import Booking, Cafe
 
 
 class User(TimestampedModel):
@@ -85,11 +85,11 @@ class User(TimestampedModel):
         back_populates='user',
         cascade='all, delete-orphan',
     )
-    # managed_cafes: Mapped[List['Cafe']] = relationship(
-    #     'Cafe',
-    #     secondary='cafe_managers',
-    #     back_populates='managers',
-    # )
+    managed_cafes: Mapped[List['Cafe']] = relationship(
+        'Cafe',
+        secondary='cafe_managers',
+        back_populates='managers',
+    )
 
     def __repr__(self) -> str:
         """Строковое представление объекта User.

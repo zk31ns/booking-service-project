@@ -1,12 +1,16 @@
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.base import TimestampedModel
 from app.core.constants import Limits
-from app.db.base import TimestampedModel
 from app.models.media import Media
 from app.models.tables import Table
+
+if TYPE_CHECKING:
+    from app.models import User
 
 
 class Cafe(TimestampedModel):
@@ -47,11 +51,15 @@ class Cafe(TimestampedModel):
         back_populates='cafe',
         cascade='all, delete-orphan',
     )
-
     photo: Mapped['Media | None'] = relationship(
         'Media',
         foreign_keys=[photo_id],
         back_populates='cafe_photos',
+    )
+    managers: Mapped[list['User']] = relationship(
+        'User',
+        secondary='cafe_managers',
+        back_populates='managed_cafes',
     )
 
     def __repr__(self) -> str:

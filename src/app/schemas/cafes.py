@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Optional
 from uuid import UUID
 
@@ -5,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from app.core.constants import Limits
 from app.schemas.base import AuditedSchema
+from app.schemas.users import UserShortInfo
 
 
 class CafeBase(BaseModel):
@@ -34,9 +37,11 @@ class CafeBase(BaseModel):
 class CafeCreate(CafeBase):
     """Схема для создания кафе."""
 
-    photo_id: Optional[UUID] = Field(
-        default=None,
+    photo_id: UUID = Field(
         description='ID фотографии кафе',
+    )
+    managers_id: list[int] = Field(
+        description='ID менеджеров кафе',
     )
 
 
@@ -62,6 +67,10 @@ class CafeUpdate(BaseModel):
         max_length=Limits.MAX_DESCRIPTION_LENGTH,
     )
     active: Optional[bool] = None
+    managers_id: Optional[list[int]] = Field(
+        default=None,
+        description='ID менеджеров кафе',
+    )
 
 
 class CafeInDBBase(AuditedSchema):
@@ -99,3 +108,7 @@ class CafeWithRelations(Cafe):
     """Кафе с отношениями."""
 
     tables_count: Optional[int] = None
+    managers: list[UserShortInfo] = Field(
+        default_factory=list,
+        description='Менеджеры кафе',
+    )

@@ -8,8 +8,8 @@ from typing import Generic, Optional, TypeVar
 
 from fastapi import HTTPException, status
 
+from app.core.base import TimestampedModel
 from app.core.constants import ErrorCode, Messages
-from app.db.base import TimestampedModel
 
 ModelType = TypeVar('ModelType', bound=TimestampedModel)
 

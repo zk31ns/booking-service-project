@@ -7,7 +7,7 @@ from app.api.dependencies import get_db
 from app.core.constants import API, ErrorCode, Limits, Messages
 from app.repositories.cafes import CafeRepository
 from app.repositories.tables import TableRepository
-from app.schemas.cafes import Cafe, CafeCreate, CafeUpdate
+from app.schemas.cafes import Cafe, CafeCreate, CafeUpdate, CafeWithRelations
 from app.services.cafes import CafeService
 
 router = APIRouter(prefix='/cafes', tags=API.CAFES)
@@ -25,7 +25,7 @@ def get_cafe_service(db: AsyncSession = Depends(get_db)) -> CafeService:
     """
     cafe_repository = CafeRepository(db)
     table_repository = TableRepository(db)
-    return CafeService(cafe_repository, table_repository)
+    return CafeService(cafe_repository, table_repository, db)
 
 
 @router.get(
@@ -98,7 +98,7 @@ async def get_cafe(
 
 @router.post(
     '/',
-    response_model=Cafe,
+    response_model=CafeWithRelations,
     status_code=status.HTTP_201_CREATED,
     summary='Создать новое кафе',
     responses={
@@ -129,7 +129,7 @@ async def create_cafe(
 
 @router.patch(
     '/{cafe_id}',
-    response_model=Cafe,
+    response_model=CafeWithRelations,
     summary='Обновить кафе',
     responses={
         404: {'description': Messages.errors[ErrorCode.CAFE_NOT_FOUND]},

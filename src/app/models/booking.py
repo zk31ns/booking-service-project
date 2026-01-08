@@ -10,8 +10,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.base import Base
 from app.core.constants import BookingStatus, Limits
-from app.db.base import Base
 
 
 class TableSlot(Base):
@@ -74,7 +74,7 @@ class Booking(Base):
         nullable=False,
     )
     status: Mapped[str] = mapped_column(
-        Integer,
+        String,
         nullable=False,
         default=BookingStatus.PENDING,
     )

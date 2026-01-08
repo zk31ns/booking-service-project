@@ -13,7 +13,7 @@ from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from app.core.constants import Limits
 from app.core.security import get_password_hash, verify_password
-from app.models.models import User, cafe_managers
+from app.models.users import User, cafe_managers
 from app.repositories.base import BaseCRUD
 
 
@@ -38,7 +38,7 @@ class UserRepository(BaseCRUD[User]):
         """
         super().__init__(session=session, model=User)
 
-    async def get_user(
+    async def get(
         self,
         user_id: Union[int, UUID],
         active_only: bool = True,

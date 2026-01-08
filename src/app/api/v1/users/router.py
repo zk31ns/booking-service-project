@@ -23,6 +23,7 @@ from app.core.exceptions import (
     ValidationException,
 )
 from app.models import User
+from app.schemas.types import AuthResponseDict, RefreshTokenResponseDict
 from app.schemas.users import (
     UserCreate,
     UserInfo,
@@ -42,7 +43,7 @@ router = APIRouter(tags=API.USERS)
 async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     service: Annotated[UserService, Depends(get_user_service)],
-) -> dict:
+) -> AuthResponseDict:
     """Аутентификация пользователя и получение JWT токенов.
 
     Поддерживает вход по username, email или phone.
@@ -74,7 +75,7 @@ async def refresh_tokens(
         Body(..., embed=True, description='Refresh токен'),
     ],
     service: Annotated[UserService, Depends(get_user_service)],
-) -> dict:
+) -> RefreshTokenResponseDict:
     """Обновляет access токен."""
     try:
         result = await service.refresh_tokens(

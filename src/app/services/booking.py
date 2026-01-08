@@ -459,7 +459,7 @@ class BookingService:
         if not table.active:
             raise AppException(ErrorCode.TABLE_INACTIVE)
 
-        slot = await self.slot_repo.get_by_id(slot_id)
+        slot = await self.slot_repo.get(slot_id)
         if not slot:
             raise ValidationException(ErrorCode.SLOT_NOT_FOUND)
         if not slot.active:

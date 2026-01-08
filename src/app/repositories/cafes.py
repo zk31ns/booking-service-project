@@ -13,10 +13,7 @@ from app.schemas.cafes import CafeCreate, CafeUpdate
 class CafeRepository(BaseCRUD[Cafe]):
     """Репозиторий для работы с кафе."""
 
-    def __init__(
-            self,
-            session: AsyncSession
-    ) -> None:
+    def __init__(self, session: AsyncSession) -> None:
         """Инициализация репозитория кафе.
 
         Args:

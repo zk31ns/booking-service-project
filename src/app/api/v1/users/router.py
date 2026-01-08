@@ -7,34 +7,29 @@ from typing import Annotated, Any, Dict, List, Optional
 
 from fastapi import APIRouter, Body, Depends, Query, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.users.dependencies import (
+from app.api.dependencies import (
     get_current_active_user,
     get_current_superuser,
     get_current_user,
-    get_db,
     get_optional_user,
-    get_user_repository,
 )
-from app.api.v1.users.repository import UserRepository
-from app.api.v1.users.schemas import (
-    UserCreate,
-    UserInfo,
-    UserUpdate,
-)
-from app.api.v1.users.service import UserService, get_user_service
 from app.core.constants import API, ErrorCode, Limits
 from app.core.exceptions import (
     AuthenticationException,
     AuthorizationException,
     ConflictException,
-    InternalServerException,
     NotFoundException,
-    ServiceUnavailableException,
     ValidationException,
 )
-from app.models.models import User
+
+from src.app.models import User
+from src.app.schemas.users import (
+    UserCreate,
+    UserInfo,
+    UserUpdate,
+)
+from src.app.services.users import UserService, get_user_service
 
 router = APIRouter(tags=API.USERS)
 
@@ -47,7 +42,6 @@ router = APIRouter(tags=API.USERS)
 )
 async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    session: Annotated[AsyncSession, Depends(get_db)],
     service: Annotated[UserService, Depends(get_user_service)],
 ) -> dict:
     """Аутентификация пользователя и получение JWT токенов.
@@ -56,11 +50,9 @@ async def login(
     """
     try:
         result = await service.authenticate_user(
-            session=session,
             login=form_data.username,
             password=form_data.password,
         )
-
         return {
             'access_token': result['tokens']['access_token'],
             'refresh_token': result['tokens']['refresh_token'],
@@ -82,16 +74,13 @@ async def refresh_tokens(
         str,
         Body(..., embed=True, description='Refresh токен'),
     ],
-    session: Annotated[AsyncSession, Depends(get_db)],
     service: Annotated[UserService, Depends(get_user_service)],
 ) -> dict:
     """Обновляет access токен."""
     try:
         result = await service.refresh_tokens(
-            session=session,
             refresh_token=refresh_token,
         )
-
         return {
             'access_token': result['tokens']['access_token'],
             'refresh_token': result['tokens']['refresh_token'],
@@ -110,7 +99,6 @@ async def refresh_tokens(
     'Только для администраторов или менеджеров.',
 )
 async def get_users(
-    session: Annotated[AsyncSession, Depends(get_db)],
     service: Annotated[UserService, Depends(get_user_service)],
     current_user: Annotated[User, Depends(get_current_superuser)],
     skip: Annotated[
@@ -151,16 +139,13 @@ async def get_users(
             filters['email'] = email
         if is_blocked is not None:
             filters['is_blocked'] = is_blocked
-
         return await service.get_users_list(
-            session=session,
             skip=skip,
             limit=limit,
             active_only=active_only,
             current_user=current_user,
             filters=filters if filters else None,
         )
-
     except (AuthorizationException, ValidationException):
         raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
 
@@ -178,7 +163,6 @@ async def get_users(
 )
 async def create_user(
     user_create: UserCreate,
-    session: Annotated[AsyncSession, Depends(get_db)],
     service: Annotated[UserService, Depends(get_user_service)],
     current_user: Annotated[Optional[User], Depends(get_optional_user)],
 ) -> UserInfo:
@@ -189,7 +173,6 @@ async def create_user(
     """
     try:
         return await service.create_user(
-            session=session,
             user_create=user_create,
             current_user=current_user,
         )
@@ -221,77 +204,17 @@ async def get_current_user_info(
 )
 async def update_current_user(
     user_update: UserUpdate,
-    session: Annotated[AsyncSession, Depends(get_db)],
     service: Annotated[UserService, Depends(get_user_service)],
     current_user: Annotated[User, Depends(get_current_active_user)],
 ) -> UserInfo:
     """Обновляет информацию о текущем пользователе."""
     try:
         return await service.update_user(
-            session=session,
             user_id=current_user.id,
             user_update=user_update,
             current_user=current_user,
         )
-
     except (
-        AuthorizationException,
-        ValidationException,
-        ConflictException,
-    ) as e:
-        raise e
-
-
-@router.get(
-    '/users/{user_id}',
-    response_model=UserInfo,
-    summary='Получение информации о пользователе по его ID',
-    description='Возвращает информацию о пользователе по его ID. '
-    'Только для администраторов или менеджеров.',
-)
-async def get_user_by_id(
-    user_id: Annotated[int, ...],
-    session: Annotated[AsyncSession, Depends(get_db)],
-    service: Annotated[UserService, Depends(get_user_service)],
-    current_user: Annotated[User, Depends(get_current_user)],
-) -> UserInfo:
-    """Получает пользователя по ID."""
-    try:
-        return await service.get_user_by_id(
-            session=session,
-            user_id=user_id,
-            current_user=current_user,
-        )
-
-    except (NotFoundException, AuthorizationException) as e:
-        raise e
-
-
-@router.patch(
-    '/users/{user_id}',
-    response_model=UserInfo,
-    summary='Обновление информации о пользователе по его ID',
-    description='Возвращает обновленную информацию о пользователе по его ID. '
-    'Только для администраторов или менеджеров.',
-)
-async def update_user(
-    user_id: Annotated[int, ...],
-    user_update: UserUpdate,
-    session: Annotated[AsyncSession, Depends(get_db)],
-    service: Annotated[UserService, Depends(get_user_service)],
-    current_user: Annotated[User, Depends(get_current_user)],
-) -> UserInfo:
-    """Обновляет информацию о пользователе."""
-    try:
-        return await service.update_user(
-            session=session,
-            user_id=user_id,
-            user_update=user_update,
-            current_user=current_user,
-        )
-
-    except (
-        NotFoundException,
         AuthorizationException,
         ValidationException,
         ConflictException,
@@ -308,51 +231,20 @@ async def update_user(
 async def change_password(
     current_password: Annotated[str, Body(..., description='Текущий пароль')],
     new_password: Annotated[str, Body(..., description='Новый пароль')],
-    session: Annotated[AsyncSession, Depends(get_db)],
     service: Annotated[UserService, Depends(get_user_service)],
     current_user: Annotated[User, Depends(get_current_active_user)],
 ) -> UserInfo:
     """Изменяет пароль текущего пользователя."""
     try:
         return await service.update_user_password(
-            session=session,
             user_id=current_user.id,
             current_password=current_password,
             new_password=new_password,
             current_user=current_user,
         )
-
     except (
         NotFoundException,
         AuthenticationException,
-        AuthorizationException,
-        ValidationException,
-    ) as e:
-        raise e
-
-
-@router.delete(
-    '/users/{user_id}',
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary='Деактивация пользователя',
-    description='Деактивирует пользователя (логическое удаление). '
-    'Только для администраторов.',
-)
-async def delete_user(
-    user_id: Annotated[int, ...],
-    session: Annotated[AsyncSession, Depends(get_db)],
-    service: Annotated[UserService, Depends(get_user_service)],
-    current_user: Annotated[User, Depends(get_current_superuser)],
-) -> None:
-    """Деактивирует пользователя."""
-    try:
-        await service.delete_user(
-            session=session,
-            user_id=user_id,
-            current_user=current_user,
-        )
-    except (
-        NotFoundException,
         AuthorizationException,
         ValidationException,
     ) as e:
@@ -366,7 +258,6 @@ async def delete_user(
     description='Деактивирует аккаунт текущего пользователя.',
 )
 async def delete_current_user(
-    session: Annotated[AsyncSession, Depends(get_db)],
     service: Annotated[UserService, Depends(get_user_service)],
     current_user: Annotated[User, Depends(get_current_active_user)],
     confirm: Annotated[
@@ -377,14 +268,7 @@ async def delete_current_user(
     """Деактивирует аккаунт текущего пользователя."""
     if not confirm:
         raise ValidationException(ErrorCode.CONFIRMATION_REQUIRED)
-
-    try:
-        current_user.active = False
-        session.add(current_user)
-        await session.commit()
-    except Exception:
-        await session.rollback()
-        raise InternalServerException(ErrorCode.INTERNAL_SERVER_ERROR)
+    await service.delete_user(current_user.id, current_user)
 
 
 @router.get(
@@ -403,7 +287,6 @@ async def search_users(
             description='Строка поиска',
         ),
     ],
-    session: Annotated[AsyncSession, Depends(get_db)],
     service: Annotated[UserService, Depends(get_user_service)],
     current_user: Annotated[User, Depends(get_current_superuser)],
     skip: Annotated[int, Query(ge=0)] = 0,
@@ -414,35 +297,88 @@ async def search_users(
     """Ищет пользователей по строке запроса."""
     try:
         return await service.search_users(
-            session=session,
             query=query,
             skip=skip,
             limit=limit,
             current_user=current_user,
         )
-
     except AuthorizationException as e:
         raise e
 
 
 @router.get(
-    '/health',
-    summary='Проверка здоровья сервиса',
-    description='Проверяет работоспособность сервиса пользователей.',
+    '/users/{user_id}',
+    response_model=UserInfo,
+    summary='Получение информации о пользователе по его ID',
+    description='Возвращает информацию о пользователе по его ID. '
+    'Только для администраторов или менеджеров.',
 )
-async def health_check(
-    session: Annotated[AsyncSession, Depends(get_db)],
-    repo: Annotated[UserRepository, Depends(get_user_repository)],
-) -> dict:
-    """Проверка здоровья сервиса."""
+async def get_user_by_id(
+    user_id: Annotated[int, ...],
+    service: Annotated[UserService, Depends(get_user_service)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> UserInfo:
+    """Получает пользователя по ID."""
     try:
-        count = await repo.count(session)
+        return await service.get_user_by_id(
+            user_id=user_id,
+            current_user=current_user,
+        )
 
-        return {
-            'status': 'healthy',
-            'database': 'connected',
-            'users_count': count,
-            'timestamp': '2024-01-01T00:00:00Z',
-        }
-    except Exception:
-        raise ServiceUnavailableException(ErrorCode.SERVICE_UNAVAILABLE)
+    except (NotFoundException, AuthorizationException) as e:
+        raise e
+
+
+@router.patch(
+    '/users/{user_id}',
+    response_model=UserInfo,
+    summary='Обновление информации о пользователе по его ID',
+    description='Возвращает обновленную информацию о пользователе по его ID. '
+    'Только для администраторов или менеджеров.',
+)
+async def update_user(
+    user_id: Annotated[int, ...],
+    user_update: UserUpdate,
+    service: Annotated[UserService, Depends(get_user_service)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> UserInfo:
+    """Обновляет информацию о пользователе."""
+    try:
+        return await service.update_user(
+            user_id=user_id,
+            user_update=user_update,
+            current_user=current_user,
+        )
+    except (
+        NotFoundException,
+        AuthorizationException,
+        ValidationException,
+        ConflictException,
+    ) as e:
+        raise e
+
+
+@router.delete(
+    '/users/{user_id}',
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary='Деактивация пользователя',
+    description='Деактивирует пользователя (логическое удаление). '
+    'Только для администраторов.',
+)
+async def delete_user(
+    user_id: Annotated[int, ...],
+    service: Annotated[UserService, Depends(get_user_service)],
+    current_user: Annotated[User, Depends(get_current_superuser)],
+) -> None:
+    """Деактивирует пользователя."""
+    try:
+        await service.delete_user(
+            user_id=user_id,
+            current_user=current_user,
+        )
+    except (
+        NotFoundException,
+        AuthorizationException,
+        ValidationException,
+    ) as e:
+        raise e

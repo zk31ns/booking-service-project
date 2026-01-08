@@ -50,18 +50,16 @@ src/
 │   │        └───media/
 │   │
 │   ├───core/
+│   │       base.py            (SQLAlchemy Declarative Base)
+│   │       session.py         (async engine + sessionmaker)
 │   │       config.py          (pydantic-settings)
 │   │       security.py        (JWT, хеширование)
 │   │       logging.py         (loguru)
 │   │       celery_app.py      (Celery init)
 │   │       celery_tasks.py    (планы задач)
-│   │       exceptions.py
-│   │       dependencies.py
-│   │
-│   ├───db/
-│   │       base.py            (Declarative Base)
-│   │       session.py         (async engine + sessionmaker)
-│   │       init_db.py
+│   │       constants.py       (глобальные константы и Enums)
+│   │       exceptions.py      (пользовательские исключения)
+│   │       dependencies.py    (dependency injection для FastAPI)
 │   │
 │   ├───models/                (общие модели при необходимости)
 │   ├───schemas/               (общие схемы)
@@ -351,7 +349,7 @@ git pull
 
 ---
 
-## 10. API-структура
+## 10. API-структура и TypedDict для ответов
 
 **Префикс всех эндпоинтов:**
 
@@ -359,7 +357,58 @@ git pull
 /api/v1/
 ```
 
-**Группы:**
+### 10.1. TypedDict для строгой типизации API ответов
+
+**Файл:** `app/schemas/types.py`
+
+Для улучшения поддержки IDE и статического анализа, все API ответы типизированы через TypedDict:
+
+```python
+from typing import TypedDict, Any
+
+class TokenDict(TypedDict):
+    """Информация о JWT токенах."""
+    access_token: str
+    refresh_token: str
+    token_type: str
+
+class AuthResponseDict(TypedDict):
+    """Полный ответ аутентификации с пользователем."""
+    access_token: str
+    refresh_token: str
+    token_type: str
+    user: dict[str, Any]
+
+class ErrorResponseDict(TypedDict, total=False):
+    """Стандартный словарь ошибки."""
+    detail: str
+    code: str
+    status_code: int
+```
+
+**Использование в роутерах:**
+
+```python
+from app.schemas.types import AuthResponseDict
+
+async def login(...) -> AuthResponseDict:
+    """Функция с явной типизацией возвращаемого словаря."""
+    return {
+        'access_token': token,
+        'refresh_token': refresh,
+        'token_type': 'bearer',
+        'user': user_data,
+    }
+```
+
+**Преимущества:**
+- IDE автодополняет структуру ответа
+- `mypy` проверяет типы на статическом уровне
+- Документация встроена в код
+
+---
+
+### 11.1. Группы API эндпоинтов
 
 - `/auth` — аутентификация и авторизация
 - `/users` — управление пользователями
@@ -377,7 +426,7 @@ git pull
 src/main.py
 ```
 
-### 10.1. Стандартные HTTP статус коды
+### 11.2. Стандартные HTTP статус коды
 
 | Код | Описание | Использование |
 |-----|---------|---------------|
@@ -394,7 +443,7 @@ src/main.py
 
 ---
 
-## 11. Переменные окружения (.env)
+## 12. Переменные окружения (.env)
 
 Для работы проекта необходимы следующие переменные окружения (пример в `.env.example`):
 
@@ -430,7 +479,7 @@ ALLOWED_IMAGE_TYPES=image/jpeg,image/png
 
 ---
 
-## 12. Миграции БД (Alembic)
+## 13. Миграции БД (Alembic)
 
 **Alembic уже инициализирован и настроен для работы с async SQLAlchemy 2.0.**
 
@@ -467,7 +516,7 @@ alembic history  # история миграций
 
 ---
 
-## 13. Pre-commit конфигурация
+## 14. Pre-commit конфигурация
 
 Файл `.pre-commit-config.yaml` в корне проекта:
 
@@ -498,7 +547,7 @@ pre-commit install
 
 ---
 
-## 14. Декомпозиция ответственности в команде
+## 15. Декомпозиция ответственности в команде
 
 | Модуль | Ответственный |
 |--------|--------------|
@@ -515,7 +564,7 @@ pre-commit install
 
 ---
 
-## 15. Минимальный порядок запуска проекта
+## 16. Минимальный порядок запуска проекта
 
 **Шаг 1: Подготовка окружения**
 

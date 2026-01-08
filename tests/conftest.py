@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import sessionmaker
 
-from app.db.base import Base
+from app.core.base import Base
 from main import app
 
 

@@ -1,4 +1,5 @@
 from datetime import time
+from zoneinfo import ZoneInfo
 
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,6 +23,10 @@ class SlotService:
         """
         self.session = session
         self.repo = SlotRepository(session)
+
+    def _normalize_time(self, t: time) -> time:
+        """Приводит объект time к UTC."""
+        return t.replace(tzinfo=ZoneInfo('UTC')) if t.tzinfo is None else t
 
     async def _validate_cafe_exists(self, cafe_id: int) -> None:
         """Проверка существования кафе.
@@ -64,6 +69,8 @@ class SlotService:
 
         """
         await self._validate_cafe_exists(cafe_id)
+        start_time = self._normalize_time(start_time)
+        end_time = self._normalize_time(end_time)
         if start_time >= end_time:
             raise ValidationException(
                 error_code=ErrorCode.INVALID_TIME_RANGE,
@@ -93,6 +100,10 @@ class SlotService:
             bool: True если интервалы пересекаются, иначе False.
 
         """
+        s1_start = self._normalize_time(s1_start)
+        s1_end = self._normalize_time(s1_end)
+        s2_start = self._normalize_time(s2_start)
+        s2_end = self._normalize_time(s2_end)
         return s1_start < s2_end and s2_start < s1_end
 
     async def get_slot(self, slot_id: int) -> Slot | None:
@@ -147,11 +158,14 @@ class SlotService:
 
         """
         slot = await self.repo.get(slot_id)
-
         if not slot or slot.cafe_id != cafe_id:
             return None
-        final_start = start_time if start_time is not None else slot.start_time
-        final_end = end_time if end_time is not None else slot.end_time
+
+        final_start = self._normalize_time(
+            start_time if start_time is not None else slot.start_time)
+        final_end = self._normalize_time(
+            end_time if end_time is not None else slot.end_time)
+
         if final_start >= final_end:
             raise ValidationException(
                 error_code=ErrorCode.VALIDATION_ERROR,

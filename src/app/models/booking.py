@@ -74,7 +74,7 @@ class Booking(Base):
         nullable=False,
     )
     status: Mapped[str] = mapped_column(
-        Integer,
+        String,
         nullable=False,
         default=BookingStatus.PENDING,
     )

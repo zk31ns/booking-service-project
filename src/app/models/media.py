@@ -6,7 +6,7 @@ from sqlalchemy import Index, Integer, String
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import TimestampedModel
+from app.core.base import TimestampedModel
 
 if TYPE_CHECKING:
     from app.models.cafes import Cafe

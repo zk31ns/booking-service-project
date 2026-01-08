@@ -13,9 +13,9 @@ from app.core.celery_app import celery_app
 from app.core.celery_base import BaseTask
 from app.core.config import settings
 from app.core.constants import CeleryTasks, ErrorCode, EventType, Times
+from app.core.database import async_session_maker
 from app.core.exceptions import TelegramApiException
 from app.core.logging import logger
-from app.db.session import async_session_maker
 from app.repositories import (
     BookingRepository,
     CafeRepository,

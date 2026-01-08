@@ -10,6 +10,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.constants import ErrorCode, Limits
+from app.core.database import get_session
 from app.core.exceptions import (
     AuthenticationException,
     AuthorizationException,
@@ -19,7 +20,6 @@ from app.core.exceptions import (
     ValidationException,
 )
 from app.core.security import create_tokens_pair, verify_password
-from app.db.session import get_session
 from app.models.users import User
 from app.repositories.users import UserRepository
 from app.schemas.users import (

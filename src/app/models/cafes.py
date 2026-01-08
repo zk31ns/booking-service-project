@@ -4,8 +4,8 @@ from uuid import UUID
 from sqlalchemy import ForeignKey, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.base import TimestampedModel
 from app.core.constants import Limits
-from app.db.base import TimestampedModel
 from app.models.media import Media
 from app.models.tables import Table
 

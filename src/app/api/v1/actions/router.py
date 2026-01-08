@@ -10,7 +10,7 @@ from app.api.v1.actions.schemas import (
 )
 from app.api.v1.actions.service import ActionService
 from app.core.constants import Limits
-from app.db import get_session
+from app.core.database import get_session
 
 router = APIRouter(prefix='/actions', tags=['actions'])
 

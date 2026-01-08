@@ -15,8 +15,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.base import Base, TimestampedModel
 from app.core.constants import Limits
-from app.db.base import Base, TimestampedModel
 
 if TYPE_CHECKING:
     from app.models import Booking, Cafe

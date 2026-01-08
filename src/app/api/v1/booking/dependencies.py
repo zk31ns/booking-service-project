@@ -2,7 +2,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_user_repository
-from app.db.session import get_session
+from app.core.database import get_session
 from app.repositories import (
     BookingRepository,
     CafeRepository,

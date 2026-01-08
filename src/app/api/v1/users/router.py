@@ -22,14 +22,13 @@ from app.core.exceptions import (
     NotFoundException,
     ValidationException,
 )
-
-from src.app.models import User
-from src.app.schemas.users import (
+from app.models import User
+from app.schemas.users import (
     UserCreate,
     UserInfo,
     UserUpdate,
 )
-from src.app.services.users import UserService, get_user_service
+from app.services.users import UserService, get_user_service
 
 router = APIRouter(tags=API.USERS)
 

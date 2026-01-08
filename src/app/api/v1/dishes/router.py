@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.dishes.schemas import DishCreate, DishInfo, DishUpdate
 from app.api.v1.dishes.service import DishService
 from app.core.constants import Limits
-from app.db import get_session
+from app.core.database import get_session
 
 router = APIRouter(prefix='/dishes', tags=['dishes'])
 

@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user
 from app.core.constants import ErrorCode, Messages
+from app.core.database import get_session
 from app.core.exceptions import AuthorizationException, NotFoundException
-from app.db.session import get_session
 from app.models import User
 from app.models.media import Media
 from app.schemas.media import MediaInfo, MediaResponse

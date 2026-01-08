@@ -22,7 +22,7 @@ app_dir = Path(__file__).resolve().parent.parent  # /app/app или src/app
 root_dir = app_dir.parent  # /app или src
 sys.path.insert(0, str(root_dir))
 
-from app.db.base import Base  # noqa: E402
+from app.core.base import Base  # noqa: E402
 
 # Import all models to register them with Base.metadata for autogenerate
 from app.models import (  # noqa: F401, E402

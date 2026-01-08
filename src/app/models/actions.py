@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import TimestampedModel
+from app.core.base import TimestampedModel
 
 
 class Action(TimestampedModel):

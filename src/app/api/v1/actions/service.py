@@ -8,7 +8,6 @@ from app.api.v1.actions.schemas import (
     ActionInfo,
     ActionUpdate,
 )
-from app.core.constants import Limits
 
 
 class ActionService:
@@ -18,13 +17,9 @@ class ActionService:
         """Initialize service with session."""
         self.repository = ActionRepository(session)
 
-    async def get_all_actions(
-        self,
-        skip: int = Limits.DEFAULT_SKIP,
-        limit: int = Limits.DEFAULT_LIMIT,
-    ) -> list[ActionInfo]:
+    async def get_all_actions(self) -> list[ActionInfo]:
         """Получить все акции."""
-        actions = await self.repository.get_all(skip, limit)
+        actions = await self.repository.get_all()
         return [ActionInfo.model_validate(action) for action in actions]
 
     async def get_action(self, action_id: int) -> Optional[ActionInfo]:

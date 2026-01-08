@@ -3,7 +3,6 @@ from typing import List, Optional
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.constants import Limits
 from app.models.tables import Table
 from app.repositories.base import BaseCRUD
 from app.schemas.tables import TableCreate, TableUpdate
@@ -42,16 +41,12 @@ class TableRepository(BaseCRUD[Table]):
     async def get_all_for_cafe(
         self,
         cafe_id: int,
-        skip: int = Limits.DEFAULT_SKIP,
-        limit: int = Limits.DEFAULT_LIMIT,
         active_only: bool = True,
     ) -> List[Table]:
         """Получить все столики для кафе.
 
         Args:
             cafe_id: Идентификатор кафе.
-            skip: Количество записей для пропуска.
-            limit: Максимальное количество записей.
             active_only: Флаг для фильтрации только активных столиков.
 
         Returns:
@@ -61,7 +56,6 @@ class TableRepository(BaseCRUD[Table]):
         stmt = select(self.model).where(self.model.cafe_id == cafe_id)
         if active_only:
             stmt = stmt.where(self.model.active)
-        stmt = stmt.offset(skip).limit(limit)
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 

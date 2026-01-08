@@ -4,7 +4,6 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.constants import Limits
 from app.models.cafes import Cafe
 from app.repositories.base import BaseCRUD
 from app.schemas.cafes import CafeCreate, CafeUpdate
@@ -39,22 +38,18 @@ class CafeRepository(BaseCRUD[Cafe]):
 
     async def get_all(
         self,
-        skip: int = Limits.DEFAULT_SKIP,
-        limit: int = Limits.DEFAULT_LIMIT,
         active_only: bool = True,
     ) -> List[Cafe]:
         """Получить все кафе.
 
         Args:
-            skip: Количество записей для пропуска.
-            limit: Максимальное количество записей.
             active_only: Флаг для фильтрации только активных кафе.
 
         Returns:
             List[Cafe]: Список кафе.
 
         """
-        all_cafes = await super().get_all(skip=skip, limit=limit)
+        all_cafes = await super().get_all()
         if active_only:
             return [cafe for cafe in all_cafes if cafe.active]
         return all_cafes

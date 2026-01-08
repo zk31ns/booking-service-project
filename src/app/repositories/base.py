@@ -76,22 +76,14 @@ class BaseCRUD(Generic[ModelType]):
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_all(
-        self,
-        skip: int = 0,
-        limit: int = 100,
-    ) -> List[ModelType]:
-        """Получить список объектов с пагинацией.
-
-        Args:
-            skip: Количество записей для пропуска
-            limit: Максимальное количество записей
+    async def get_all(self) -> List[ModelType]:
+        """Получить список всех объектов.
 
         Returns:
             Список объектов модели
 
         """
-        stmt = select(self.model).offset(skip).limit(limit)
+        stmt = select(self.model)
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 

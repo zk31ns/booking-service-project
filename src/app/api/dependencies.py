@@ -9,6 +9,7 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.constants import ErrorCode
+from app.core.database import async_session_maker, get_session
 from app.core.exceptions import (
     AuthenticationException,
     AuthorizationException,
@@ -18,7 +19,6 @@ from app.core.security import (
     get_current_username_from_token,
     verify_refresh_token,
 )
-from app.db.session import async_session_maker, get_session
 from app.models import User, cafe_managers
 from app.repositories.users import UserRepository
 

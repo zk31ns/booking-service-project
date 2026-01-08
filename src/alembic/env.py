@@ -23,7 +23,7 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-from app.db.base import Base
+from app.core.base import Base
 from app.models.actions import Action
 from app.models.booking import Booking
 from app.models.cafes import Cafe

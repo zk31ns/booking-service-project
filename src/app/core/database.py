@@ -1,6 +1,7 @@
-"""Конфигурация асинхронного подключения к PostgreSQL.
+"""Единое подключение к базе данных PostgreSQL.
 
-Использует SQLAlchemy 2.0 async.
+Централизованное управление подключением к БД, connection pool и сессиями.
+Все сервисы и репозитории должны использовать только этот модуль.
 """
 
 from typing import AsyncGenerator
@@ -11,10 +12,9 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from app.core.config import settings
 from app.core.constants import ErrorCode
 from app.core.logging import logger
-
-from ..core.config import settings
 
 # Создать асинхронный движок
 engine = create_async_engine(
@@ -35,7 +35,11 @@ async_session_maker = async_sessionmaker(
 
 
 async def get_session() -> AsyncGenerator:
-    """Dependency для FastAPI — получить сессию БД."""
+    """Dependency для FastAPI — получить сессию БД.
+
+    Автоматически выполняет commit при успешном завершении
+    или rollback при ошибке.
+    """
     async with async_session_maker() as session:
         try:
             yield session
@@ -43,9 +47,11 @@ async def get_session() -> AsyncGenerator:
         except Exception as e:
             await session.rollback()
             logger.error(f'{ErrorCode.INTERNAL_SERVER_ERROR}: {e}')
-            # на период тестирования проекта
             logger.error(f'{type(e).__name__}: {str(e)}', exc_info=True)
             raise
 
 
-__all__ = ['engine', 'async_session_maker', 'get_session']
+async def close_db_connection() -> None:
+    """Закрыть все соединения с БД при завершении приложения."""
+    await engine.dispose()
+    logger.info('Database connections closed')

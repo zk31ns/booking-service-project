@@ -92,9 +92,13 @@ pip install -r src/requirements.txt
 pip install -r requirements_style.txt
 
 # Проверить установку
-pip list | grep -i fastapi  # Должна быть fastapi 0.104.1
+pip list | grep -i fastapi  # Должна быть fastapi 0.128.0
 pip list | grep -i sqlalchemy  # Должна быть sqlalchemy 2.0.23
+pip list | grep -i uvicorn  # Должна быть uvicorn 0.34.0
+pip list | grep -i pydantic  # Должна быть pydantic 2.9.2
 ```
+
+**📝 Примечание:** За последним обновлением зависимостей (08.01.2026) см. [DEPENDENCIES_UPDATE.md](./DEPENDENCIES_UPDATE.md)
 
 ### 3. Настройка конфигурации
 

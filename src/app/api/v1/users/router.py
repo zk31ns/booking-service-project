@@ -36,7 +36,7 @@ router = APIRouter(tags=API.USERS)
 
 @router.post(
     '/auth/login',
-    response_model=dict,
+    response_model=AuthResponseDict,
     summary='Получение токена авторизации',
     description='Возвращает токен для последующей авторизации пользователя.',
 )
@@ -65,14 +65,14 @@ async def login(
 
 @router.post(
     '/auth/refresh',
-    response_model=dict,
+    response_model=RefreshTokenResponseDict,
     summary='Обновление access токена',
     description='Обновляет access токен с помощью refresh токена.',
 )
 async def refresh_tokens(
     refresh_token: Annotated[
         str,
-        Body(..., embed=True, description='Refresh токен'),
+        Body(..., embed=True, description='Refresh токена'),
     ],
     service: Annotated[UserService, Depends(get_user_service)],
 ) -> RefreshTokenResponseDict:

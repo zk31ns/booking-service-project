@@ -278,7 +278,7 @@ jobs:
             HEALTH_CHECK_SUCCESS=false
 
             for i in $(seq 1 $MAX_ATTEMPTS); do
-              if curl -sf http://localhost:8000/api/v1/health > /dev/null 2>&1; then
+              if curl -sf http://localhost:8000/api/v1/ > /dev/null 2>&1; then
                 echo "✅ Application is healthy!"
                 HEALTH_CHECK_SUCCESS=true
                 break

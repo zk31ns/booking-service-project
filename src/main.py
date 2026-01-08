@@ -17,7 +17,6 @@ from app.api.v1.actions import router as actions_router
 from app.api.v1.booking import router as booking_router
 from app.api.v1.cafes import router as cafes_router
 from app.api.v1.dishes import router as dishes_router
-from app.api.v1.health import router as health_router
 from app.api.v1.media import router as media_router
 from app.api.v1.slots import router as slots_router
 from app.api.v1.tables import router as tables_router
@@ -54,9 +53,6 @@ app.add_middleware(
 # ========== Routers ==========
 # Greeting message
 app.include_router(root.router, prefix=API.V1_PREFIX, tags=API.ROOT)
-
-# Health check
-app.include_router(health_router, prefix=API.V1_PREFIX, tags=['health'])
 
 # Users and Authentication
 app.include_router(users_router, prefix=API.V1_PREFIX)

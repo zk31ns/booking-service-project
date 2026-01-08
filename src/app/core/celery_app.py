@@ -36,6 +36,7 @@ celery_app.conf.update(
     task_ignore_result=False,
     result_expires=Times.RABBITMQ_RESULT_EXPIRE,
     worker_hijack_root_logger=False,
+    imports=['app.core.celery_tasks'],
 )
 
 # Настройка расписания для Celery Beat
@@ -100,6 +101,3 @@ def task_postrun_handler(
             'result': retval,
         },
     )
-
-
-celery_app.autodiscover_tasks(['app.core.celery_tasks'])

@@ -16,13 +16,6 @@ from app.core.constants import CeleryTasks, ErrorCode, EventType, Times
 from app.core.database import async_session_maker
 from app.core.exceptions import TelegramApiException
 from app.core.logging import logger
-from app.repositories import (
-    BookingRepository,
-    CafeRepository,
-    TableRepository,
-)
-from app.repositories.slot import SlotRepository
-from app.repositories.users import UserRepository
 
 
 class TelegramAPIResponse(BaseModel):
@@ -44,7 +37,7 @@ def send_booking_reminder(
     telegram_id: str,
     cafe_name: str,
     cafe_address: str,
-    booking_date: datetime,
+    booking_date: str,
     start_time: str,
 ) -> None:
     """Отправка напоминания о бронировании в Telegram.
@@ -71,7 +64,7 @@ def send_booking_reminder(
             telegram_id,
             cafe_name,
             cafe_address,
-            booking_date,
+            date.fromisoformat(booking_date),
             start_time,
         )
     )
@@ -82,7 +75,7 @@ async def _send_reminder_async(
     telegram_id: str,
     cafe_name: str,
     cafe_address: str,
-    booking_date: datetime,
+    booking_date: date,
     start_time: str,
 ) -> None:
     """Асинхронная отправка напоминания.
@@ -250,8 +243,14 @@ async def _cleanup_expired_bookings_async() -> int:
         Количество обработанных записей
 
     """
+    from app.repositories import (
+        BookingRepository,
+        CafeRepository,
+        TableRepository,
+    )
+    from app.repositories.slot import SlotRepository
+    from app.repositories.users import UserRepository
     from app.services.booking import BookingService
-
     async with async_session_maker() as session:
         booking_repo = BookingRepository(session)
         cafe_repo = CafeRepository(session)

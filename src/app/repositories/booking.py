@@ -174,6 +174,7 @@ class BookingRepository(BaseCRUD[Booking]):
         ]
 
         self.session.add(booking)
+        await self.session.flush()
         await self.session.refresh(booking)
 
         return booking

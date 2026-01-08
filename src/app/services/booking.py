@@ -7,7 +7,6 @@ from app.api.v1.booking.schemas import (
     TableSlotSchema,
 )
 from app.core.celery_app import celery_app
-from app.core.celery_tasks import notify_manager, send_booking_reminder
 from app.core.constants import (
     BookingRules,
     BookingStatus,
@@ -589,6 +588,7 @@ class BookingService:
             create: признак создания нового бронирования
 
         """
+        from app.core.celery_tasks import notify_manager, send_booking_reminder
         first_slot = min(
             booking.table_slots,
             key=lambda table_slot: table_slot.slot.start_time,
@@ -623,7 +623,7 @@ class BookingService:
                     'telegram_id': user.tg_id,
                     'cafe_name': cafe.name,
                     'cafe_address': cafe.address,
-                    'booking_date': booking.booking_date,
+                    'booking_date': booking.booking_date.isoformat(),
                     'start_time': start_time.strftime('%H:%M'),
                 },
                 eta=remind_at,
@@ -640,7 +640,6 @@ class BookingService:
                         'user_name': user.username,
                         'table_seats': table_seats,
                         'table_description': table_description,
-                        'booking_date': booking.booking_date,
                         'start_time': start_time.strftime('%H:%M'),
                         'end_time': end_time.strftime('%H:%M'),
                         'cancellation': cancellation,

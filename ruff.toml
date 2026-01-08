@@ -5,7 +5,7 @@ target-version = "py311"
 # Enable preview features.
 preview = true
 # Содержимое папки alembic-а в проверку не включаем
-exclude = ["src/app/alembic"]
+exclude = ["src/app/alembic/versions"]
 
 [format]
 # Enable reformatting of code snippets in docstrings.

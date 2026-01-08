@@ -4,7 +4,9 @@
 Обеспечивает проверку типов на уровне IDE и статического анализа.
 """
 
-from typing import Any, TypedDict
+from typing import Any
+
+from typing_extensions import TypedDict
 
 
 class TokenDict(TypedDict):

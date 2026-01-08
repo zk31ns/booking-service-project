@@ -2,9 +2,12 @@ from typing import List
 from uuid import UUID
 
 from fastapi import HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.constants import ErrorCode, Messages
 from app.models.cafes import Cafe
+from app.models.users import User
 from app.repositories.cafes import CafeRepository
 from app.repositories.tables import TableRepository
 from app.schemas.cafes import CafeCreate, CafeUpdate
@@ -18,16 +21,19 @@ class CafeService(EntityValidationMixin[Cafe]):
         self,
         cafe_repository: CafeRepository,
         table_repository: TableRepository,
+        session: AsyncSession,
     ) -> None:
         """Инициализация сервиса кафе.
 
         Args:
             cafe_repository: Репозиторий для работы с кафе.
             table_repository: Репозиторий для работы со столиками.
+            session: Асинхронная сессия SQLAlchemy.
 
         """
         self.cafe_repository = cafe_repository
         self.table_repository = table_repository
+        self.session = session
 
     async def get_all_cafes(
         self,
@@ -86,6 +92,7 @@ class CafeService(EntityValidationMixin[Cafe]):
         Raises:
             HTTPException: Если кафе с таким названием уже существует
             (статус 409).
+            HTTPException: Если хотя бы один менеджер не найден (статус 404).
 
         """
         existing_cafe = await self.cafe_repository.get_by_name(
@@ -93,7 +100,33 @@ class CafeService(EntityValidationMixin[Cafe]):
         )
         if existing_cafe:
             await self._raise_conflict(ErrorCode.CAFE_ALREADY_EXISTS)
-        return await self.cafe_repository.create(cafe_create)
+
+        # Проверить что все менеджеры существуют
+        if cafe_create.managers_id:
+            managers_result = await self.session.execute(
+                select(User).where(User.id.in_(cafe_create.managers_id))
+            )
+            managers = managers_result.scalars().all()
+            if len(managers) != len(cafe_create.managers_id):
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=Messages.errors[ErrorCode.USER_NOT_FOUND],
+                )
+
+        # Создать кафе без менеджеров
+        cafe_data = cafe_create.model_dump(exclude={'managers_id'})
+        cafe = await self.cafe_repository.create(cafe_data)
+
+        # Добавить менеджеров
+        if cafe_create.managers_id:
+            managers_result = await self.session.execute(
+                select(User).where(User.id.in_(cafe_create.managers_id))
+            )
+            managers = managers_result.scalars().all()
+            cafe.managers = managers
+            await self.session.commit()
+
+        return cafe
 
     async def update_cafe(self, cafe_id: int, cafe_update: CafeUpdate) -> Cafe:
         """Обновить данные кафе.
@@ -111,6 +144,7 @@ class CafeService(EntityValidationMixin[Cafe]):
             HTTPException: Если кафе с таким названием уже существует
             (статус 400).
             HTTPException: Если не удалось обновить кафе (статус 500).
+            HTTPException: Если хотя бы один менеджер не найден (статус 404).
 
         """
         cafe = await self.get_cafe_by_id(cafe_id)
@@ -123,13 +157,38 @@ class CafeService(EntityValidationMixin[Cafe]):
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=Messages.errors[ErrorCode.CAFE_ALREADY_EXISTS],
                 )
-        updated_cafe = await self.cafe_repository.update(cafe_id, cafe_update)
-        if not updated_cafe:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=Messages.errors[ErrorCode.CAFE_UPDATE_FAILED],
-            )
-        return updated_cafe
+
+        # Проверить менеджеров если они указаны
+        if cafe_update.managers_id is not None:
+            if cafe_update.managers_id:  # Если не пустой список
+                managers_result = await self.session.execute(
+                    select(User).where(User.id.in_(cafe_update.managers_id))
+                )
+                managers = managers_result.scalars().all()
+                if len(managers) != len(cafe_update.managers_id):
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail=Messages.errors[ErrorCode.USER_NOT_FOUND],
+                    )
+            # Обновить менеджеров в объекте кафе
+            if cafe_update.managers_id:
+                managers_result = await self.session.execute(
+                    select(User).where(User.id.in_(cafe_update.managers_id))
+                )
+                cafe.managers = managers_result.scalars().all()
+            else:
+                cafe.managers = []
+
+        # Обновить остальные поля
+        update_data = cafe_update.model_dump(
+            exclude={'managers_id'},
+            exclude_none=True,
+        )
+        for key, value in update_data.items():
+            setattr(cafe, key, value)
+
+        await self.session.commit()
+        return cafe
 
     async def delete_cafe(self, cafe_id: int) -> bool:
         """Удалить кафе (логическое удаление).

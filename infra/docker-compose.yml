@@ -89,7 +89,7 @@ services:
     container_name: booking_worker
     env_file: ../.env
     image: ${DOCKER_IMAGE:?set DOCKER_IMAGE env}:${IMAGE_TAG:-latest}
-    command: celery -A app.core.celery_app:celery_app worker --loglevel=info
+    command: celery -A app.core.celery_app:celery_app worker --beat --loglevel=info
     working_dir: /app
     environment:
       - PYTHONPATH=/app
@@ -100,19 +100,6 @@ services:
       rabbitmq:
         condition: service_healthy
       db:
-        condition: service_healthy
-    restart: unless-stopped
-
-  beat:
-    container_name: booking_beat
-    env_file: ../.env
-    image: ${DOCKER_IMAGE:?set DOCKER_IMAGE env}:${IMAGE_TAG:-latest}
-    command: celery -A app.core.celery_app:celery_app beat --loglevel=info
-    working_dir: /app
-    environment:
-      - PYTHONPATH=/app
-    depends_on:
-      rabbitmq:
         condition: service_healthy
     restart: unless-stopped
 

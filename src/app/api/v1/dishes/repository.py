@@ -14,9 +14,9 @@ class DishRepository:
         """Initialize repository with database session."""
         self.session = session
 
-    async def get_all(self, skip: int = 0, limit: int = 100) -> list[Dish]:
+    async def get_all(self) -> list[Dish]:
         """Получить все блюда."""
-        stmt = select(Dish).offset(skip).limit(limit)
+        stmt = select(Dish)
         result = await self.session.execute(stmt)
         return result.scalars().all()
 

@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.dishes.schemas import DishCreate, DishInfo, DishUpdate
 from app.api.v1.dishes.service import DishService
-from app.core.constants import Limits
 from app.core.database import get_session
 
 router = APIRouter(prefix='/dishes', tags=['dishes'])
@@ -20,12 +19,10 @@ async def get_dish_service(
 
 @router.get('/', response_model=list[DishInfo])
 async def get_dishes(
-    skip: int = Limits.DEFAULT_SKIP,
-    limit: int = Limits.DEFAULT_LIMIT,
     service: Annotated[DishService, Depends(get_dish_service)] = None,
 ) -> list[DishInfo]:
     """Получить список всех блюд."""
-    return await service.get_all_dishes(skip, limit)
+    return await service.get_all_dishes()
 
 
 @router.get('/{dish_id}', response_model=DishInfo)

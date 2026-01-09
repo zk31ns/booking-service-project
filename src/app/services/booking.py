@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 from datetime import date, datetime, timedelta
 from typing import Any, List, Optional, Tuple, Union
 
 from app.core.celery_app import celery_app
-from app.core.celery_tasks import notify_manager, send_booking_reminder
 from app.core.constants import (
     BookingRules,
     BookingStatus,
@@ -21,9 +22,9 @@ from app.repositories import (
     BookingRepository,
     CafeRepository,
     TableRepository,
+    SlotRepository,
+    UserRepository
 )
-from app.repositories.slot import SlotRepository
-from app.repositories.users import UserRepository
 from app.schemas import (
     BookingCreate,
     BookingUpdate,
@@ -60,7 +61,7 @@ class BookingService:
 
     async def create_booking(
         self,
-        booking_in: BookingCreate,
+        booking_in: 'BookingCreate',
         user: User,
     ) -> Booking:
         """Создать новое бронирование.
@@ -171,7 +172,7 @@ class BookingService:
 
     async def update_booking(
         self,
-        update_booking: BookingUpdate,
+        update_booking: 'BookingUpdate',
         booking_id: int,
         current_user: User,
     ) -> Booking:
@@ -579,6 +580,8 @@ class BookingService:
             create: признак создания нового бронирования
 
         """
+        from app.core.celery_tasks import notify_manager, send_booking_reminder
+
         first_slot = min(
             booking.table_slots,
             key=lambda table_slot: table_slot.slot.start_time,
@@ -613,7 +616,7 @@ class BookingService:
                     'telegram_id': user.tg_id,
                     'cafe_name': cafe.name,
                     'cafe_address': cafe.address,
-                    'booking_date': booking.booking_date,
+                    'booking_date': booking.booking_date.isoformat(),
                     'start_time': start_time.strftime('%H:%M'),
                 },
                 eta=remind_at,
@@ -630,7 +633,6 @@ class BookingService:
                         'user_name': user.username,
                         'table_seats': table_seats,
                         'table_description': table_description,
-                        'booking_date': booking.booking_date,
                         'start_time': start_time.strftime('%H:%M'),
                         'end_time': end_time.strftime('%H:%M'),
                         'cancellation': cancellation,

@@ -143,7 +143,7 @@ class BookingRepository(BaseCRUD[Booking]):
         return list(result.scalars().all())
 
     async def create(
-        self, obj_in: BookingCreate, user: Optional[User] = None
+        self, obj_in: 'BookingCreate', user: Optional[User] = None
     ) -> Booking:
         """Создать новое бронирование.
 
@@ -174,7 +174,7 @@ class BookingRepository(BaseCRUD[Booking]):
         ]
 
         self.session.add(booking)
-        await self.session.commit()
+        await self.session.flush()
         await self.session.refresh(booking)
 
         return booking
@@ -182,7 +182,7 @@ class BookingRepository(BaseCRUD[Booking]):
     async def update(
         self,
         booking: Booking,
-        update_booking: BookingUpdate,
+        update_booking: 'BookingUpdate',
         data: dict[str, Union[int, str, date, bool]],
     ) -> Booking:
         """Обновить существующее бронирование.

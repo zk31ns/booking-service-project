@@ -52,7 +52,7 @@ src/
 │   │       logging.py         (loguru)
 │   │       lifespan.py        (События жизненного цикла приложения)
 │   │       celery_app.py      (Celery init)
-│   │       celery_base.py     (Обработка ошибок в Celary)
+│   │       celery_base.py     (Обработка ошибок в Celery)
 │   │       celery_tasks.py    (планы задач)
 │   │       constants.py       (глобальные константы и Enums)
 │   │       exceptions.py      (пользовательские исключения)

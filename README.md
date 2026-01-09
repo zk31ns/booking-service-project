@@ -228,9 +228,9 @@ booking_seats_team_project/
 │   │   │   └── dependencies.py    # Зависимости
 │   │   ├── core/                # Ядро приложения
 │   │   │   ├── base.py          # SQLAlchemy Base
-│   │   │   ├── celery_app.py    # Логика работы Celary
-│   │   │   ├── celery_base.py   # Обработка ошибок в Celary
-│   │   │   ├── celery_tasks.py  # Celary задачи
+│   │   │   ├── celery_app.py    # Логика работы Celery
+│   │   │   ├── celery_base.py   # Обработка ошибок в Celery
+│   │   │   ├── celery_tasks.py  # Celery задачи
 │   │   │   ├── config.py        # Pydantic Settings
 │   │   │   ├── constants.py     # Глобальные константы
 │   │   │   ├── database.py      # Подключение к бд Postgres

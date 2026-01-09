@@ -4,7 +4,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.dishes.repository import DishRepository
 from app.api.v1.dishes.schemas import DishCreate, DishInfo, DishUpdate
-from app.core.constants import Limits
 
 
 class DishService:
@@ -14,13 +13,9 @@ class DishService:
         """Initialize service with session."""
         self.repository = DishRepository(session)
 
-    async def get_all_dishes(
-        self,
-        skip: int = Limits.DEFAULT_SKIP,
-        limit: int = Limits.DEFAULT_LIMIT,
-    ) -> list[DishInfo]:
+    async def get_all_dishes(self) -> list[DishInfo]:
         """Получить все блюда."""
-        dishes = await self.repository.get_all(skip, limit)
+        dishes = await self.repository.get_all()
         return [DishInfo.model_validate(dish) for dish in dishes]
 
     async def get_dish(self, dish_id: int) -> Optional[DishInfo]:

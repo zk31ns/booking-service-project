@@ -30,16 +30,12 @@ class TableService:
     async def get_all_tables_for_cafe(
         self,
         cafe_id: int,
-        skip: int = 0,
-        limit: int = 100,
         active_only: bool = True,
     ) -> List[Table]:
         """Получить список столиков для указанного кафе.
 
         Args:
             cafe_id: Идентификатор кафе.
-            skip: Количество записей для пропуска.
-            limit: Максимальное количество записей для возврата.
             active_only: Флаг фильтрации только активных столиков.
 
         Returns:
@@ -62,8 +58,6 @@ class TableService:
             )
         return await self.table_repository.get_all_for_cafe(
             cafe_id=cafe_id,
-            skip=skip,
-            limit=limit,
             active_only=active_only,
         )
 

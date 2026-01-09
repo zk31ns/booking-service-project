@@ -37,15 +37,11 @@ class CafeService(EntityValidationMixin[Cafe]):
 
     async def get_all_cafes(
         self,
-        skip: int = 0,
-        limit: int = 100,
         active_only: bool = True,
     ) -> List[Cafe]:
         """Получить список всех кафе.
 
         Args:
-            skip: Количество записей для пропуска.
-            limit: Максимальное количество записей для возврата.
             active_only: Флаг фильтрации только активных кафе.
 
         Returns:
@@ -53,8 +49,6 @@ class CafeService(EntityValidationMixin[Cafe]):
 
         """
         return await self.cafe_repository.get_all(
-            skip=skip,
-            limit=limit,
             active_only=active_only,
         )
 

@@ -14,9 +14,9 @@ class ActionRepository:
         """Initialize repository with session."""
         self.session = session
 
-    async def get_all(self, skip: int = 0, limit: int = 100) -> list[Action]:
+    async def get_all(self) -> list[Action]:
         """Получить все акции."""
-        stmt = select(Action).offset(skip).limit(limit)
+        stmt = select(Action)
         result = await self.session.execute(stmt)
         return result.scalars().all()
 

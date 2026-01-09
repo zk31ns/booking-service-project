@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_db
-from app.core.constants import API, ErrorCode, Limits, Messages
+from app.core.constants import API, ErrorCode, Messages
 from app.repositories.cafes import CafeRepository
 from app.repositories.tables import TableRepository
 from app.schemas.tables import Table, TableCreate, TableUpdate
@@ -38,15 +38,6 @@ def get_table_service(
 )
 async def get_tables_for_cafe(
     cafe_id: int = Query(..., description='ID кафе'),
-    skip: int = Query(0, ge=0, description='Количество записей для пропуска'),
-    limit: int = Query(
-        Limits.DEFAULT_PAGE_SIZE,
-        ge=1,
-        le=Limits.MAX_PAGE_SIZE,
-        description=(
-            f'Количество записей на странице ({Limits.MAX_PAGE_SIZE} max)'
-        ),
-    ),
     active_only: bool = Query(True, description='Только активные столики'),
     table_service: TableService = Depends(get_table_service),
 ) -> List[Table]:
@@ -54,8 +45,6 @@ async def get_tables_for_cafe(
 
     Args:
         cafe_id: Идентификатор кафе.
-        skip: Количество записей для пропуска.
-        limit: Количество записей на странице.
         active_only: Флаг фильтрации только активных столиков.
         table_service: Сервис работы со столиками (внедряется автоматически).
 
@@ -65,8 +54,6 @@ async def get_tables_for_cafe(
     """
     return await table_service.get_all_tables_for_cafe(
         cafe_id=cafe_id,
-        skip=skip,
-        limit=limit,
         active_only=active_only,
     )
 

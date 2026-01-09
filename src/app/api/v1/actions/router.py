@@ -9,7 +9,6 @@ from app.api.v1.actions.schemas import (
     ActionUpdate,
 )
 from app.api.v1.actions.service import ActionService
-from app.core.constants import Limits
 from app.core.database import get_session
 
 router = APIRouter(prefix='/actions', tags=['actions'])
@@ -24,12 +23,10 @@ async def get_action_service(
 
 @router.get('/', response_model=list[ActionInfo])
 async def get_actions(
-    skip: int = Limits.DEFAULT_SKIP,
-    limit: int = Limits.DEFAULT_LIMIT,
     service: Annotated[ActionService, Depends(get_action_service)] = None,
 ) -> list[ActionInfo]:
     """Получить список всех акций."""
-    return await service.get_all_actions(skip, limit)
+    return await service.get_all_actions()
 
 
 @router.get('/{action_id}', response_model=ActionInfo)

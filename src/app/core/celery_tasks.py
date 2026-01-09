@@ -241,6 +241,11 @@ def cleanup_expired_bookings(self: Task) -> Dict[str, Any]:
 async def _cleanup_expired_bookings_async() -> int:
     """Асинхронная очистка истёкших бронирований.
 
+    Создает собственное подключение к БД с NullPool для безопасной работы
+    в многопроцессной среде Celery. NullPool не использует пул соединений,
+    а создает новое соединение для каждой операции, что предотвращает
+    конфликты между процессами worker'ов.
+
     Returns:
         Количество обработанных записей
 
@@ -260,6 +265,9 @@ async def _cleanup_expired_bookings_async() -> int:
     from app.repositories.users import UserRepository
     from app.services.booking import BookingService
 
+    # NullPool: создаёт новое соединение для каждой операции.
+    # Необходимо для Celery workers чтобы избежать конфликтов
+    # при использовании соединений в разных процессах.
     engine = create_async_engine(
         settings.database_url,
         echo=settings.db_echo,
@@ -287,6 +295,7 @@ async def _cleanup_expired_bookings_async() -> int:
         now = date.today()
         expired_count = await booking_service.cleanup_expired_bookings(now=now)
         await session.commit()
+    # Важно: закрываем engine после использования для освобождения ресурсов
     await engine.dispose()
     return expired_count
 

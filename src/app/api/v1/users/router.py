@@ -54,10 +54,11 @@ async def login(
             password=form_data.password,
         )
         user_data = result['user']
-        if hasattr(user_data, 'model_dump'):
-            user_dict = user_data.model_dump()
-        else:
-            user_dict = user_data
+        user_dict = (
+            user_data.model_dump()
+            if hasattr(user_data, 'model_dump')
+            else user_data
+        )
         return {
             'access_token': result['tokens']['access_token'],
             'refresh_token': result['tokens']['refresh_token'],
@@ -87,10 +88,11 @@ async def refresh_tokens(
             refresh_token=refresh_token,
         )
         user_data = result['user']
-        if hasattr(user_data, 'model_dump'):
-            user_dict = user_data.model_dump()
-        else:
-            user_dict = user_data
+        user_dict = (
+            user_data.model_dump()
+            if hasattr(user_data, 'model_dump')
+            else user_data
+        )
         return {
             'access_token': result['tokens']['access_token'],
             'refresh_token': result['tokens']['refresh_token'],

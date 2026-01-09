@@ -148,38 +148,6 @@ async def update_cafe(
     return await cafe_service.update_cafe(cafe_id, cafe_update)
 
 
-@router.delete(
-    '/{cafe_id}',
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary='Удалить кафе',
-    responses={
-        404: {'description': Messages.errors[ErrorCode.CAFE_NOT_FOUND]},
-        403: {
-            'description': Messages.errors[ErrorCode.INSUFFICIENT_PERMISSIONS]
-        },
-    },
-)
-async def delete_cafe(
-    cafe_id: int,
-    cafe_service: CafeService = Depends(get_cafe_service),
-) -> None:
-    """Удалить кафе (логическое удаление).
-
-    Args:
-        cafe_id: Идентификатор кафе.
-        cafe_service: Сервис для работы с кафе (внедряется автоматически).
-
-    Returns:
-        None: Не возвращает данные (статус 204 No Content).
-
-    Raises:
-        HTTPException: 404 - Если кафе не найдено.
-        HTTPException: 403 - Если недостаточно прав.
-
-    """
-    await cafe_service.delete_cafe(cafe_id)
-
-
 @router.post(
     '/{cafe_id}/managers/{user_id}',
     status_code=status.HTTP_201_CREATED,

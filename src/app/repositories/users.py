@@ -421,7 +421,7 @@ class UserRepository(BaseCRUD[User]):
             manager = select(
                 exists().where(
                     cafe_managers.c.user_id == user_id,
-                    cafe_managers.c.cafe_id == cafe_id
+                    cafe_managers.c.cafe_id == cafe_id,
                 )
             )
         else:

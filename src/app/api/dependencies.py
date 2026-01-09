@@ -5,6 +5,7 @@ from fastapi.security import (
     HTTPAuthorizationCredentials,
     HTTPBearer,
 )
+from loguru import logger
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -98,32 +99,6 @@ async def get_current_user(
     return user
 
 
-async def get_current_active_user(
-    current_user: Annotated[User, Depends(get_current_user)],
-) -> User:
-    """Зависимость для получения текущего активного пользователя.
-
-    Гарантирует, что пользователь не заблокирован и активен.
-
-    Args:
-        current_user: Текущий пользователь из get_current_user
-
-    Returns:
-        User: Активный пользователь
-
-    Raises:
-        HTTPException: 403 если пользователь заблокирован
-
-    """
-    if current_user.is_blocked:
-        raise AuthorizationException(ErrorCode.USER_BLOCKED)
-
-    if not current_user.active:
-        raise AuthorizationException(ErrorCode.USER_DEACTIVATED)
-
-    return current_user
-
-
 async def get_current_superuser(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> User:
@@ -140,6 +115,47 @@ async def get_current_superuser(
 
     """
     if not current_user.is_superuser:
+        raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
+
+    return current_user
+
+
+async def get_current_manager_or_superuser(
+    current_user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> User:
+    """Зависимость для получения менеджера кафе или администратора.
+
+    Args:
+        current_user: Текущий пользователь из get_current_user
+        session: Асинхронная сессия базы данных
+
+    Returns:
+        User: Менеджер кафе или суперпользователь
+
+    Raises:
+        HTTPException: 403 если пользователь не менеджер и не администратор
+
+    """
+    if current_user.is_superuser:
+        return current_user
+
+    # Проверяем, является ли пользователь менеджером хотя бы одного кафе
+    query = select(cafe_managers).where(
+        cafe_managers.c.user_id == current_user.id,
+    )
+
+    result = await session.execute(query)
+    is_manager = result.scalar() is not None
+
+    logger.info(
+        'User {} ({}) - is_manager: {}',
+        current_user.id,
+        current_user.username,
+        is_manager,
+    )
+
+    if not is_manager:
         raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
 
     return current_user
@@ -380,8 +396,8 @@ __all__ = [
     'security',
     'get_user_repository',
     'get_current_user',
-    'get_current_active_user',
     'get_current_superuser',
+    'get_current_manager_or_superuser',
     'get_current_user_id',
     'get_current_user_username',
     'get_optional_user',
@@ -391,5 +407,5 @@ __all__ = [
     'get_cafe_repository',
     'get_slot_repository',
     'get_booking_repository',
-    'get_booking_service'
+    'get_booking_service',
 ]

@@ -261,7 +261,7 @@ def update_booking_status(booking_id: int, new_status: BookingStatus):
     allowed_transitions = BookingRules.STATUS_TRANSITIONS[user_role].get(
             current_status, set()
         )
-    
+
     class BookingRules:
     """Бизнес-правила для работы с бронированиями."""
 
@@ -308,7 +308,7 @@ def update_booking_status(booking_id: int, new_status: BookingStatus):
                 BookingStatus.COMPLETED: {BookingStatus.CONFIRMED},
             },
         }
-    
+
 ```
 
 **Значения:**

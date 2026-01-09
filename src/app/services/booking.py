@@ -135,9 +135,7 @@ class BookingService:
             AuthenticationException: Если недостаточно прав
 
         """
-        is_manager = await self.user_repo.is_manager(
-            user_id=current_user.id
-        )
+        is_manager = await self.user_repo.is_manager(user_id=current_user.id)
         if (not current_user.is_superuser and not is_manager) or not show_all:
             user_id = current_user.id
 
@@ -403,10 +401,8 @@ class BookingService:
 
         """
         if (
-            not current_user.is_superuser and
-            not await self.user_repo.is_manager(
-                current_user.id
-            )
+            not current_user.is_superuser
+            and not await self.user_repo.is_manager(current_user.id)
         ):
             if booking.user_id != current_user.id:
                 raise AuthenticationException(
@@ -522,9 +518,7 @@ class BookingService:
         update_data['status'] = new_status_value
 
         if 'active' not in update_data:
-            update_data['active'] = (
-                new_status in BookingRules.ACTIVE_STATUSES
-            )
+            update_data['active'] = new_status in BookingRules.ACTIVE_STATUSES
 
     async def _process_active_update(
         self,

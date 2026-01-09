@@ -2,7 +2,7 @@ from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends
 
-from app.api.dependencies import get_booking_service, get_current_active_user
+from app.api.dependencies import get_booking_service, get_current_user
 from app.models import Booking, User
 from app.schemas import BookingCreate, BookingDB, BookingUpdate
 from app.services.booking import BookingService
@@ -15,7 +15,7 @@ router = APIRouter(prefix='/booking', tags=['booking'])
     response_model=list[BookingDB],
 )
 async def get_all_bookings(
-    current_user: Annotated[User, Depends(get_current_active_user)],
+    current_user: Annotated[User, Depends(get_current_user)],
     show_all: bool = True,
     cafe_id: Optional[int] = None,
     user_id: Optional[int] = None,
@@ -52,7 +52,7 @@ async def get_all_bookings(
 )
 async def create_booking(
     booking_in: BookingCreate,
-    user: User = Depends(get_current_active_user),
+    user: User = Depends(get_current_user),
     service: BookingService = Depends(get_booking_service),
 ) -> Booking:
     """Создать новое бронирование.
@@ -80,7 +80,7 @@ async def create_booking(
     response_model=BookingDB,
 )
 async def get_booking(
-    current_user: Annotated[User, Depends(get_current_active_user)],
+    current_user: Annotated[User, Depends(get_current_user)],
     booking_id: int,
     service: BookingService = Depends(get_booking_service),
 ) -> Booking:
@@ -110,7 +110,7 @@ async def get_booking(
 async def update_booking(
     booking_in: BookingUpdate,
     booking_id: int,
-    user: User = Depends(get_current_active_user),
+    user: User = Depends(get_current_user),
     service: BookingService = Depends(get_booking_service),
 ) -> Booking:
     """Обновить существующее бронирование.

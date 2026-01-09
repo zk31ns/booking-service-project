@@ -84,8 +84,8 @@ class UserService:
             List[UserInfo]: Список пользователей
 
         """
-        if not self._is_superuser_or_none(current_user):
-            raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
+        # Проверка прав уже выполнена в зависимости
+        # get_current_manager_or_superuser
         users = await self.user_repo.get_multi(
             skip=skip,
             limit=limit,

@@ -9,7 +9,7 @@ from fastapi import APIRouter, Body, Depends, Query, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.api.dependencies import (
-    get_current_active_user,
+    get_current_manager_or_superuser,
     get_current_superuser,
     get_current_user,
     get_optional_user,
@@ -110,7 +110,7 @@ async def refresh_tokens(
 )
 async def get_users(
     service: Annotated[UserService, Depends(get_user_service)],
-    current_user: Annotated[User, Depends(get_current_superuser)],
+    current_user: Annotated[User, Depends(get_current_manager_or_superuser)],
     skip: Annotated[
         int,
         Query(ge=0, description='Сколько записей пропустить'),
@@ -199,7 +199,7 @@ async def create_user(
     'Только для авторизированных пользователей.',
 )
 async def get_current_user_info(
-    current_user: Annotated[User, Depends(get_current_active_user)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> UserInfo:
     """Получает информацию о текущем пользователе."""
     return UserInfo.from_orm(current_user)
@@ -215,7 +215,7 @@ async def get_current_user_info(
 async def update_current_user(
     user_update: UserUpdate,
     service: Annotated[UserService, Depends(get_user_service)],
-    current_user: Annotated[User, Depends(get_current_active_user)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> UserInfo:
     """Обновляет информацию о текущем пользователе."""
     try:
@@ -242,7 +242,7 @@ async def change_password(
     current_password: Annotated[str, Body(..., description='Текущий пароль')],
     new_password: Annotated[str, Body(..., description='Новый пароль')],
     service: Annotated[UserService, Depends(get_user_service)],
-    current_user: Annotated[User, Depends(get_current_active_user)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> UserInfo:
     """Изменяет пароль текущего пользователя."""
     try:
@@ -269,7 +269,7 @@ async def change_password(
 )
 async def delete_current_user(
     service: Annotated[UserService, Depends(get_user_service)],
-    current_user: Annotated[User, Depends(get_current_active_user)],
+    current_user: Annotated[User, Depends(get_current_user)],
     confirm: Annotated[
         bool,
         Body(..., description='Подтверждение удаления аккаунта'),

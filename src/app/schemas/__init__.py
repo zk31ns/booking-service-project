@@ -21,5 +21,5 @@ __all__ = [
     'BookingCreate',
     'BookingDB',
     'BookingUpdate',
-    'TableSlotSchema'
+    'TableSlotSchema',
 ]

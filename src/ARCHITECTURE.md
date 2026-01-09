@@ -40,8 +40,8 @@ src/
 │   │        ├───tables/
 │   │        ├───slots/
 │   │        ├───booking/
-│   │        ├───dishes/     
-│   │        ├───actions/     
+│   │        ├───dishes/
+│   │        ├───actions/
 │   │        └───media/
 │   │
 │   ├───core/

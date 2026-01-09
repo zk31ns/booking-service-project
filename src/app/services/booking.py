@@ -1,7 +1,7 @@
 from datetime import date, datetime, timedelta
 from typing import Any, List, Optional, Tuple, Union
 
-from app.api.v1.booking.schemas import (
+from app.schemas import (
     BookingCreate,
     BookingUpdate,
     TableSlotSchema,

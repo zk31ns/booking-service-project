@@ -21,9 +21,9 @@ from app.models import Booking, Cafe, Slot, Table, User
 from app.repositories import (
     BookingRepository,
     CafeRepository,
-    TableRepository,
     SlotRepository,
-    UserRepository
+    TableRepository,
+    UserRepository,
 )
 from app.schemas import (
     BookingCreate,

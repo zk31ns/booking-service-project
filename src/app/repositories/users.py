@@ -248,7 +248,7 @@ class UserRepository(BaseCRUD[User]):
             Удалённый пользователь или None, если не найден
 
         """
-        user = await self.get_user(user_id, active_only=False)
+        user = await self.get(user_id, active_only=False)
 
         if not user:
             return None

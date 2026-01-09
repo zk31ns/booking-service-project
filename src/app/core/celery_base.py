@@ -37,9 +37,10 @@ class BaseTask(Task):
 
         """
         logger.error(
-            f'SYSTEM: {EventType.TASK_FAILED} '
-            'Error occurs while sending reminder for task '
-            f'{self.name}: {exc}',
+            'SYSTEM: {} Error occurs while sending reminder for task {}: {}',
+            EventType.TASK_FAILED,
+            self.name,
+            exc,
             exc_info=True,
         )
 
@@ -62,7 +63,9 @@ class BaseTask(Task):
 
         """
         logger.warning(
-            f'SYSTEM: {EventType.TASK_FAILED} '
-            f'Network error for task {self.name}, '
-            f'retry {self.request.retries}: {exc}'
+            'SYSTEM: {} Network error for task {}, retry {}: {}',
+            EventType.TASK_FAILED,
+            self.name,
+            self.request.retries,
+            exc,
         )

@@ -40,8 +40,9 @@ class CafeCreate(CafeBase):
     photo_id: UUID = Field(
         description='ID фотографии кафе',
     )
-    managers_id: list[int] = Field(
-        description='ID менеджеров кафе',
+    managers_id: Optional[list[int]] = Field(
+        default=None,
+        description='ID менеджеров кафе (опционально, можно добавить позже)',
     )
 
 

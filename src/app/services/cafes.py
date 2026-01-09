@@ -118,6 +118,7 @@ class CafeService(EntityValidationMixin[Cafe]):
             managers = managers_result.scalars().all()
             cafe.managers = managers
             await self.session.commit()
+            await self.session.refresh(cafe)
 
         return cafe
 
@@ -181,6 +182,7 @@ class CafeService(EntityValidationMixin[Cafe]):
             setattr(cafe, key, value)
 
         await self.session.commit()
+        await self.session.refresh(cafe)
         return cafe
 
     async def delete_cafe(self, cafe_id: int) -> bool:

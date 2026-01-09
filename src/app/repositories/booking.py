@@ -5,9 +5,9 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.schemas import BookingCreate, BookingUpdate
 from app.core.constants import BookingStatus
 from app.models import Booking, Slot, TableSlot, User
+from app.schemas import BookingCreate, BookingUpdate
 
 from .base import BaseCRUD
 

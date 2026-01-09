@@ -23,9 +23,9 @@ from app.models import User, cafe_managers
 from app.repositories import (
     BookingRepository,
     CafeRepository,
-    TableRepository,
     SlotRepository,
-    UserRepository
+    TableRepository,
+    UserRepository,
 )
 from app.services.booking import BookingService
 

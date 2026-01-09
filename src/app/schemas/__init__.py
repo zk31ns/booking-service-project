@@ -1,5 +1,9 @@
 from .bookings import (
-    BookingBase, BookingCreate, BookingDB, BookingUpdate, TableSlotSchema
+    BookingBase,
+    BookingCreate,
+    BookingDB,
+    BookingUpdate,
+    TableSlotSchema,
 )
 from .cafes import Cafe, CafeCreate, CafeUpdate, CafeWithRelations
 from .tables import Table, TableCreate, TableUpdate, TableWithCafe

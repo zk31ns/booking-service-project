@@ -1,11 +1,6 @@
 from datetime import date, datetime, timedelta
 from typing import Any, List, Optional, Tuple, Union
 
-from app.schemas import (
-    BookingCreate,
-    BookingUpdate,
-    TableSlotSchema,
-)
 from app.core.celery_app import celery_app
 from app.core.celery_tasks import notify_manager, send_booking_reminder
 from app.core.constants import (
@@ -29,6 +24,11 @@ from app.repositories import (
 )
 from app.repositories.slot import SlotRepository
 from app.repositories.users import UserRepository
+from app.schemas import (
+    BookingCreate,
+    BookingUpdate,
+    TableSlotSchema,
+)
 
 
 class BookingService:
@@ -103,7 +103,7 @@ class BookingService:
             user=user,
         )
 
-        # await self._trigger_celery_tasks(booking, user, cafe, create=True)
+        await self._trigger_celery_tasks(booking, user, cafe, create=True)
 
         return booking
 
@@ -268,9 +268,9 @@ class BookingService:
             update_data['note'] = update_booking.note
 
         cafe = await self._validate_cafe(booking.cafe_id)
-        # await self._trigger_celery_tasks(
-        #     booking, current_user, cafe, create=False
-        # )
+        await self._trigger_celery_tasks(
+            booking, current_user, cafe, create=False
+        )
 
         return await self.booking_repo.update(
             booking=booking, update_booking=update_booking, data=update_data

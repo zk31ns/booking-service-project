@@ -134,7 +134,9 @@ class BookingService:
             AuthenticationException: Если недостаточно прав
 
         """
-        is_manager = await self.user_repo.is_manager(user_id=current_user.id)
+        is_manager = await self.user_repo.is_manager(
+            user_id=current_user.id
+        )
         if (not current_user.is_superuser and not is_manager) or not show_all:
             user_id = current_user.id
 
@@ -383,21 +385,6 @@ class BookingService:
             raise NotFoundException(ErrorCode.BOOKING_NOT_FOUND)
         return booking
 
-    async def _is_manager(
-        self,
-        current_user: User,
-    ) -> bool:
-        """Проверить является ли пользователь менеджером.
-
-        Args:
-            current_user: Пользователь для проверки
-
-        Returns:
-            True если пользователь менеджер, иначе False
-
-        """
-        return await self.user_repo.is_manager(user_id=current_user.id)
-
     async def _check_booking_permissions(
         self, current_user: User, booking: Booking
     ) -> None:
@@ -414,8 +401,11 @@ class BookingService:
             AuthenticationException: Если недостаточно прав
 
         """
-        if not current_user.is_superuser and not await self._is_manager(
-            current_user
+        if (
+            not current_user.is_superuser and
+            not await self.user_repo.is_manager(
+                current_user.id
+            )
         ):
             if booking.user_id != current_user.id:
                 raise AuthenticationException(
@@ -490,7 +480,7 @@ class BookingService:
         """
         if user.is_superuser:
             return UserRole.ADMIN
-        if self._is_manager(current_user=user):
+        if self.user_repo.is_manager(user.id):
             return UserRole.MANAGER
         return UserRole.CUSTOMER
 

@@ -1,10 +1,11 @@
-from typing import List
+from typing import Annotated, Dict, List
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_db
+from app.api.dependencies import get_current_superuser, get_db
 from app.core.constants import API, ErrorCode, Messages
+from app.models import User
 from app.repositories.cafes import CafeRepository
 from app.repositories.tables import TableRepository
 from app.schemas.cafes import Cafe, CafeCreate, CafeUpdate, CafeWithRelations
@@ -177,3 +178,70 @@ async def delete_cafe(
 
     """
     await cafe_service.delete_cafe(cafe_id)
+
+
+@router.post(
+    '/{cafe_id}/managers/{user_id}',
+    status_code=status.HTTP_201_CREATED,
+    summary='Добавить менеджера к кафе',
+    responses={
+        404: {'description': 'Cafe or User not found'},
+        409: {'description': 'User is already manager of this cafe'},
+    },
+)
+async def add_cafe_manager(
+    cafe_id: int,
+    user_id: int,
+    current_user: Annotated[User, Depends(get_current_superuser)],
+    cafe_service: CafeService = Depends(get_cafe_service),
+) -> Dict[str, str]:
+    """Добавить пользователя как менеджера кафе.
+
+    Args:
+        cafe_id: ID кафе.
+        user_id: ID пользователя для добавления.
+        current_user: Текущий пользователь (должен быть суперюзер).
+        cafe_service: Сервис кафе (внедряется автоматически).
+
+    Returns:
+        Dict[str, str]: Сообщение об успехе.
+
+    Raises:
+        HTTPException: 404 - Если кафе или пользователь не найдены.
+        HTTPException: 409 - Если пользователь уже менеджер кафе.
+
+    """
+    await cafe_service.add_manager(cafe_id, user_id)
+    return {'message': f'User {user_id} added as manager to cafe {cafe_id}'}
+
+
+@router.delete(
+    '/{cafe_id}/managers/{user_id}',
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary='Удалить менеджера от кафе',
+    responses={
+        404: {'description': 'User is not manager of this cafe'},
+    },
+)
+async def remove_cafe_manager(
+    cafe_id: int,
+    user_id: int,
+    current_user: Annotated[User, Depends(get_current_superuser)],
+    cafe_service: CafeService = Depends(get_cafe_service),
+) -> None:
+    """Удалить пользователя из менеджеров кафе.
+
+    Args:
+        cafe_id: ID кафе.
+        user_id: ID пользователя для удаления.
+        current_user: Текущий пользователь (должен быть суперюзер).
+        cafe_service: Сервис кафе (внедряется автоматически).
+
+    Returns:
+        None: Не возвращает данные (статус 204 No Content).
+
+    Raises:
+        HTTPException: 404 - Если пользователь не менеджер кафе.
+
+    """
+    await cafe_service.remove_manager(cafe_id, user_id)

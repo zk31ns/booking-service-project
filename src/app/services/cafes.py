@@ -2,12 +2,12 @@ from typing import List
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.constants import ErrorCode, Messages
 from app.models.cafes import Cafe
-from app.models.users import User
+from app.models.users import User, cafe_managers
 from app.repositories.cafes import CafeRepository
 from app.repositories.tables import TableRepository
 from app.schemas.cafes import CafeCreate, CafeUpdate
@@ -257,3 +257,92 @@ class CafeService(EntityValidationMixin[Cafe]):
             'created_at': cafe.created_at,
             'updated_at': cafe.updated_at,
         }
+
+    async def add_manager(
+        self,
+        cafe_id: int,
+        user_id: int,
+    ) -> None:
+        """Добавить менеджера к кафе.
+
+        Args:
+            cafe_id: ID кафе.
+            user_id: ID пользователя.
+
+        Raises:
+            HTTPException: Если кафе или пользователь не найдены.
+            HTTPException: Если пользователь уже менеджер кафе.
+
+        """
+        # Проверяем наличие кафе
+        await self.get_cafe_by_id(cafe_id)
+
+        # Проверяем наличие пользователя
+        user_result = await self.session.execute(
+            select(User).where(User.id == user_id)
+        )
+        user = user_result.scalar_one_or_none()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f'User with id {user_id} not found',
+            )
+
+        # Проверяем не менеджер ли уже
+        existing = await self.session.execute(
+            select(cafe_managers).where(
+                (cafe_managers.c.cafe_id == cafe_id)
+                & (cafe_managers.c.user_id == user_id)
+            )
+        )
+        if existing.scalar() is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f'User {user_id} is already manager of cafe {cafe_id}',
+            )
+
+        # Добавляем менеджера
+        await self.session.execute(
+            insert(cafe_managers).values(
+                cafe_id=cafe_id,
+                user_id=user_id,
+            )
+        )
+        await self.session.commit()
+
+    async def remove_manager(
+        self,
+        cafe_id: int,
+        user_id: int,
+    ) -> None:
+        """Удалить менеджера от кафе.
+
+        Args:
+            cafe_id: ID кафе.
+            user_id: ID пользователя.
+
+        Raises:
+            HTTPException: Если связь не найдена.
+
+        """
+        from sqlalchemy import delete
+
+        result = await self.session.execute(
+            select(cafe_managers).where(
+                (cafe_managers.c.cafe_id == cafe_id)
+                & (cafe_managers.c.user_id == user_id)
+            )
+        )
+        if result.scalar() is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f'User {user_id} is not manager of cafe {cafe_id}',
+            )
+
+        await self.session.execute(
+            delete(cafe_managers).where(
+                (cafe_managers.c.cafe_id == cafe_id)
+                & (cafe_managers.c.user_id == user_id)
+            )
+        )
+        await self.session.commit()

@@ -8,21 +8,16 @@ from typing import Any, Dict
 import aiohttp
 from celery import Task
 from pydantic import BaseModel
+from sqlalchemy.pool import NullPool
 
 from app.core.celery_app import celery_app
 from app.core.celery_base import BaseTask
 from app.core.config import settings
 from app.core.constants import CeleryTasks, ErrorCode, EventType, Times
-from app.core.database import async_session_maker
+
+# from app.core.database import async_session_maker
 from app.core.exceptions import TelegramApiException
 from app.core.logging import logger
-from app.repositories import (
-    BookingRepository,
-    CafeRepository,
-    TableRepository,
-)
-from app.repositories.slot import SlotRepository
-from app.repositories.users import UserRepository
 
 
 class TelegramAPIResponse(BaseModel):
@@ -44,7 +39,7 @@ def send_booking_reminder(
     telegram_id: str,
     cafe_name: str,
     cafe_address: str,
-    booking_date: datetime,
+    booking_date: str,
     start_time: str,
 ) -> None:
     """Отправка напоминания о бронировании в Telegram.
@@ -71,7 +66,7 @@ def send_booking_reminder(
             telegram_id,
             cafe_name,
             cafe_address,
-            booking_date,
+            date.fromisoformat(booking_date),
             start_time,
         )
     )
@@ -82,7 +77,7 @@ async def _send_reminder_async(
     telegram_id: str,
     cafe_name: str,
     cafe_address: str,
-    booking_date: datetime,
+    booking_date: date,
     start_time: str,
 ) -> None:
     """Асинхронная отправка напоминания.
@@ -246,12 +241,44 @@ def cleanup_expired_bookings(self: Task) -> Dict[str, Any]:
 async def _cleanup_expired_bookings_async() -> int:
     """Асинхронная очистка истёкших бронирований.
 
+    Создает собственное подключение к БД с NullPool для безопасной работы
+    в многопроцессной среде Celery. NullPool не использует пул соединений,
+    а создает новое соединение для каждой операции, что предотвращает
+    конфликты между процессами worker'ов.
+
     Returns:
         Количество обработанных записей
 
     """
+    from sqlalchemy.ext.asyncio import (
+        AsyncSession,
+        async_sessionmaker,
+        create_async_engine,
+    )
+
+    from app.repositories import (
+        BookingRepository,
+        CafeRepository,
+        TableRepository,
+    )
+    from app.repositories.slot import SlotRepository
+    from app.repositories.users import UserRepository
     from app.services.booking import BookingService
 
+    # NullPool: создаёт новое соединение для каждой операции.
+    # Необходимо для Celery workers чтобы избежать конфликтов
+    # при использовании соединений в разных процессах.
+    engine = create_async_engine(
+        settings.database_url,
+        echo=settings.db_echo,
+        future=True,
+        poolclass=NullPool,
+    )
+    async_session_maker = async_sessionmaker(
+        engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+    )
     async with async_session_maker() as session:
         booking_repo = BookingRepository(session)
         cafe_repo = CafeRepository(session)
@@ -268,6 +295,8 @@ async def _cleanup_expired_bookings_async() -> int:
         now = date.today()
         expired_count = await booking_service.cleanup_expired_bookings(now=now)
         await session.commit()
+    # Важно: закрываем engine после использования для освобождения ресурсов
+    await engine.dispose()
     return expired_count
 
 

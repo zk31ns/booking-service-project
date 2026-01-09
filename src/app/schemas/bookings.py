@@ -60,11 +60,11 @@ class BookingCreate(BookingBase):
 class BookingUpdate(BookingBase):
     """Схема для обновления существующего бронирования.
 
-    Наследует базовую схему и добавляет поле is_active.
+    Наследует базовую схему и добавляет поле active.
     Все поля опциональны для поддержки частичного обновления.
     """
 
-    is_active: bool | None = Field(default=None)
+    active: bool | None = Field(default=None)
 
     model_config = ConfigDict(extra='forbid', validate_default=True)
 
@@ -82,6 +82,6 @@ class BookingDB(BookingBase):
     table_slots: list[TableSlotSchema]
     created_at: datetime
     updated_at: datetime
-    is_active: bool
+    active: bool
 
     model_config = ConfigDict(from_attributes=True)

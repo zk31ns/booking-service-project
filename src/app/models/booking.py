@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date
 
 from sqlalchemy import (
     Date,
@@ -6,11 +6,10 @@ from sqlalchemy import (
     Index,
     Integer,
     String,
-    func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.base import Base
+from app.core.base import Base, TimestampedModel
 from app.core.constants import BookingStatus, Limits
 
 
@@ -53,7 +52,7 @@ class TableSlot(Base):
     )
 
 
-class Booking(Base):
+class Booking(TimestampedModel):
     """Модель бронирований столиков в кафе.
 
     Основная модель, представляющая бронирование столиков пользователями.
@@ -87,13 +86,6 @@ class Booking(Base):
         back_populates='booking',
         lazy='selectin',
         cascade='all, delete-orphan',
-    )
-    is_active: Mapped[bool] = mapped_column(nullable=False, default=True)
-    created_at: Mapped[datetime] = mapped_column(
-        nullable=False, server_default=func.now()
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        nullable=False, server_default=func.now(), server_onupdate=func.now()
     )
 
     user_id: Mapped[int] = mapped_column(

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 from app.core.celery_app import celery_app
 from app.core.constants import (
@@ -21,17 +21,15 @@ from app.models import Booking, Cafe, Slot, Table, User
 from app.repositories import (
     BookingRepository,
     CafeRepository,
+    SlotRepository,
     TableRepository,
+    UserRepository,
 )
-from app.repositories.slot import SlotRepository
-from app.repositories.users import UserRepository
-
-if TYPE_CHECKING:
-    from app.api.v1.booking.schemas import (
-        BookingCreate,
-        BookingUpdate,
-        TableSlotSchema,
-    )
+from app.schemas import (
+    BookingCreate,
+    BookingUpdate,
+    TableSlotSchema,
+)
 
 
 class BookingService:
@@ -137,7 +135,9 @@ class BookingService:
             AuthenticationException: Если недостаточно прав
 
         """
-        is_manager = await self.user_repo.is_manager(user_id=current_user.id)
+        is_manager = await self.user_repo.is_manager(
+            user_id=current_user.id
+        )
         if (not current_user.is_superuser and not is_manager) or not show_all:
             user_id = current_user.id
 
@@ -198,9 +198,9 @@ class BookingService:
         """
         booking = await self.__get_booking_or_404(booking_id)
 
-        user_role = self._get_user_role(current_user)
+        user_role = await self._get_user_role(current_user)
 
-        if not booking.is_active and user_role != UserRole.ADMIN:
+        if not booking.active and user_role != UserRole.ADMIN:
             raise AppException(ErrorCode.BOOKING_INACTIVE)
 
         update_data: dict[str, Union[int, str, date, bool]] = {}
@@ -214,10 +214,10 @@ class BookingService:
                 current_user=current_user,
             )
 
-        if update_booking.is_active is not None:
+        if update_booking.active is not None:
             await self._process_active_update(
                 booking=booking,
-                requested_active=update_booking.is_active,
+                requested_active=update_booking.active,
                 user_role=user_role,
                 update_data=update_data,
                 new_status=update_booking.status,
@@ -381,25 +381,10 @@ class BookingService:
             NotFoundException: Если бронирование не найдено
 
         """
-        booking = await self.booking_repo.get(booking_id=booking_id)
+        booking = await self.booking_repo.get(booking_id)
         if booking is None:
             raise NotFoundException(ErrorCode.BOOKING_NOT_FOUND)
         return booking
-
-    async def _is_manager(
-        self,
-        current_user: User,
-    ) -> bool:
-        """Проверить является ли пользователь менеджером.
-
-        Args:
-            current_user: Пользователь для проверки
-
-        Returns:
-            True если пользователь менеджер, иначе False
-
-        """
-        return await self.user_repo.is_manager(user_id=current_user.id)
 
     async def _check_booking_permissions(
         self, current_user: User, booking: Booking
@@ -417,8 +402,11 @@ class BookingService:
             AuthenticationException: Если недостаточно прав
 
         """
-        if not current_user.is_superuser and not await self._is_manager(
-            current_user
+        if (
+            not current_user.is_superuser and
+            not await self.user_repo.is_manager(
+                current_user.id
+            )
         ):
             if booking.user_id != current_user.id:
                 raise AuthenticationException(
@@ -481,7 +469,7 @@ class BookingService:
         """
         return sum(table.seats for table in tables) if tables else 0
 
-    def _get_user_role(self, user: User) -> UserRole:
+    async def _get_user_role(self, user: User) -> UserRole:
         """Определить роль пользователя.
 
         Args:
@@ -493,7 +481,7 @@ class BookingService:
         """
         if user.is_superuser:
             return UserRole.ADMIN
-        if self._is_manager(current_user=user):
+        if await self.user_repo.is_manager(user.id):
             return UserRole.MANAGER
         return UserRole.CUSTOMER
 
@@ -508,7 +496,7 @@ class BookingService:
         """Обработать изменение статуса бронирования.
 
         Проверяет разрешенные переходы статусов и устанавливает
-        автоматическое значение is_active на основе нового статуса.
+        автоматическое значение active на основе нового статуса.
 
         Args:
             booking: Обновляемое бронирование
@@ -533,8 +521,8 @@ class BookingService:
 
         update_data['status'] = new_status_value
 
-        if 'is_active' not in update_data:
-            update_data['is_active'] = (
+        if 'active' not in update_data:
+            update_data['active'] = (
                 new_status in BookingRules.ACTIVE_STATUSES
             )
 
@@ -578,7 +566,7 @@ class BookingService:
             if status_enum in BookingRules.ACTIVE_STATUSES:
                 raise AppException(ErrorCode.CANNOT_DEACTIVATE_ACTIVE_STATUS)
 
-        update_data['is_active'] = requested_active
+        update_data['active'] = requested_active
 
     async def _trigger_celery_tasks(
         self, booking: Booking, user: User, cafe: Cafe, create: bool = False

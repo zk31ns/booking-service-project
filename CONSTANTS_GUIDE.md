@@ -250,31 +250,72 @@ Times.CELERY_TASK_TIMEOUT           # 300 (5 минут)
 ### BookingStatus
 
 ```python
-from app.core.constants import BookingStatus
+from app.core.constants import BookingRules, BookingStatus
 
 class Booking(Base):
-    status: str = Column(String, default=BookingStatus.NEW.value)
+    status: str = Column(String, default=BookingStatus.PENDING)
 
 # Использование в коде
 def update_booking_status(booking_id: int, new_status: BookingStatus):
     # Валидация: статус должен быть из enum
-    if new_status not in BookingStatus:
-        raise ValueError("Неверный статус")
+    allowed_transitions = BookingRules.STATUS_TRANSITIONS[user_role].get(
+            current_status, set()
+        )
+    
+    class BookingRules:
+    """Бизнес-правила для работы с бронированиями."""
 
-    # Переход только из допустимых статусов
-    allowed_transitions = {
-        BookingStatus.NEW: [BookingStatus.CONFIRMED, BookingStatus.CANCELLED],
-        BookingStatus.CONFIRMED: [BookingStatus.CANCELLED, BookingStatus.FINISHED],
-        BookingStatus.CANCELLED: [],
-        BookingStatus.FINISHED: [],
-    }
+        # Статусы, активной брони (видимой для редактирования)
+        ACTIVE_STATUSES = {BookingStatus.PENDING, BookingStatus.CONFIRMED}
+
+        # Статусы, при которых бронь считается завершенной/неактивной
+        INACTIVE_STATUSES = {BookingStatus.CANCELLED, BookingStatus.COMPLETED}
+
+        # Разрешенные переходы статусов для каждой роли
+        # Формат: {роль: {текущий_статус: {разрешенные_новые_статусы}}}
+        STATUS_TRANSITIONS = {
+            UserRole.CUSTOMER: {
+                BookingStatus.PENDING: {BookingStatus.CANCELLED},
+                BookingStatus.CONFIRMED: {BookingStatus.CANCELLED},
+                BookingStatus.CANCELLED: set(),
+                BookingStatus.COMPLETED: set(),
+            },
+            UserRole.MANAGER: {
+                BookingStatus.PENDING: {
+                    BookingStatus.CONFIRMED,
+                    BookingStatus.CANCELLED,
+                },
+                BookingStatus.CONFIRMED: {
+                    BookingStatus.CANCELLED,
+                    BookingStatus.COMPLETED,
+                },
+                BookingStatus.CANCELLED: set(),
+                BookingStatus.COMPLETED: set(),
+            },
+            UserRole.ADMIN: {
+                BookingStatus.PENDING: {
+                    BookingStatus.CONFIRMED,
+                    BookingStatus.CANCELLED,
+                },
+                BookingStatus.CONFIRMED: {
+                    BookingStatus.CANCELLED,
+                    BookingStatus.COMPLETED,
+                },
+                BookingStatus.CANCELLED: {
+                    BookingStatus.PENDING,
+                    BookingStatus.CONFIRMED,
+                },
+                BookingStatus.COMPLETED: {BookingStatus.CONFIRMED},
+            },
+        }
+    
 ```
 
 **Значения:**
-- `NEW` - новая бронь
+- `PENDING` - находится на рассмотрении
 - `CONFIRMED` - подтверждённая бронь
 - `CANCELLED` - отменённая бронь
-- `FINISHED` - завершённая бронь
+- `COMPLETED` - завершённая бронь
 
 ### UserRole
 

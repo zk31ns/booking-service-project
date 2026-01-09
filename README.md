@@ -214,38 +214,46 @@ booking_seats_team_project/
 ├── src/
 │   ├── main.py                 # FastAPI entry point
 │   ├── app/
-│   │   ├── api/v1/            # API маршруты по версиям
-│   │   │   ├── users/         # Users endpoints (Александр)
-│   │   │   ├── cafes/         # Cafes endpoints (Павел)
-│   │   │   ├── tables/        # Tables endpoints (Павел)
-│   │   │   ├── slots/         # Slots endpoints (Лев)
-│   │   │   ├── booking/       # Booking endpoints (Анастасия)
-│   │   │   ├── media/         # Media endpoints (Данил + Лев)
-│   │   │   └── health.py      # Health check endpoint
-│   │   ├── core/              # Ядро приложения
-│   │   │   ├── config.py      # Pydantic Settings
-│   │   │   ├── constants.py   # Глобальные константы (НОВОЕ!)
-│   │   │   ├── logging.py     # Loguru конфигурация
-│   │   │   └── security.py    # JWT, password hashing (TODO)
-│   │   ├── db/                # Работа с БД
-│   │   │   ├── base.py        # SQLAlchemy Base
-│   │   │   └── session.py     # Engine и session factory
+│   │   ├── api/
+│   │   │   ├── v1/          # API маршруты по версиям
+│   │   │   |   ├── users/         # Users endpoints (Александр)
+│   │   │   │   ├── cafes/         # Cafes endpoints (Павел)
+│   │   │   │   ├── tables/        # Tables endpoints (Павел)
+│   │   │   │   ├── slots/         # Slots endpoints (Лев)
+│   │   │   │   ├── booking/       # Booking endpoints (Анастасия)
+│   │   │   │   ├── media/         # Media endpoints (Данил + Лев)
+│   │   │   │   ├── actions/       # Actions endpoints
+│   │   │   │   ├── dishes/        # Dishes endpoints
+│   │   │   │   └── root.py        # Корневой endpoint для проверки статуса приложения
+│   │   │   └── dependencies.py    # Зависимости
+│   │   ├── core/                # Ядро приложения
+│   │   │   ├── base.py          # SQLAlchemy Base
+│   │   │   ├── celery_app.py    # Логика работы Celery
+│   │   │   ├── celery_base.py   # Обработка ошибок в Celery
+│   │   │   ├── celery_tasks.py  # Celery задачи
+│   │   │   ├── config.py        # Pydantic Settings
+│   │   │   ├── constants.py     # Глобальные константы
+│   │   │   ├── database.py      # Подключение к бд Postgres
+│   │   │   ├── exceptions.py    # Исключения
+│   │   │   ├── lifespan.py      # События жизненного цикла приложения
+│   │   │   ├── logging.py       # Loguru конфигурация
+│   │   │   ├── redis_cache.py   # Redis
+│   │   │   └── security.py      # JWT, password hashing
 │   │   ├── models/            # ORM модели
 │   │   ├── schemas/           # Pydantic DTO
 │   │   ├── services/          # Бизнес-логика
 │   │   ├── repositories/      # CRUD операции
 │   │   ├── utils/             # Утилиты и helpers
 │   │   ├── media/             # Хранилище файлов (JPG, PNG)
-│   │   ├── alembic/           # Миграции БД (Database migrations)
-│   │   │   ├── env.py         # Alembic runtime configuration
-│   │   │   ├── versions/      # Migration files
-│   │   │   └── script.py.mako # Migration template
-│   │   ├── alembic.ini        # Alembic configuration
-│   │   └──                    # (зависимости теперь в src/requirements.txt)
+│   ├── alembic/           # Миграции БД (Database migrations)
+│   │   ├── env.py         # Alembic runtime configuration
+│   │   ├── versions/      # Migration files
+│   │   └── script.py.mako # Migration template
+│   ├── alembic.ini        # Alembic configuration
+|   ├── requirements.txt        # Основные зависимости
+│   └── Dockerfile              # Dockerfile
 ├── infra/                      # Docker и конфигурация
 │   └── docker-compose.yml     # Compose (указывает на src/Dockerfile)
-├── src/Dockerfile              # Dockerfile (перемещён из infra)
-├── src/requirements.txt        # Основные зависимости
 ├── tests/                      # 🧪 Unit & Integration tests
 │   ├── api/                   # API endpoint tests
 │   ├── services/              # Business logic tests
@@ -585,8 +593,8 @@ A: Они обычно автоисправляются. Если нет — с�
 ## Статус разработки
 
 - ✅ P1: Инфраструктура (архитектура, логирование, конфигурация)
-- ⏳ P2: MVP (users, cafes, tables, slots, booking, media)
-- ⏳ P3: Оптимизация (Celery, кэширование, уведомления)
+- ✅ P2: MVP (users, cafes, tables, slots, booking, media)
+- ✅ P3: Оптимизация (Celery, кэширование, уведомления)
 - ⏳ P4: Опциональные улучшения
 
 **Хотите присоединиться?** Посмотрите [ISSUES_CHECKLIST.md](./ISSUES_CHECKLIST.md)!

@@ -1,5 +1,5 @@
 from datetime import date, time
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import List, Optional, Union
 
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,9 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.constants import BookingStatus
 from app.models import Booking, Slot, TableSlot, User
-
-if TYPE_CHECKING:
-    from app.api.v1.booking.schemas import BookingCreate, BookingUpdate
+from app.schemas import BookingCreate, BookingUpdate
 
 from .base import BaseCRUD
 
@@ -60,7 +58,7 @@ class BookingRepository(BaseCRUD[Booking]):
                     BookingStatus.PENDING,
                     BookingStatus.CONFIRMED,
                 ]),
-                self.model.is_active.is_(True),
+                self.model.active.is_(True),
             )
         )
 
@@ -102,7 +100,7 @@ class BookingRepository(BaseCRUD[Booking]):
                     BookingStatus.PENDING,
                     BookingStatus.CONFIRMED,
                 ]),
-                Booking.is_active.is_(True),
+                Booking.active.is_(True),
                 (start_time < Slot.end_time) & (end_time > Slot.start_time),
             )
             .limit(1)
@@ -270,6 +268,6 @@ class BookingRepository(BaseCRUD[Booking]):
                     BookingStatus.CONFIRMED,
                 ]),
             )
-            .values(status=BookingStatus.COMPLETED, is_active=False)
+            .values(status=BookingStatus.COMPLETED, active=False)
         )
         await self.session.execute(query)

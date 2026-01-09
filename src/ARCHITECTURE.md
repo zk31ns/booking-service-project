@@ -33,20 +33,15 @@ src/
 │
 ├───app/
 │   ├───api/
+│   │   ├───dependencies.py    (dependency injection для FastAPI)
 │   │   └───v1/
 │   │        ├───users/
-│   │        │       router.py
-│   │        │       schemas.py
-│   │        │       service.py
-│   │        │       repository.py
-│   │        │       models.py
-│   │        │
 │   │        ├───cafes/
 │   │        ├───tables/
 │   │        ├───slots/
 │   │        ├───booking/
-│   │        ├───dishes/      (опционально)
-│   │        ├───actions/     (опционально)
+│   │        ├───dishes/     
+│   │        ├───actions/     
 │   │        └───media/
 │   │
 │   ├───core/
@@ -55,11 +50,13 @@ src/
 │   │       config.py          (pydantic-settings)
 │   │       security.py        (JWT, хеширование)
 │   │       logging.py         (loguru)
+│   │       lifespan.py        (События жизненного цикла приложения)
 │   │       celery_app.py      (Celery init)
+│   │       celery_base.py     (Обработка ошибок в Celery)
 │   │       celery_tasks.py    (планы задач)
 │   │       constants.py       (глобальные константы и Enums)
 │   │       exceptions.py      (пользовательские исключения)
-│   │       dependencies.py    (dependency injection для FastAPI)
+│   │       redis_cache.py     (Redis)
 │   │
 │   ├───models/                (общие модели при необходимости)
 │   ├───schemas/               (общие схемы)

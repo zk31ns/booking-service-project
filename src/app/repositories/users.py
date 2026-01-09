@@ -248,7 +248,7 @@ class UserRepository(BaseCRUD[User]):
             Удалённый пользователь или None, если не найден
 
         """
-        user = await self.get_user(user_id, active_only=False)
+        user = await self.get(user_id, active_only=False)
 
         if not user:
             return None
@@ -414,8 +414,20 @@ class UserRepository(BaseCRUD[User]):
     async def is_manager(
         self,
         user_id: int,
+        cafe_id: Optional[int] = None,
     ) -> bool:
         """Проверить является ли пользователь менеджером."""
-        stmt = select(exists().where(cafe_managers.c.user_id == user_id))
-        result = await self.session.execute(stmt)
-        return result.scalar() is not None
+        if cafe_id:
+            manager = select(
+                exists().where(
+                    cafe_managers.c.user_id == user_id,
+                    cafe_managers.c.cafe_id == cafe_id
+                )
+            )
+        else:
+            manager = select(
+                exists().where(cafe_managers.c.user_id == user_id)
+            )
+
+        result = await self.session.execute(manager)
+        return result.scalar()

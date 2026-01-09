@@ -2,12 +2,10 @@ from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends
 
-from app.api.dependencies import get_current_active_user
+from app.api.dependencies import get_booking_service, get_current_active_user
 from app.models import Booking, User
+from app.schemas import BookingCreate, BookingDB, BookingUpdate
 from app.services.booking import BookingService
-
-from .dependencies import get_booking_service
-from .schemas import BookingCreate, BookingDB, BookingUpdate
 
 router = APIRouter(prefix='/booking', tags=['booking'])
 

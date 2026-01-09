@@ -60,6 +60,7 @@ class Cafe(TimestampedModel):
         'User',
         secondary='cafe_managers',
         back_populates='managed_cafes',
+        lazy='selectin',
     )
 
     def __repr__(self) -> str:

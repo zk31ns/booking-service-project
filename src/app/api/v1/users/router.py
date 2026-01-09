@@ -53,11 +53,16 @@ async def login(
             login=form_data.username,
             password=form_data.password,
         )
+        user_data = result['user']
+        if hasattr(user_data, 'model_dump'):
+            user_dict = user_data.model_dump()
+        else:
+            user_dict = user_data
         return {
             'access_token': result['tokens']['access_token'],
             'refresh_token': result['tokens']['refresh_token'],
             'token_type': 'bearer',
-            'user': result['user'],
+            'user': user_dict,
         }
     except (AuthenticationException, AuthorizationException) as e:
         raise e
@@ -81,11 +86,16 @@ async def refresh_tokens(
         result = await service.refresh_tokens(
             refresh_token=refresh_token,
         )
+        user_data = result['user']
+        if hasattr(user_data, 'model_dump'):
+            user_dict = user_data.model_dump()
+        else:
+            user_dict = user_data
         return {
             'access_token': result['tokens']['access_token'],
             'refresh_token': result['tokens']['refresh_token'],
             'token_type': 'bearer',
-            'user': result['user'],
+            'user': user_dict,
         }
     except (AuthenticationException, AuthorizationException) as e:
         raise e

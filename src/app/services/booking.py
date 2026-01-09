@@ -103,7 +103,7 @@ class BookingService:
             user=user,
         )
 
-        await self._trigger_celery_tasks(booking, user, cafe, create=True)
+        # await self._trigger_celery_tasks(booking, user, cafe, create=True)
 
         return booking
 
@@ -266,9 +266,9 @@ class BookingService:
             update_data['note'] = update_booking.note
 
         cafe = await self._validate_cafe(booking.cafe_id)
-        await self._trigger_celery_tasks(
-            booking, current_user, cafe, create=False
-        )
+        # await self._trigger_celery_tasks(
+        #     booking, current_user, cafe, create=False
+        # )
 
         return await self.booking_repo.update(
             booking=booking, update_booking=update_booking, data=update_data
@@ -378,7 +378,7 @@ class BookingService:
             NotFoundException: Если бронирование не найдено
 
         """
-        booking = await self.booking_repo.get(booking_id=booking_id)
+        booking = await self.booking_repo.get(booking_id)
         if booking is None:
             raise NotFoundException(ErrorCode.BOOKING_NOT_FOUND)
         return booking

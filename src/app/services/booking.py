@@ -197,7 +197,7 @@ class BookingService:
 
         user_role = self._get_user_role(current_user)
 
-        if not booking.is_active and user_role != UserRole.ADMIN:
+        if not booking.active and user_role != UserRole.ADMIN:
             raise AppException(ErrorCode.BOOKING_INACTIVE)
 
         update_data: dict[str, Union[int, str, date, bool]] = {}
@@ -211,10 +211,10 @@ class BookingService:
                 current_user=current_user,
             )
 
-        if update_booking.is_active is not None:
+        if update_booking.active is not None:
             await self._process_active_update(
                 booking=booking,
-                requested_active=update_booking.is_active,
+                requested_active=update_booking.active,
                 user_role=user_role,
                 update_data=update_data,
                 new_status=update_booking.status,
@@ -505,7 +505,7 @@ class BookingService:
         """Обработать изменение статуса бронирования.
 
         Проверяет разрешенные переходы статусов и устанавливает
-        автоматическое значение is_active на основе нового статуса.
+        автоматическое значение active на основе нового статуса.
 
         Args:
             booking: Обновляемое бронирование
@@ -530,8 +530,8 @@ class BookingService:
 
         update_data['status'] = new_status_value
 
-        if 'is_active' not in update_data:
-            update_data['is_active'] = (
+        if 'active' not in update_data:
+            update_data['active'] = (
                 new_status in BookingRules.ACTIVE_STATUSES
             )
 
@@ -575,7 +575,7 @@ class BookingService:
             if status_enum in BookingRules.ACTIVE_STATUSES:
                 raise AppException(ErrorCode.CANNOT_DEACTIVATE_ACTIVE_STATUS)
 
-        update_data['is_active'] = requested_active
+        update_data['active'] = requested_active
 
     async def _trigger_celery_tasks(
         self, booking: Booking, user: User, cafe: Cafe, create: bool = False

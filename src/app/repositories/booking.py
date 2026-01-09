@@ -58,7 +58,7 @@ class BookingRepository(BaseCRUD[Booking]):
                     BookingStatus.PENDING,
                     BookingStatus.CONFIRMED,
                 ]),
-                self.model.is_active.is_(True),
+                self.model.active.is_(True),
             )
         )
 
@@ -100,7 +100,7 @@ class BookingRepository(BaseCRUD[Booking]):
                     BookingStatus.PENDING,
                     BookingStatus.CONFIRMED,
                 ]),
-                Booking.is_active.is_(True),
+                Booking.active.is_(True),
                 (start_time < Slot.end_time) & (end_time > Slot.start_time),
             )
             .limit(1)
@@ -268,6 +268,6 @@ class BookingRepository(BaseCRUD[Booking]):
                     BookingStatus.CONFIRMED,
                 ]),
             )
-            .values(status=BookingStatus.COMPLETED, is_active=False)
+            .values(status=BookingStatus.COMPLETED, active=False)
         )
         await self.session.execute(query)

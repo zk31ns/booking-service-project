@@ -1,11 +1,8 @@
-from datetime import date, datetime, timedelta
-from typing import Any, List, Optional, Tuple, Union
+from __future__ import annotations
 
-from app.api.v1.booking.schemas import (
-    BookingCreate,
-    BookingUpdate,
-    TableSlotSchema,
-)
+from datetime import date, datetime, timedelta
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Union
+
 from app.core.celery_app import celery_app
 from app.core.constants import (
     BookingRules,
@@ -28,6 +25,13 @@ from app.repositories import (
 )
 from app.repositories.slot import SlotRepository
 from app.repositories.users import UserRepository
+
+if TYPE_CHECKING:
+    from app.api.v1.booking.schemas import (
+        BookingCreate,
+        BookingUpdate,
+        TableSlotSchema,
+    )
 
 
 class BookingService:
@@ -59,7 +63,7 @@ class BookingService:
 
     async def create_booking(
         self,
-        booking_in: BookingCreate,
+        booking_in: 'BookingCreate',
         user: User,
     ) -> Booking:
         """Создать новое бронирование.
@@ -168,7 +172,7 @@ class BookingService:
 
     async def update_booking(
         self,
-        update_booking: BookingUpdate,
+        update_booking: 'BookingUpdate',
         booking_id: int,
         current_user: User,
     ) -> Booking:

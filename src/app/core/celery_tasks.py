@@ -8,12 +8,14 @@ from typing import Any, Dict
 import aiohttp
 from celery import Task
 from pydantic import BaseModel
+from sqlalchemy.pool import NullPool
 
 from app.core.celery_app import celery_app
 from app.core.celery_base import BaseTask
 from app.core.config import settings
 from app.core.constants import CeleryTasks, ErrorCode, EventType, Times
-from app.core.database import async_session_maker
+
+# from app.core.database import async_session_maker
 from app.core.exceptions import TelegramApiException
 from app.core.logging import logger
 
@@ -243,6 +245,12 @@ async def _cleanup_expired_bookings_async() -> int:
         Количество обработанных записей
 
     """
+    from sqlalchemy.ext.asyncio import (
+        AsyncSession,
+        async_sessionmaker,
+        create_async_engine,
+    )
+
     from app.repositories import (
         BookingRepository,
         CafeRepository,
@@ -251,6 +259,18 @@ async def _cleanup_expired_bookings_async() -> int:
     from app.repositories.slot import SlotRepository
     from app.repositories.users import UserRepository
     from app.services.booking import BookingService
+
+    engine = create_async_engine(
+        settings.database_url,
+        echo=settings.db_echo,
+        future=True,
+        poolclass=NullPool,
+    )
+    async_session_maker = async_sessionmaker(
+        engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+    )
     async with async_session_maker() as session:
         booking_repo = BookingRepository(session)
         cafe_repo = CafeRepository(session)
@@ -267,6 +287,7 @@ async def _cleanup_expired_bookings_async() -> int:
         now = date.today()
         expired_count = await booking_service.cleanup_expired_bookings(now=now)
         await session.commit()
+    await engine.dispose()
     return expired_count
 
 

@@ -37,21 +37,20 @@ celery_app.conf.update(
     result_expires=Times.RABBITMQ_RESULT_EXPIRE,
     worker_hijack_root_logger=False,
     imports=['app.core.celery_tasks'],
-)
-
-# Настройка расписания для Celery Beat
-celery_app.conf.beat_schedule = {
-    'periodically_cleanup_expired_bookings': {
-        'task': 'cleanup_expired_bookings',
-        'schedule': crontab(
-            hour=Times.CLEANUP_EXPIRED_BOOKINGS_START_HOUR,
-            minute=Times.CLEANUP_EXPIRED_BOOKINGS_START_MINUTES,
-        ),
-        'options': {
-            'expires': Times.CELERY_BEAT_EXPIRED,
+    beat_schedule={
+        'periodically_cleanup_expired_bookings': {
+            'task': 'cleanup_expired_bookings',
+            # 'schedule': crontab(
+            #     hour=Times.CLEANUP_EXPIRED_BOOKINGS_START_HOUR,
+            #     minute=Times.CLEANUP_EXPIRED_BOOKINGS_START_MINUTES,
+            # ),
+            'schedule': crontab(),
+            'options': {
+                'expires': Times.CELERY_BEAT_EXPIRED,
+            },
         },
     },
-}
+)
 
 
 @celery_setup_logging.connect

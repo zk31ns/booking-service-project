@@ -1,13 +1,15 @@
 from datetime import date, time
-from typing import List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Union
 
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.api.v1.booking.schemas import BookingCreate, BookingUpdate
 from app.core.constants import BookingStatus
 from app.models import Booking, Slot, TableSlot, User
+
+if TYPE_CHECKING:
+    from app.api.v1.booking.schemas import BookingCreate, BookingUpdate
 
 from .base import BaseCRUD
 
@@ -143,7 +145,7 @@ class BookingRepository(BaseCRUD[Booking]):
         return list(result.scalars().all())
 
     async def create(
-        self, obj_in: BookingCreate, user: Optional[User] = None
+        self, obj_in: 'BookingCreate', user: Optional[User] = None
     ) -> Booking:
         """Создать новое бронирование.
 
@@ -182,7 +184,7 @@ class BookingRepository(BaseCRUD[Booking]):
     async def update(
         self,
         booking: Booking,
-        update_booking: BookingUpdate,
+        update_booking: 'BookingUpdate',
         data: dict[str, Union[int, str, date, bool]],
     ) -> Booking:
         """Обновить существующее бронирование.

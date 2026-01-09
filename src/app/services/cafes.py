@@ -1,4 +1,3 @@
-from typing import List
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -38,7 +37,7 @@ class CafeService(EntityValidationMixin[Cafe]):
     async def get_all_cafes(
         self,
         active_only: bool = True,
-    ) -> List[Cafe]:
+    ) -> list[Cafe]:
         """Получить список всех кафе.
 
         Args:

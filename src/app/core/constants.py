@@ -20,7 +20,7 @@
 """
 
 import re
-from enum import Enum
+from enum import StrEnum
 
 # ========== API и Таги ==========
 
@@ -159,14 +159,14 @@ class Times:
 # ========== Enum классы ==========
 
 
-class RedisKey(str, Enum):
+class RedisKey(StrEnum):
     """Ключи кэша в Redis."""
 
     CACHE_KEY_ALL_CAFES = 'cafe:all'  # ключ для кэша кафе
     CACHE_KEY_ALL_SLOTS = 'slots:all'  # ключ для кэша слотов
 
 
-class BookingStatus(str, Enum):
+class BookingStatus(StrEnum):
     """Статусы бронирований."""
 
     PENDING = 'pending'
@@ -175,7 +175,7 @@ class BookingStatus(str, Enum):
     COMPLETED = 'completed'
 
 
-class UserRole(str, Enum):
+class UserRole(StrEnum):
     """Роли пользователей."""
 
     CUSTOMER = 'customer'  # Клиент
@@ -234,7 +234,7 @@ class BookingRules:
     }
 
 
-class ErrorCode(str, Enum):
+class ErrorCode(StrEnum):
     """Коды ошибок API."""
 
     # Auth
@@ -302,7 +302,7 @@ class ErrorCode(str, Enum):
     BAD_GATEWAY = 'bad_gateway'
 
 
-class EventType(str, Enum):
+class EventType(StrEnum):
     """Типы событий для логирования."""
 
     # Auth

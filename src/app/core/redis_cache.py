@@ -1,7 +1,7 @@
 """Управление кэшем Redis."""
 
 import json
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel
 from redis.asyncio import Redis
@@ -17,7 +17,7 @@ class RedisCache:
     кэширования и получения информации из кэша.
     """
 
-    redis: Optional[Redis] = None
+    redis: Redis | None = None
 
     @classmethod
     def init(cls, redis: Redis) -> None:
@@ -25,7 +25,7 @@ class RedisCache:
         cls.redis = redis
 
     @classmethod
-    async def get(cls, key: str) -> Optional[Any]:
+    async def get(cls, key: str) -> Any | None:
         """Получение данных из кэша.
 
         Args:

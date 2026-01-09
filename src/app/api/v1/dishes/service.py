@@ -1,5 +1,3 @@
-from typing import Optional
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.dishes.repository import DishRepository
@@ -18,7 +16,7 @@ class DishService:
         dishes = await self.repository.get_all()
         return [DishInfo.model_validate(dish) for dish in dishes]
 
-    async def get_dish(self, dish_id: int) -> Optional[DishInfo]:
+    async def get_dish(self, dish_id: int) -> DishInfo | None:
         """Получить блюдо по ID."""
         dish = await self.repository.get_by_id(dish_id)
         if not dish:
@@ -32,7 +30,7 @@ class DishService:
 
     async def update_dish(
         self, dish_id: int, dish_data: DishUpdate
-    ) -> Optional[DishInfo]:
+    ) -> DishInfo | None:
         """Обновить блюдо."""
         dish = await self.repository.update(dish_id, dish_data)
         if not dish:

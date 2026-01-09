@@ -1,5 +1,3 @@
-from typing import List
-
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -40,7 +38,7 @@ async def get_tables_for_cafe(
     cafe_id: int = Query(..., description='ID кафе'),
     active_only: bool = Query(True, description='Только активные столики'),
     table_service: TableService = Depends(get_table_service),
-) -> List[Table]:
+) -> list[Table]:
     """Получить список столиков для указанного кафе.
 
     Args:

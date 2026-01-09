@@ -1,4 +1,4 @@
-from typing import Annotated, Dict, List
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -38,7 +38,7 @@ def get_cafe_service(db: AsyncSession = Depends(get_db)) -> CafeService:
 async def get_cafes(
     active_only: bool = Query(True, description='Только активные кафе'),
     cafe_service: CafeService = Depends(get_cafe_service),
-) -> List[Cafe]:
+) -> list[Cafe]:
     """Получить список всех кафе.
 
     Args:
@@ -194,7 +194,7 @@ async def add_cafe_manager(
     user_id: int,
     current_user: Annotated[User, Depends(get_current_superuser)],
     cafe_service: CafeService = Depends(get_cafe_service),
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Добавить пользователя как менеджера кафе.
 
     Args:

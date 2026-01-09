@@ -1,4 +1,3 @@
-from typing import List, Optional
 from uuid import UUID
 
 from sqlalchemy import select
@@ -24,7 +23,7 @@ class CafeRepository(BaseCRUD[Cafe]):
     async def get_by_id(
         self,
         cafe_id: int,
-    ) -> Optional[Cafe]:
+    ) -> Cafe | None:
         """Получить кафе по ID.
 
         Args:
@@ -39,7 +38,7 @@ class CafeRepository(BaseCRUD[Cafe]):
     async def get_all(
         self,
         active_only: bool = True,
-    ) -> List[Cafe]:
+    ) -> list[Cafe]:
         """Получить все кафе.
 
         Args:
@@ -57,7 +56,7 @@ class CafeRepository(BaseCRUD[Cafe]):
     async def get_by_name(
         self,
         name: str,
-    ) -> Optional[Cafe]:
+    ) -> Cafe | None:
         """Получить кафе по названию.
 
         Args:
@@ -92,7 +91,7 @@ class CafeRepository(BaseCRUD[Cafe]):
         self,
         cafe_id: int,
         cafe_update: CafeUpdate,
-    ) -> Optional[Cafe]:
+    ) -> Cafe | None:
         """Обновить кафе.
 
         Args:

@@ -1,4 +1,4 @@
-from typing import Annotated, List, Optional
+from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
@@ -17,10 +17,10 @@ router = APIRouter(prefix='/booking', tags=['booking'])
 async def get_all_bookings(
     current_user: Annotated[User, Depends(get_current_user)],
     show_all: bool = True,
-    cafe_id: Optional[int] = None,
-    user_id: Optional[int] = None,
+    cafe_id: int | None = None,
+    user_id: int | None = None,
     service: BookingService = Depends(get_booking_service),
-) -> List[Booking]:
+) -> list[Booking]:
     """Получить список доступных бронирований.
 
     В зависимости от прав пользователя возвращает:

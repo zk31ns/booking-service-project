@@ -1,8 +1,8 @@
 # tests/services/slots/test_slot_service.py
 """Unit-тесты для SlotService."""
 
+from collections.abc import Callable
 from datetime import time
-from typing import Callable
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest

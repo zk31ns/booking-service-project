@@ -145,7 +145,7 @@ class MediaService:
             )
             return file_path, file_size
 
-        except (IOError, OSError) as e:
+        except OSError as e:
             logger.error(f'Ошибка сохранения файла: {str(e)}')
             raise InternalServerException(
                 detail=f'Ошибка сохранения файла: {str(e)}'

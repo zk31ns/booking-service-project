@@ -4,7 +4,7 @@
 Все сервисы и репозитории должны использовать только этот модуль.
 """
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession,

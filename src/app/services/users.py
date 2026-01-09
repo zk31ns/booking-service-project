@@ -4,7 +4,7 @@
 Использует Repository для доступа к данным и возвращает Pydantic схемы.
 """
 
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, Any
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,7 +41,7 @@ class UserService:
     async def get_user_by_id(
         self,
         user_id: int,
-        current_user: Optional[User] = None,
+        current_user: User | None = None,
     ) -> UserInfo:
         """Получает пользователя по ID.
 
@@ -67,9 +67,9 @@ class UserService:
         skip: int = 0,
         limit: int = Limits.DEFAULT_PAGE_SIZE,
         active_only: bool = True,
-        current_user: Optional[User] = None,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[UserInfo]:
+        current_user: User | None = None,
+        filters: dict[str, Any] | None = None,
+    ) -> list[UserInfo]:
         """Получает список пользователей.
 
         Args:
@@ -97,7 +97,7 @@ class UserService:
     async def create_user(
         self,
         user_create: UserCreate,
-        current_user: Optional[User] = None,
+        current_user: User | None = None,
     ) -> UserInfo:
         """Создаёт нового пользователя.
 
@@ -148,7 +148,7 @@ class UserService:
         self,
         user_id: int,
         user_update: UserUpdate,
-        current_user: Optional[User] = None,
+        current_user: User | None = None,
     ) -> UserInfo:
         """Обновляет информацию о пользователе."""
         from sqlalchemy.exc import IntegrityError
@@ -188,7 +188,7 @@ class UserService:
     async def delete_user(
         self,
         user_id: int,
-        current_user: Optional[User] = None,
+        current_user: User | None = None,
     ) -> UserInfo:
         """Деактивирует пользователя (логическое удаление).
 
@@ -228,7 +228,7 @@ class UserService:
         self,
         login: str,
         password: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Аутентифицирует пользователя.
 
         Args:
@@ -255,7 +255,7 @@ class UserService:
     async def refresh_tokens(
         self,
         refresh_token: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Обновляет access токен с помощью refresh токена.
 
         Args:
@@ -292,7 +292,7 @@ class UserService:
         user_id: int,
         current_password: str,
         new_password: str,
-        current_user: Optional[User] = None,
+        current_user: User | None = None,
     ) -> UserInfo:
         """Обновляет пароль пользователя.
 
@@ -328,8 +328,8 @@ class UserService:
         query: str,
         skip: int = 0,
         limit: int = Limits.DEFAULT_PAGE_SIZE,
-        current_user: Optional[User] = None,
-    ) -> List[UserInfo]:
+        current_user: User | None = None,
+    ) -> list[UserInfo]:
         """Ищет пользователей по строке запроса.
 
         Args:
@@ -355,7 +355,7 @@ class UserService:
     async def get_user_short_info(
         self,
         user_id: int,
-    ) -> Optional[UserShortInfo]:
+    ) -> UserShortInfo | None:
         """Получает краткую информацию о пользователе.
 
         Используется для вложенных объектов в других схемах.
@@ -372,7 +372,7 @@ class UserService:
             return None
         return UserShortInfo.from_orm(user)
 
-    def _is_superuser_or_none(self, user: Optional[User]) -> bool:
+    def _is_superuser_or_none(self, user: User | None) -> bool:
         """Проверяет, является ли пользователь суперпользователем или None.
 
         Args:
@@ -389,7 +389,7 @@ class UserService:
     async def _check_user_access(
         self,
         target_user: User,
-        current_user: Optional[User],
+        current_user: User | None,
         action: str,
     ) -> None:
         """Проверяет права доступа к пользователю.

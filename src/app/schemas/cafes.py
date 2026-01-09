@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -27,7 +26,7 @@ class CafeBase(BaseModel):
         max_length=Limits.MAX_PHONE_LENGTH,
         description='Телефон кафе',
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         max_length=Limits.MAX_DESCRIPTION_LENGTH,
         description='Описание кафе',
@@ -40,7 +39,7 @@ class CafeCreate(CafeBase):
     photo_id: UUID = Field(
         description='ID фотографии кафе',
     )
-    managers_id: Optional[list[int]] = Field(
+    managers_id: list[int] | None = Field(
         default=None,
         description='ID менеджеров кафе (опционально, можно добавить позже)',
     )
@@ -49,26 +48,26 @@ class CafeCreate(CafeBase):
 class CafeUpdate(BaseModel):
     """Схема для обновления кафе."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         None,
         min_length=Limits.MIN_CAFE_NAME_LENGTH,
         max_length=Limits.MAX_CAFE_NAME_LENGTH,
     )
-    address: Optional[str] = Field(
+    address: str | None = Field(
         None,
         max_length=Limits.MAX_DESCRIPTION_LENGTH,
     )
-    phone: Optional[str] = Field(
+    phone: str | None = Field(
         None,
         min_length=Limits.MIN_PHONE_LENGTH,
         max_length=Limits.MAX_PHONE_LENGTH,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None,
         max_length=Limits.MAX_DESCRIPTION_LENGTH,
     )
-    active: Optional[bool] = None
-    managers_id: Optional[list[int]] = Field(
+    active: bool | None = None
+    managers_id: list[int] | None = Field(
         default=None,
         description='ID менеджеров кафе',
     )
@@ -91,12 +90,12 @@ class CafeInDBBase(AuditedSchema):
         max_length=Limits.MAX_PHONE_LENGTH,
         description='Телефон кафе',
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         max_length=Limits.MAX_DESCRIPTION_LENGTH,
         description='Описание кафе',
     )
-    photo_id: Optional[UUID] = None
+    photo_id: UUID | None = None
 
 
 class Cafe(CafeInDBBase):
@@ -108,7 +107,7 @@ class Cafe(CafeInDBBase):
 class CafeWithRelations(Cafe):
     """Кафе с отношениями."""
 
-    tables_count: Optional[int] = None
+    tables_count: int | None = None
     managers: list[UserShortInfo] = Field(
         default_factory=list,
         description='Менеджеры кафе',

@@ -1,5 +1,3 @@
-from typing import List
-
 from fastapi import HTTPException, status
 
 from app.core.constants import ErrorCode, Limits, Messages
@@ -31,7 +29,7 @@ class TableService:
         self,
         cafe_id: int,
         active_only: bool = True,
-    ) -> List[Table]:
+    ) -> list[Table]:
         """Получить список столиков для указанного кафе.
 
         Args:

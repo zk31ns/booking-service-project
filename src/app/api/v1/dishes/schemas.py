@@ -1,5 +1,4 @@
 from decimal import Decimal
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -14,11 +13,11 @@ class DishBase(BaseModel):
         min_length=Limits.DISH_NAME_MIN_LENGTH,
         max_length=Limits.DISH_NAME_MAX_LENGTH,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None, max_length=Limits.DISH_DESCRIPTION_MAX_LENGTH
     )
     price: Decimal = Field(..., gt=Limits.DISH_PRICE_MIN)
-    photo_id: Optional[str] = Field(None)
+    photo_id: str | None = Field(None)
 
 
 class DishCreate(DishBase):
@@ -30,16 +29,16 @@ class DishCreate(DishBase):
 class DishUpdate(BaseModel):
     """Схема для обновления блюда."""
 
-    name: Optional[str] = Field(
+    name: str | None = Field(
         None,
         min_length=Limits.DISH_NAME_MIN_LENGTH,
         max_length=Limits.DISH_NAME_MAX_LENGTH,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None, max_length=Limits.DISH_DESCRIPTION_MAX_LENGTH
     )
-    price: Optional[Decimal] = Field(None, gt=Limits.DISH_PRICE_MIN)
-    photo_id: Optional[str] = Field(None)
+    price: Decimal | None = Field(None, gt=Limits.DISH_PRICE_MIN)
+    photo_id: str | None = Field(None)
 
 
 class DishInfo(DishBase):

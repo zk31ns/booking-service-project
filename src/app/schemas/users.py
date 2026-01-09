@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 from pydantic import (
     BaseModel,
@@ -34,15 +33,15 @@ class UserBase(BaseModel):
         max_length=Limits.MAX_USERNAME_LENGTH,
         description='Уникальное имя пользователя',
     )
-    email: Optional[EmailStr] = Field(
+    email: EmailStr | None = Field(
         None,
         description='Электронная почта пользователя',
     )
-    phone: Optional[str] = Field(
+    phone: str | None = Field(
         None,
         description='Номер телефона пользователя в формате E.164',
     )
-    tg_id: Optional[str] = Field(
+    tg_id: str | None = Field(
         None,
         max_length=Limits.MAX_TG_ID_LENGTH,
         description='Идентификатор Telegram для уведомлений',
@@ -119,40 +118,40 @@ class UserUpdate(BaseModel):
 
     """
 
-    username: Optional[str] = Field(
+    username: str | None = Field(
         None,
         min_length=Limits.MIN_USERNAME_LENGTH,
         max_length=Limits.MAX_USERNAME_LENGTH,
         description='Уникальное имя пользователя',
     )
-    email: Optional[EmailStr] = Field(
+    email: EmailStr | None = Field(
         None,
         description='Электронная почта пользователя',
     )
-    phone: Optional[str] = Field(
+    phone: str | None = Field(
         None,
         description='Номер телефона пользователя в формате E.164',
     )
-    tg_id: Optional[str] = Field(
+    tg_id: str | None = Field(
         None,
         max_length=Limits.MAX_TG_ID_LENGTH,
         description='Идентификатор Telegram для уведомлений',
     )
-    password: Optional[str] = Field(
+    password: str | None = Field(
         None,
         min_length=Limits.MIN_PASSWORD_LENGTH,
         max_length=Limits.MAX_PASSWORD_LENGTH,
         description='Новый пароль пользователя',
     )
-    is_blocked: Optional[bool] = Field(
+    is_blocked: bool | None = Field(
         None,
         description='Флаг блокировки пользователя',
     )
-    is_superuser: Optional[bool] = Field(
+    is_superuser: bool | None = Field(
         None,
         description='Флаг администратора системы',
     )
-    active: Optional[bool] = Field(
+    active: bool | None = Field(
         None,
         description='Флаг активности пользователя',
     )
@@ -241,15 +240,15 @@ class UserShortInfo(BaseModel):
 
     id: int = Field(..., description='Уникальный идентификатор пользователя')
     username: str = Field(..., description='Уникальное имя пользователя')
-    email: Optional[str] = Field(
+    email: str | None = Field(
         None,
         description='Электронная почта пользователя',
     )
-    phone: Optional[str] = Field(
+    phone: str | None = Field(
         None,
         description='Номер телефона пользователя',
     )
-    tg_id: Optional[str] = Field(None, description='Идентификатор Telegram')
+    tg_id: str | None = Field(None, description='Идентификатор Telegram')
 
     class Config:
         """Конфигурация Pydantic схемы."""

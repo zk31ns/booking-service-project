@@ -4,7 +4,7 @@
 и соответствием бизнес-правилам проекта.
 """
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import and_, exists, select
@@ -40,9 +40,9 @@ class UserRepository(BaseCRUD[User]):
 
     async def get(
         self,
-        user_id: Union[int, UUID],
+        user_id: int | UUID,
         active_only: bool = True,
-    ) -> Optional[User]:
+    ) -> User | None:
         """Получает пользователя по его ID.
 
         Args:
@@ -65,8 +65,8 @@ class UserRepository(BaseCRUD[User]):
         skip: int = 0,
         limit: int = Limits.DEFAULT_PAGE_SIZE,
         active_only: bool = True,
-        filters: Optional[Dict[str, Any]] = None,
-    ) -> List[User]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[User]:
         """Получает список пользователей с пагинацией и фильтрацией.
 
         Args:
@@ -105,7 +105,7 @@ class UserRepository(BaseCRUD[User]):
         self,
         username: str,
         active_only: bool = True,
-    ) -> Optional[User]:
+    ) -> User | None:
         """Получает пользователя по имени пользователя.
 
         Args:
@@ -126,7 +126,7 @@ class UserRepository(BaseCRUD[User]):
         self,
         email: str,
         active_only: bool = True,
-    ) -> Optional[User]:
+    ) -> User | None:
         """Получает пользователя по email.
 
         Args:
@@ -147,7 +147,7 @@ class UserRepository(BaseCRUD[User]):
         self,
         phone: str,
         active_only: bool = True,
-    ) -> Optional[User]:
+    ) -> User | None:
         """Получает пользователя по номеру телефона.
 
         Args:
@@ -166,7 +166,7 @@ class UserRepository(BaseCRUD[User]):
 
     async def create_user(
         self,
-        user_data: Dict[str, Any],
+        user_data: dict[str, Any],
         commit: bool = True,
     ) -> User:
         """Создаёт нового пользователя.
@@ -199,7 +199,7 @@ class UserRepository(BaseCRUD[User]):
     async def update_user(
         self,
         user: User,
-        update_data: Dict[str, Any],
+        update_data: dict[str, Any],
         commit: bool = True,
     ) -> User:
         """Обновляет существующего пользователя.
@@ -232,10 +232,10 @@ class UserRepository(BaseCRUD[User]):
 
     async def delete_user(
         self,
-        user_id: Union[int, UUID],
+        user_id: int | UUID,
         hard_delete: bool = False,
         commit: bool = True,
-    ) -> Optional[User]:
+    ) -> User | None:
         """Удаляет пользователя.
 
         Args:
@@ -268,7 +268,7 @@ class UserRepository(BaseCRUD[User]):
         self,
         login: str,
         password: str,
-    ) -> Optional[User]:
+    ) -> User | None:
         """Аутентифицирует пользователя.
 
         Ищет пользователя по username, email или phone и проверяет пароль.
@@ -302,9 +302,9 @@ class UserRepository(BaseCRUD[User]):
 
     async def exists(
         self,
-        username: Optional[str] = None,
-        email: Optional[str] = None,
-        phone: Optional[str] = None,
+        username: str | None = None,
+        email: str | None = None,
+        phone: str | None = None,
     ) -> bool:
         """Проверяет существование пользователя.
 
@@ -318,7 +318,7 @@ class UserRepository(BaseCRUD[User]):
 
         """
         query = select(self.model.id).limit(1)
-        conditions: List[BinaryExpression] = []
+        conditions: list[BinaryExpression] = []
         if username:
             conditions.append(self.model.username == username)
         if email:
@@ -382,7 +382,7 @@ class UserRepository(BaseCRUD[User]):
         skip: int = 0,
         limit: int = Limits.DEFAULT_PAGE_SIZE,
         active_only: bool = True,
-    ) -> List[User]:
+    ) -> list[User]:
         """Ищет пользователей по строке запроса.
 
         Args:
@@ -395,7 +395,7 @@ class UserRepository(BaseCRUD[User]):
             Список найденных пользователей
 
         """
-        conditions: List[BooleanClauseList] = []
+        conditions: list[BooleanClauseList] = []
         if query_str:
             conditions.append(self.model.username.ilike(f'%{query_str}%'))
         if active_only:
@@ -414,7 +414,7 @@ class UserRepository(BaseCRUD[User]):
     async def is_manager(
         self,
         user_id: int,
-        cafe_id: Optional[int] = None,
+        cafe_id: int | None = None,
     ) -> bool:
         """Проверить является ли пользователь менеджером."""
         if cafe_id:

@@ -3,7 +3,7 @@
 import asyncio
 from datetime import date, datetime
 from http import HTTPStatus
-from typing import Any, Dict
+from typing import Any
 
 import aiohttp
 from celery import Task
@@ -215,7 +215,7 @@ async def _notify_manager_async(
     bind=True,
     base=BaseTask,
 )
-def cleanup_expired_bookings(self: Task) -> Dict[str, Any]:
+def cleanup_expired_bookings(self: Task) -> dict[str, Any]:
     """Очистка истёкших бронирований.
 
     Периодическая задача.

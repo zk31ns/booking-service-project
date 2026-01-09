@@ -1,5 +1,3 @@
-from typing import Optional
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,7 +18,7 @@ class DishRepository:
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
-    async def get_by_id(self, dish_id: int) -> Optional[Dish]:
+    async def get_by_id(self, dish_id: int) -> Dish | None:
         """Получить блюдо по ID."""
         stmt = select(Dish).where(Dish.id == dish_id)
         result = await self.session.execute(stmt)
@@ -33,9 +31,7 @@ class DishRepository:
         await self.session.flush()
         return dish
 
-    async def update(
-        self, dish_id: int, dish_data: DishUpdate
-    ) -> Optional[Dish]:
+    async def update(self, dish_id: int, dish_data: DishUpdate) -> Dish | None:
         """Обновить блюдо."""
         dish = await self.get_by_id(dish_id)
         if not dish:

@@ -4,7 +4,7 @@
 для уменьшения дублирования кода в сервис-слое.
 """
 
-from typing import Generic, Optional, TypeVar
+from typing import Generic, TypeVar
 
 from fastapi import HTTPException, status
 
@@ -27,7 +27,7 @@ class EntityValidationMixin(Generic[ModelType]):
 
     async def _validate_exists(
         self,
-        entity: Optional[ModelType],
+        entity: ModelType | None,
         entity_name: str,
         error_code: ErrorCode = ErrorCode.VALIDATION_ERROR,
         status_code: int = status.HTTP_404_NOT_FOUND,
@@ -107,7 +107,7 @@ class EntityValidationMixin(Generic[ModelType]):
 
     async def _validate_exists_and_active(
         self,
-        entity: Optional[ModelType],
+        entity: ModelType | None,
         entity_name: str,
         not_found_code: ErrorCode = ErrorCode.VALIDATION_ERROR,
         inactive_code: ErrorCode = ErrorCode.VALIDATION_ERROR,
@@ -155,7 +155,7 @@ class EntityValidationMixin(Generic[ModelType]):
     async def _raise_conflict(
         self,
         error_code: ErrorCode,
-        detail: Optional[str] = None,
+        detail: str | None = None,
     ) -> None:
         """Выбросить исключение конфликта данных (409).
 

@@ -1,6 +1,6 @@
 """Обработка ошибок в задачах Celery."""
 
-from typing import Any, Dict, Tuple, Type
+from typing import Any
 
 import aiohttp
 from celery import Task
@@ -13,7 +13,7 @@ from app.core.logging import logger
 class BaseTask(Task):
     """Базовый класс для логирования ошибок в задачах Celery."""
 
-    autoretry_for: Tuple[Type[Exception], ...] = (aiohttp.ClientError,)
+    autoretry_for: tuple[type[Exception], ...] = (aiohttp.ClientError,)
     max_retries: int = Limits.TASK_MAX_RETRIES
     default_retry_delay: int = Times.CELERY_TASK_RETRY_DELAY
     acks_late: bool = True
@@ -22,8 +22,8 @@ class BaseTask(Task):
         self,
         exc: Exception,
         task_id: str,
-        args: Tuple[Any, ...],
-        kwargs: Dict[str, Any],
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
         einfo: ExceptionInfo,
     ) -> None:
         """Вызывается при финальной ошибке (после всех retry).
@@ -48,8 +48,8 @@ class BaseTask(Task):
         self,
         exc: Exception,
         task_id: str,
-        args: Tuple[Any, ...],
-        kwargs: Dict[str, Any],
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
         einfo: ExceptionInfo,
     ) -> None:
         """Вызывается при retry.

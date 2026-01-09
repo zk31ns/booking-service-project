@@ -2,8 +2,8 @@
 
 import asyncio
 import os
+from collections.abc import AsyncGenerator, Callable, Generator
 from datetime import time
-from typing import AsyncGenerator, Callable, Generator
 from unittest.mock import MagicMock
 
 import pytest

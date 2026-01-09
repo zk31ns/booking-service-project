@@ -1,5 +1,3 @@
-from typing import Optional
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.actions.repository import ActionRepository
@@ -22,7 +20,7 @@ class ActionService:
         actions = await self.repository.get_all()
         return [ActionInfo.model_validate(action) for action in actions]
 
-    async def get_action(self, action_id: int) -> Optional[ActionInfo]:
+    async def get_action(self, action_id: int) -> ActionInfo | None:
         """Получить акцию по ID."""
         action = await self.repository.get_by_id(action_id)
         if not action:
@@ -36,7 +34,7 @@ class ActionService:
 
     async def update_action(
         self, action_id: int, action_data: ActionUpdate
-    ) -> Optional[ActionInfo]:
+    ) -> ActionInfo | None:
         """Обновить акцию."""
         action = await self.repository.update(action_id, action_data)
         if not action:

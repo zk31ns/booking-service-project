@@ -95,11 +95,11 @@ for root, dirs, files in os.walk('src/app'):
         if file.endswith('.py'):
             filepath = os.path.join(root, file)
             try:
-                with open(filepath, 'r', encoding='utf-8') as f:
+                with open(filepath, encoding='utf-8') as f:
                     content = f.read()
                     if 'src.app' in content or r'src\.app' in content:
                         files_with_src.append(filepath)
-            except (IOError, UnicodeDecodeError):
+            except (OSError, UnicodeDecodeError):
                 pass
 
 if files_with_src:

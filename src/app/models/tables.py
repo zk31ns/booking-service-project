@@ -39,9 +39,9 @@ class Table(Base):
         nullable=False,
     )
     active: Mapped[bool] = mapped_column(default=True, nullable=False)
-    cafe: Mapped['Cafe'] = relationship('Cafe', back_populates='tables')
+    cafe: Mapped[Cafe] = relationship('Cafe', back_populates='tables')
 
-    cafe: Mapped['Cafe'] = relationship(
+    cafe: Mapped[Cafe] = relationship(
         'Cafe',
         back_populates='tables',
     )

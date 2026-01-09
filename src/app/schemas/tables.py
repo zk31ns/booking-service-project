@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pydantic import BaseModel, Field
 
 from app.core.constants import Limits
@@ -14,7 +12,7 @@ class TableBase(BaseModel):
         le=Limits.MAX_SEATS,
         description='Количество мест за столиком',
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         max_length=Limits.MAX_DESCRIPTION_LENGTH,
         description='Описание столика (например, "VIP стол", "у окна")',
@@ -30,16 +28,16 @@ class TableCreate(TableBase):
 class TableUpdate(BaseModel):
     """Схема для обновления столика."""
 
-    seats: Optional[int] = Field(
+    seats: int | None = Field(
         None,
         ge=Limits.MIN_SEATS,
         le=Limits.MAX_SEATS,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         None,
         max_length=Limits.MAX_DESCRIPTION_LENGTH,
     )
-    active: Optional[bool] = None
+    active: bool | None = None
 
 
 class TableInDBBase(AuditedSchema):
@@ -51,7 +49,7 @@ class TableInDBBase(AuditedSchema):
         le=Limits.MAX_SEATS,
         description='Количество мест за столиком',
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         max_length=Limits.MAX_DESCRIPTION_LENGTH,
         description='Описание столика (например, "VIP стол", "у окна")',
@@ -67,5 +65,5 @@ class Table(TableInDBBase):
 class TableWithCafe(Table):
     """Столик с информацией о кафе."""
 
-    cafe_name: Optional[str] = None
-    cafe_address: Optional[str] = None
+    cafe_name: str | None = None
+    cafe_address: str | None = None

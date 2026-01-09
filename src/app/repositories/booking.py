@@ -1,5 +1,4 @@
 from datetime import date, time
-from typing import List, Optional, Union
 
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,7 +32,7 @@ class BookingRepository(BaseCRUD[Booking]):
         table_id: int,
         slot_id: int,
         date: date,
-        exclude_booking_id: Optional[int] = None,
+        exclude_booking_id: int | None = None,
     ) -> bool:
         """Проверить занят ли стол в указанный слот на дату.
 
@@ -74,7 +73,7 @@ class BookingRepository(BaseCRUD[Booking]):
         start_time: time,
         end_time: time,
         booking_date: date,
-        exclude_booking_id: Optional[int] = None,
+        exclude_booking_id: int | None = None,
     ) -> bool:
         """Проверить занят ли пользователь в указанный временной интервал.
 
@@ -114,9 +113,9 @@ class BookingRepository(BaseCRUD[Booking]):
 
     async def get_multi(
         self,
-        user_id: Optional[int] = None,
-        cafe_id: Optional[int] = None,
-    ) -> List[Booking]:
+        user_id: int | None = None,
+        cafe_id: int | None = None,
+    ) -> list[Booking]:
         """Получить список бронирований с фильтрацией.
 
         Args:
@@ -143,7 +142,7 @@ class BookingRepository(BaseCRUD[Booking]):
         return list(result.scalars().all())
 
     async def create(
-        self, obj_in: 'BookingCreate', user: Optional[User] = None
+        self, obj_in: 'BookingCreate', user: User | None = None
     ) -> Booking:
         """Создать новое бронирование.
 
@@ -183,7 +182,7 @@ class BookingRepository(BaseCRUD[Booking]):
         self,
         booking: Booking,
         update_booking: 'BookingUpdate',
-        data: dict[str, Union[int, str, date, bool]],
+        data: dict[str, int | str | date | bool],
     ) -> Booking:
         """Обновить существующее бронирование.
 

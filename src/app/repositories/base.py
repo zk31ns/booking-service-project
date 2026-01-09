@@ -3,7 +3,7 @@
 Предоставляет стандартные CRUD операции для всех моделей.
 """
 
-from typing import Generic, List, Optional, Type, TypeVar
+from typing import Generic, TypeVar
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,7 +28,7 @@ class BaseCRUD(Generic[ModelType]):
 
     """
 
-    def __init__(self, session: AsyncSession, model: Type[ModelType]) -> None:
+    def __init__(self, session: AsyncSession, model: type[ModelType]) -> None:
         """Инициализирует базовый репозиторий.
 
         Args:
@@ -62,7 +62,7 @@ class BaseCRUD(Generic[ModelType]):
         await self.session.refresh(db_obj)
         return db_obj
 
-    async def get(self, obj_id: int | str) -> Optional[ModelType]:
+    async def get(self, obj_id: int | str) -> ModelType | None:
         """Получить объект по ID.
 
         Args:
@@ -76,7 +76,7 @@ class BaseCRUD(Generic[ModelType]):
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_all(self) -> List[ModelType]:
+    async def get_all(self) -> list[ModelType]:
         """Получить список всех объектов.
 
         Returns:

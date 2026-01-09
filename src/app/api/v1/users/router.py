@@ -3,7 +3,7 @@
 Реализует все эндпоинты из OpenAPI спецификации для модуля Users/Auth.
 """
 
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Depends, Query, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -103,7 +103,7 @@ async def refresh_tokens(
 
 @router.get(
     '/users',
-    response_model=List[UserInfo],
+    response_model=list[UserInfo],
     summary='Получение списка пользователей',
     description='Возвращает информацию о всех пользователях. '
     'Только для администраторов или менеджеров.',
@@ -128,21 +128,21 @@ async def get_users(
         Query(description='Показывать только активных пользователей'),
     ] = True,
     username: Annotated[
-        Optional[str],
+        str | None,
         Query(description='Фильтр по username'),
     ] = None,
     email: Annotated[
-        Optional[str],
+        str | None,
         Query(description='Фильтр по email'),
     ] = None,
     is_blocked: Annotated[
-        Optional[bool],
+        bool | None,
         Query(description='Фильтр по статусу блокировки'),
     ] = None,
-) -> List[UserInfo]:
+) -> list[UserInfo]:
     """Получает список пользователей."""
     try:
-        filters: Dict[str, Any] = {}
+        filters: dict[str, Any] = {}
         if username:
             filters['username'] = username
         if email:
@@ -174,7 +174,7 @@ async def get_users(
 async def create_user(
     user_create: UserCreate,
     service: Annotated[UserService, Depends(get_user_service)],
-    current_user: Annotated[Optional[User], Depends(get_optional_user)],
+    current_user: Annotated[User | None, Depends(get_optional_user)],
 ) -> UserInfo:
     """Создаёт нового пользователя.
 
@@ -283,7 +283,7 @@ async def delete_current_user(
 
 @router.get(
     '/users/search',
-    response_model=List[UserInfo],
+    response_model=list[UserInfo],
     summary='Поиск пользователей',
     description='Ищет пользователей по строке запроса. '
     'Только для администраторов.',
@@ -303,7 +303,7 @@ async def search_users(
     limit: Annotated[
         int, Query(ge=1, le=Limits.MAX_PAGE_SIZE)
     ] = Limits.DEFAULT_PAGE_SIZE,
-) -> List[UserInfo]:
+) -> list[UserInfo]:
     """Ищет пользователей по строке запроса."""
     try:
         return await service.search_users(

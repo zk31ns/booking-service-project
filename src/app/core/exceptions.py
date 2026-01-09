@@ -4,7 +4,7 @@
 Все исключения наследуются от AppException и преобразуются в HTTPException.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from fastapi import HTTPException, status
 
@@ -30,9 +30,9 @@ class AppException(HTTPException):
         self,
         error_code: ErrorCode,
         status_code: int = status.HTTP_400_BAD_REQUEST,
-        detail: Optional[str] = None,
-        headers: Optional[Dict[str, str]] = None,
-        extra: Optional[Dict[str, Any]] = None,
+        detail: str | None = None,
+        headers: dict[str, str] | None = None,
+        extra: dict[str, Any] | None = None,
     ) -> None:
         """Инициализирует исключение.
 
@@ -55,7 +55,7 @@ class AppException(HTTPException):
             headers=headers or {'X-Error-Code': error_code.value},
         )
 
-    def _format_detail(self, detail: str) -> Dict[str, Any]:
+    def _format_detail(self, detail: str) -> dict[str, Any]:
         """Форматирует детали ошибки в структурированный вид.
 
         Args:
@@ -84,9 +84,9 @@ class AuthenticationException(AppException):
     def __init__(
         self,
         error_code: ErrorCode,
-        detail: Optional[str] = None,
-        headers: Optional[Dict[str, str]] = None,
-        extra: Optional[Dict[str, Any]] = None,
+        detail: str | None = None,
+        headers: dict[str, str] | None = None,
+        extra: dict[str, Any] | None = None,
     ) -> None:
         """Инициализирует исключение аутентификации.
 
@@ -117,9 +117,9 @@ class AuthorizationException(AppException):
     def __init__(
         self,
         error_code: ErrorCode,
-        detail: Optional[str] = None,
-        headers: Optional[Dict[str, str]] = None,
-        extra: Optional[Dict[str, Any]] = None,
+        detail: str | None = None,
+        headers: dict[str, str] | None = None,
+        extra: dict[str, Any] | None = None,
     ) -> None:
         """Инициализирует исключение авторизации.
 
@@ -150,9 +150,9 @@ class NotFoundException(AppException):
     def __init__(
         self,
         error_code: ErrorCode,
-        detail: Optional[str] = None,
-        headers: Optional[Dict[str, str]] = None,
-        extra: Optional[Dict[str, Any]] = None,
+        detail: str | None = None,
+        headers: dict[str, str] | None = None,
+        extra: dict[str, Any] | None = None,
     ) -> None:
         """Инициализирует исключение 'Не найдено'.
 
@@ -183,9 +183,9 @@ class ConflictException(AppException):
     def __init__(
         self,
         error_code: ErrorCode,
-        detail: Optional[str] = None,
-        headers: Optional[Dict[str, str]] = None,
-        extra: Optional[Dict[str, Any]] = None,
+        detail: str | None = None,
+        headers: dict[str, str] | None = None,
+        extra: dict[str, Any] | None = None,
     ) -> None:
         """Инициализирует исключение конфликта.
 
@@ -216,9 +216,9 @@ class ValidationException(AppException):
     def __init__(
         self,
         error_code: ErrorCode,
-        detail: Optional[str] = None,
-        headers: Optional[Dict[str, str]] = None,
-        extra: Optional[Dict[str, Any]] = None,
+        detail: str | None = None,
+        headers: dict[str, str] | None = None,
+        extra: dict[str, Any] | None = None,
     ) -> None:
         """Инициализирует исключение валидации.
 
@@ -249,9 +249,9 @@ class InternalServerException(AppException):
     def __init__(
         self,
         error_code: ErrorCode = ErrorCode.INTERNAL_SERVER_ERROR,
-        detail: Optional[str] = None,
-        headers: Optional[Dict[str, str]] = None,
-        extra: Optional[Dict[str, Any]] = None,
+        detail: str | None = None,
+        headers: dict[str, str] | None = None,
+        extra: dict[str, Any] | None = None,
     ) -> None:
         """Инициализирует исключение внутренней ошибки.
 
@@ -282,9 +282,9 @@ class ServiceUnavailableException(AppException):
     def __init__(
         self,
         error_code: ErrorCode = ErrorCode.SERVICE_UNAVAILABLE,
-        detail: Optional[str] = None,
-        headers: Optional[Dict[str, str]] = None,
-        extra: Optional[Dict[str, Any]] = None,
+        detail: str | None = None,
+        headers: dict[str, str] | None = None,
+        extra: dict[str, Any] | None = None,
     ) -> None:
         """Инициализирует исключение 'Сервис недоступен'.
 
@@ -315,9 +315,9 @@ class TelegramApiException(AppException):
     def __init__(
         self,
         error_code: ErrorCode = ErrorCode.BAD_GATEWAY,
-        detail: Optional[str] = None,
-        headers: Optional[Dict[str, str]] = None,
-        extra: Optional[Dict[str, Any]] = None,
+        detail: str | None = None,
+        headers: dict[str, str] | None = None,
+        extra: dict[str, Any] | None = None,
     ) -> None:
         """Инициализирует исключение 'Сервис недоступен'.
 

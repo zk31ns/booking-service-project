@@ -1,5 +1,3 @@
-from typing import Optional
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,7 +18,7 @@ class ActionRepository:
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
-    async def get_by_id(self, action_id: int) -> Optional[Action]:
+    async def get_by_id(self, action_id: int) -> Action | None:
         """Получить акцию по ID."""
         stmt = select(Action).where(Action.id == action_id)
         result = await self.session.execute(stmt)
@@ -35,7 +33,7 @@ class ActionRepository:
 
     async def update(
         self, action_id: int, action_data: ActionUpdate
-    ) -> Optional[Action]:
+    ) -> Action | None:
         """Обновить акцию."""
         action = await self.get_by_id(action_id)
         if not action:

@@ -3,7 +3,7 @@
 Модуль содержит ORM-модели SQLAlchemy 2.0 для работы с таблицей пользователей.
 """
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean,
@@ -59,12 +59,12 @@ class User(TimestampedModel):
         comment=f'Имя пользователя от {Limits.MIN_USERNAME_LENGTH} до '
         f'{Limits.MAX_USERNAME_LENGTH} символов',
     )
-    email: Mapped[Optional[str]] = mapped_column(
+    email: Mapped[str | None] = mapped_column(
         String(Limits.MAX_EMAIL_LENGTH),
         unique=True,
         nullable=True,
     )
-    phone: Mapped[Optional[str]] = mapped_column(
+    phone: Mapped[str | None] = mapped_column(
         String(Limits.MAX_PHONE_LENGTH),
         unique=True,
         nullable=True,
@@ -80,12 +80,12 @@ class User(TimestampedModel):
     is_blocked: Mapped[bool] = mapped_column(Boolean, default=False)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    bookings: Mapped[List['Booking']] = relationship(
+    bookings: Mapped[list['Booking']] = relationship(
         'Booking',
         back_populates='user',
         cascade='all, delete-orphan',
     )
-    managed_cafes: Mapped[List['Cafe']] = relationship(
+    managed_cafes: Mapped[list['Cafe']] = relationship(
         'Cafe',
         secondary='cafe_managers',
         back_populates='managers',

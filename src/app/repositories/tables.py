@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,7 +24,7 @@ class TableRepository(BaseCRUD[Table]):
     async def get_by_id(
         self,
         table_id: int,
-    ) -> Optional[Table]:
+    ) -> Table | None:
         """Получить столик по ID.
 
         Args:
@@ -42,7 +40,7 @@ class TableRepository(BaseCRUD[Table]):
         self,
         cafe_id: int,
         active_only: bool = True,
-    ) -> List[Table]:
+    ) -> list[Table]:
         """Получить все столики для кафе.
 
         Args:
@@ -63,7 +61,7 @@ class TableRepository(BaseCRUD[Table]):
         self,
         cafe_id: int,
         table_id: int,
-    ) -> Optional[Table]:
+    ) -> Table | None:
         """Получить столик по ID кафе и ID столика.
 
         Args:
@@ -102,7 +100,7 @@ class TableRepository(BaseCRUD[Table]):
         self,
         table_id: int,
         table_update: TableUpdate,
-    ) -> Optional[Table]:
+    ) -> Table | None:
         """Обновить столик.
 
         Args:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any
 
 from app.core.celery_app import celery_app
 from app.core.constants import (
@@ -61,7 +61,7 @@ class BookingService:
 
     async def create_booking(
         self,
-        booking_in: 'BookingCreate',
+        booking_in: BookingCreate,
         user: User,
     ) -> Booking:
         """Создать новое бронирование.
@@ -112,9 +112,9 @@ class BookingService:
         self,
         current_user: User,
         show_all: bool = True,
-        cafe_id: Optional[int] = None,
-        user_id: Optional[int] = None,
-    ) -> List[Booking]:
+        cafe_id: int | None = None,
+        user_id: int | None = None,
+    ) -> list[Booking]:
         """Получить список бронирований с учетом прав доступа.
 
         Для суперюзеров и менеджеров: все бронирования с возможностью
@@ -170,7 +170,7 @@ class BookingService:
 
     async def update_booking(
         self,
-        update_booking: 'BookingUpdate',
+        update_booking: BookingUpdate,
         booking_id: int,
         current_user: User,
     ) -> Booking:
@@ -201,7 +201,7 @@ class BookingService:
         if not booking.active and user_role != UserRole.ADMIN:
             raise AppException(ErrorCode.BOOKING_INACTIVE)
 
-        update_data: dict[str, Union[int, str, date, bool]] = {}
+        update_data: dict[str, int | str | date | bool] = {}
 
         if update_booking.status is not None:
             await self._process_status_update(
@@ -277,12 +277,12 @@ class BookingService:
 
     async def _validate_new_table_slots(
         self,
-        table_slots: List[TableSlotSchema],
+        table_slots: list[TableSlotSchema],
         cafe_id: int,
         booking_date: date,
         user: User,
-        guest_number: Optional[int] = None,
-        exclude_booking_id: Optional[int] = None,
+        guest_number: int | None = None,
+        exclude_booking_id: int | None = None,
     ) -> set:
         """Валидировать связки столов и временных слотов.
 
@@ -424,7 +424,7 @@ class BookingService:
 
     async def _validate_table_slot(
         self, table_id: int, slot_id: int, cafe_id: int
-    ) -> Tuple[Table, Slot]:
+    ) -> tuple[Table, Slot]:
         """Валидировать связку стол+слот.
 
         Args:
@@ -526,7 +526,7 @@ class BookingService:
         requested_active: bool,
         user_role: UserRole,
         update_data: dict,
-        new_status: Optional[str],
+        new_status: str | None,
     ) -> None:
         """Обработать изменение активности бронирования.
 

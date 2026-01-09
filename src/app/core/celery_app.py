@@ -1,6 +1,6 @@
 """Инициализация и настройка очереди задач Celery."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from celery import Celery, Task
 from celery.schedules import crontab
@@ -61,11 +61,11 @@ def configure_loguru_for_celery(**kwargs: Any) -> None:
 
 @task_prerun.connect
 def task_prerun_handler(
-    sender: Optional[Celery] = None,
-    task_id: Optional[str] = None,
-    task: Optional[Task] = None,
-    args: Optional[tuple[Any, ...]] = None,
-    kwargs: Optional[Dict[str, Any]] = None,
+    sender: Celery | None = None,
+    task_id: str | None = None,
+    task: Task | None = None,
+    args: tuple[Any, ...] | None = None,
+    kwargs: dict[str, Any] | None = None,
     **extra: Any,
 ) -> None:
     """Логирование старта задачи."""
@@ -82,11 +82,11 @@ def task_prerun_handler(
 
 @task_postrun.connect
 def task_postrun_handler(
-    sender: Optional[Celery] = None,
-    task_id: Optional[str] = None,
-    task: Optional[Task] = None,
+    sender: Celery | None = None,
+    task_id: str | None = None,
+    task: Task | None = None,
     retval: Any = None,
-    state: Optional[str] = None,
+    state: str | None = None,
     **extra: Any,
 ) -> None:
     """Логирование завершения задачи."""

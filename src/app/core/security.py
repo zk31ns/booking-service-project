@@ -3,8 +3,8 @@
 Использует настройки из config.py с константами из constants.py.
 """
 
-from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -18,8 +18,8 @@ pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 class TokenData(BaseModel):
     """Данные токена."""
 
-    username: Optional[str] = None
-    user_id: Optional[int] = None
+    username: str | None = None
+    user_id: int | None = None
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -60,7 +60,7 @@ def get_password_hash(password: str) -> str:
 
 def create_access_token(
     data: dict[str, Any],
-    expires_delta: Optional[timedelta] = None,
+    expires_delta: timedelta | None = None,
 ) -> str:
     """Создаёт JWT access token с сроком действия 1 час.
 
@@ -78,9 +78,9 @@ def create_access_token(
     to_encode = data.copy()
 
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(
+        expire = datetime.now(UTC) + timedelta(
             minutes=settings.access_token_expire_minutes,
         )
 
@@ -96,7 +96,7 @@ def create_access_token(
         raise ValueError(f'Ошибка создания токена: {e}') from e
 
 
-def decode_access_token(token: str) -> Optional[dict[str, Any]]:
+def decode_access_token(token: str) -> dict[str, Any] | None:
     """Декодирует JWT access token.
 
     Args:
@@ -123,7 +123,7 @@ def decode_access_token(token: str) -> Optional[dict[str, Any]]:
 
 def create_refresh_token(
     data: dict[str, Any],
-    expires_delta: Optional[timedelta] = None,
+    expires_delta: timedelta | None = None,
 ) -> str:
     """Создаёт JWT refresh token с сроком действия 7 дней.
 
@@ -141,9 +141,9 @@ def create_refresh_token(
     to_encode = data.copy()
 
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(
+        expire = datetime.now(UTC) + timedelta(
             days=settings.refresh_token_expire_days,
         )
 
@@ -159,7 +159,7 @@ def create_refresh_token(
         raise ValueError(f'Ошибка создания refresh токена: {e}') from e
 
 
-def decode_refresh_token(token: str) -> Optional[dict[str, Any]]:
+def decode_refresh_token(token: str) -> dict[str, Any] | None:
     """Декодирует JWT refresh token.
 
     Args:
@@ -213,7 +213,7 @@ def create_tokens_pair(
     }
 
 
-def verify_refresh_token(token: str) -> Optional[TokenData]:
+def verify_refresh_token(token: str) -> TokenData | None:
     """Проверяет refresh token и возвращает данные пользователя.
 
     Args:
@@ -236,7 +236,7 @@ def verify_refresh_token(token: str) -> Optional[TokenData]:
     return TokenData(username=username, user_id=user_id)
 
 
-def get_current_user_id_from_token(token: str) -> Optional[int]:
+def get_current_user_id_from_token(token: str) -> int | None:
     """Получает ID пользователя из access token.
 
     Args:
@@ -253,7 +253,7 @@ def get_current_user_id_from_token(token: str) -> Optional[int]:
     return payload.get('user_id')
 
 
-def get_current_username_from_token(token: str) -> Optional[str]:
+def get_current_username_from_token(token: str) -> str | None:
     """Получает username из access token.
 
     Args:

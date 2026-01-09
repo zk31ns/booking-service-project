@@ -1,4 +1,5 @@
-from typing import Annotated, AsyncGenerator, Optional
+from collections.abc import AsyncGenerator
+from typing import Annotated
 
 from fastapi import Depends, HTTPException, Security
 from fastapi.security import (
@@ -47,7 +48,7 @@ async def get_user_repository(
 
 async def get_current_user(
     credentials: Annotated[
-        Optional[HTTPAuthorizationCredentials],
+        HTTPAuthorizationCredentials | None,
         Security(security),
     ],
     session: Annotated[AsyncSession, Depends(get_session)],
@@ -163,12 +164,12 @@ async def get_current_manager_or_superuser(
 
 async def get_optional_user(
     credentials: Annotated[
-        Optional[HTTPAuthorizationCredentials],
+        HTTPAuthorizationCredentials | None,
         Security(security),
     ],
     session: Annotated[AsyncSession, Depends(get_session)],
     repo: Annotated[UserRepository, Depends(get_user_repository)],
-) -> Optional[User]:
+) -> User | None:
     """Получает текущего пользователя, если токен передан.
 
     В отличие от get_current_user, не выбрасывает исключение если токен

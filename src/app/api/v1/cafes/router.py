@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_db
-from app.core.constants import API, ErrorCode, Limits, Messages
+from app.core.constants import API, ErrorCode, Messages
 from app.repositories.cafes import CafeRepository
 from app.repositories.tables import TableRepository
 from app.schemas.cafes import Cafe, CafeCreate, CafeUpdate, CafeWithRelations
@@ -32,26 +32,15 @@ def get_cafe_service(db: AsyncSession = Depends(get_db)) -> CafeService:
     '/',
     response_model=list[Cafe],
     summary='Получить список всех кафе',
-    description='Возвращает список кафе с пагинацией',
+    description='Возвращает список всех кафе',
 )
 async def get_cafes(
-    skip: int = Query(0, ge=0, description='Количество записей для пропуска'),
-    limit: int = Query(
-        Limits.DEFAULT_PAGE_SIZE,
-        ge=1,
-        le=Limits.MAX_PAGE_SIZE,
-        description=(
-            f'Количество записей на странице ({Limits.MAX_PAGE_SIZE} max)'
-        ),
-    ),
     active_only: bool = Query(True, description='Только активные кафе'),
     cafe_service: CafeService = Depends(get_cafe_service),
 ) -> List[Cafe]:
     """Получить список всех кафе.
 
     Args:
-        skip: Количество записей для пропуска.
-        limit: Количество записей на странице.
         active_only: Флаг фильтрации только активных кафе.
         cafe_service: Сервис для работы с кафе (внедряется автоматически).
 
@@ -60,8 +49,6 @@ async def get_cafes(
 
     """
     return await cafe_service.get_all_cafes(
-        skip=skip,
-        limit=limit,
         active_only=active_only,
     )
 

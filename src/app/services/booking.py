@@ -593,6 +593,7 @@ class BookingService:
 
         """
         from app.core.celery_tasks import notify_manager, send_booking_reminder
+
         first_slot = min(
             booking.table_slots,
             key=lambda table_slot: table_slot.slot.start_time,

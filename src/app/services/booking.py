@@ -197,7 +197,7 @@ class BookingService:
         """
         booking = await self.__get_booking_or_404(booking_id)
 
-        user_role = self._get_user_role(current_user)
+        user_role = await self._get_user_role(current_user)
 
         if not booking.active and user_role != UserRole.ADMIN:
             raise AppException(ErrorCode.BOOKING_INACTIVE)
@@ -468,7 +468,7 @@ class BookingService:
         """
         return sum(table.seats for table in tables) if tables else 0
 
-    def _get_user_role(self, user: User) -> UserRole:
+    async def _get_user_role(self, user: User) -> UserRole:
         """Определить роль пользователя.
 
         Args:
@@ -480,7 +480,7 @@ class BookingService:
         """
         if user.is_superuser:
             return UserRole.ADMIN
-        if self.user_repo.is_manager(user.id):
+        if await self.user_repo.is_manager(user.id):
             return UserRole.MANAGER
         return UserRole.CUSTOMER
 

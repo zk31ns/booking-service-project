@@ -40,11 +40,10 @@ celery_app.conf.update(
     beat_schedule={
         'periodically_cleanup_expired_bookings': {
             'task': 'cleanup_expired_bookings',
-            # 'schedule': crontab(
-            #     hour=Times.CLEANUP_EXPIRED_BOOKINGS_START_HOUR,
-            #     minute=Times.CLEANUP_EXPIRED_BOOKINGS_START_MINUTES,
-            # ),
-            'schedule': crontab(),
+            'schedule': crontab(
+                hour=Times.CLEANUP_EXPIRED_BOOKINGS_START_HOUR,
+                minute=Times.CLEANUP_EXPIRED_BOOKINGS_START_MINUTES,
+            ),
             'options': {
                 'expires': Times.CELERY_BEAT_EXPIRED,
             },

@@ -89,7 +89,7 @@ services:
     container_name: booking_worker
     env_file: ../.env
     image: ${DOCKER_IMAGE:?set DOCKER_IMAGE env}:${IMAGE_TAG:-latest}
-    command: celery -A app.core.celery_app:celery_app worker --beat --loglevel=info
+    command: celery -A app.core.celery_app:celery_app worker -E --beat --loglevel=info
     working_dir: /app
     environment:
       - PYTHONPATH=/app

@@ -72,7 +72,7 @@ async def login(
     '/auth/refresh',
     response_model=RefreshTokenResponseDict,
     summary='Обновление access токена',
-    description='Обновляет access токен с помощью refresh токена.',
+    description='Обновляет access токена с помощью refresh токена.',
 )
 async def refresh_tokens(
     refresh_token: Annotated[
@@ -169,7 +169,9 @@ async def get_users(
     '**Обязательные поля:**\n'
     '- username\n'
     '- password\n'
-    '- email или phone',
+    '- email или phone\n\n'
+    '**Ограничения:**\n'
+    '- Поле `is_superuser` игнорируется для не-администраторов',
 )
 async def create_user(
     user_create: UserCreate,
@@ -182,6 +184,10 @@ async def create_user(
     без дополнительных проверок.
     """
     try:
+        if not current_user or not current_user.is_superuser:
+            create_data = user_create.model_dump(exclude={'is_superuser'})
+            user_create = UserCreate(**create_data)
+
         return await service.create_user(
             user_create=user_create,
             current_user=current_user,
@@ -209,8 +215,10 @@ async def get_current_user_info(
     '/users/me',
     response_model=UserInfo,
     summary='Обновление информации о текущем пользователе',
-    description='Возвращает обновленную информацию о пользователе. '
-    'Только для авторизированных пользователей.',
+    description='Обновляет информацию о текущем пользователе.\n\n'
+    '**Ограничения:**\n'
+    '- Нельзя изменить поле `is_superuser`\n'
+    '- Нельзя изменить поле `is_staff`',
 )
 async def update_current_user(
     user_update: UserUpdate,
@@ -219,9 +227,23 @@ async def update_current_user(
 ) -> UserInfo:
     """Обновляет информацию о текущем пользователе."""
     try:
+        update_data = user_update.model_dump(exclude_unset=True)
+
+        protected_fields = ['is_superuser', 'is_staff']
+        for field in protected_fields:
+            if field in update_data:
+                raise ValidationException(
+                    ErrorCode.CANNOT_CHANGE_PRIVILEGES, extra={'field': field}
+                )
+
+        safe_update_data = {
+            k: v for k, v in update_data.items() if k not in protected_fields
+        }
+        safe_user_update = UserUpdate(**safe_update_data)
+
         return await service.update_user(
             user_id=current_user.id,
-            user_update=user_update,
+            user_update=safe_user_update,
             current_user=current_user,
         )
     except (
@@ -278,7 +300,10 @@ async def delete_current_user(
     """Деактивирует аккаунт текущего пользователя."""
     if not confirm:
         raise ValidationException(ErrorCode.CONFIRMATION_REQUIRED)
-    await service.delete_user(current_user.id, current_user)
+    await service.delete_user(
+        user_id=current_user.id,
+        current_user=current_user,
+    )
 
 
 @router.get(
@@ -343,8 +368,11 @@ async def get_user_by_id(
     '/users/{user_id}',
     response_model=UserInfo,
     summary='Обновление информации о пользователе по его ID',
-    description='Возвращает обновленную информацию о пользователе по его ID. '
-    'Только для администраторов или менеджеров.',
+    description='Обновляет информацию о пользователе по его ID.\n\n'
+    '**Разрешения:**\n'
+    '- Администраторы: могут изменять все поля\n'
+    '- Менеджеры: могут изменять только непривилегированные поля\n'
+    '- Обычные пользователи: могут изменять только свои данные',
 )
 async def update_user(
     user_id: Annotated[int, ...],
@@ -354,6 +382,24 @@ async def update_user(
 ) -> UserInfo:
     """Обновляет информацию о пользователе."""
     try:
+        update_data = user_update.model_dump(exclude_unset=True)
+
+        privileged_fields = ['is_superuser', 'is_staff']
+
+        if not current_user.is_superuser:
+            for field in privileged_fields:
+                if field in update_data:
+                    raise AuthorizationException(
+                        ErrorCode.INSUFFICIENT_PERMISSIONS,
+                        extra={'field': field},
+                    )
+
+            if not current_user.is_staff and current_user.id != user_id:
+                raise AuthorizationException(
+                    ErrorCode.INSUFFICIENT_PERMISSIONS,
+                    extra={'message': 'Можно изменять только свой профиль'},
+                )
+
         return await service.update_user(
             user_id=user_id,
             user_update=user_update,

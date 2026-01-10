@@ -3,7 +3,6 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from typing import Any
 
-from app.core.celery_app import celery_app
 from app.core.constants import (
     BookingRules,
     BookingStatus,
@@ -574,6 +573,7 @@ class BookingService:
             create: признак создания нового бронирования
 
         """
+        from app.core.celery_app import celery_app
         from app.core.celery_tasks import notify_manager, send_booking_reminder
 
         first_slot = min(

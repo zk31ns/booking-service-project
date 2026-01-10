@@ -14,8 +14,6 @@ from app.core.celery_app import celery_app
 from app.core.celery_base import BaseTask
 from app.core.config import settings
 from app.core.constants import CeleryTasks, ErrorCode, EventType, Times
-
-# from app.core.database import async_session_maker
 from app.core.exceptions import TelegramApiException
 from app.core.logging import logger
 
@@ -265,9 +263,6 @@ async def _cleanup_expired_bookings_async() -> int:
     from app.repositories.users import UserRepository
     from app.services.booking import BookingService
 
-    # NullPool: создаёт новое соединение для каждой операции.
-    # Необходимо для Celery workers чтобы избежать конфликтов
-    # при использовании соединений в разных процессах.
     engine = create_async_engine(
         settings.database_url,
         echo=settings.db_echo,
@@ -295,7 +290,6 @@ async def _cleanup_expired_bookings_async() -> int:
         now = date.today()
         expired_count = await booking_service.cleanup_expired_bookings(now=now)
         await session.commit()
-    # Важно: закрываем engine после использования для освобождения ресурсов
     await engine.dispose()
     return expired_count
 

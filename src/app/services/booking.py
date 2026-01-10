@@ -602,7 +602,7 @@ class BookingService:
 
         if (
             booking.status != BookingStatus.CANCELLED
-            and remind_at > datetime.now()
+            and remind_at > datetime.now() and user.tg_id
         ):
             send_booking_reminder.apply_async(
                 kwargs={

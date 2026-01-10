@@ -86,38 +86,6 @@ async def get_table(
     return await table_service.get_table_by_id(table_id)
 
 
-@router.get(
-    '/cafe/{cafe_id}/{table_id}',
-    response_model=Table,
-    summary='Получить столик по ID кафе и ID столика',
-    responses={
-        404: {'description': Messages.errors[ErrorCode.TABLE_NOT_FOUND]},
-        410: {'description': Messages.errors[ErrorCode.TABLE_INACTIVE]},
-    },
-)
-async def get_table_by_cafe_and_id(
-    cafe_id: int,
-    table_id: int,
-    table_service: TableService = Depends(get_table_service),
-) -> Table:
-    """Получить столик по идентификаторам кафе и столика.
-
-    Args:
-        cafe_id: Идентификатор кафе.
-        table_id: Идентификатор столика.
-        table_service: Сервис работы со столиками (внедряется автоматически).
-
-    Returns:
-        Table: Объект столика.
-
-    Raises:
-        HTTPException: Если столик не найден в указанном кафе (статус 404).
-        HTTPException: Если столик удален (статус 410).
-
-    """
-    return await table_service.get_table_by_cafe_and_id(cafe_id, table_id)
-
-
 @router.post(
     '/',
     response_model=Table,
@@ -181,62 +149,3 @@ async def update_table(
 
     """
     return await table_service.update_table(table_id, table_update)
-
-
-@router.delete(
-    '/{table_id}',
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary='Удалить столик',
-    responses={
-        404: {'description': Messages.errors[ErrorCode.TABLE_NOT_FOUND]},
-        403: {
-            'description': Messages.errors[ErrorCode.INSUFFICIENT_PERMISSIONS]
-        },
-    },
-)
-async def delete_table(
-    table_id: int,
-    table_service: TableService = Depends(get_table_service),
-) -> None:
-    """Удалить столик (логическое удаление).
-
-    Args:
-        table_id: Идентификатор столика.
-        table_service: Сервис работы со столиками (внедряется автоматически).
-
-    Returns:
-        None: Не возвращает данные (статус 204 No Content).
-
-    Raises:
-        HTTPException: Если столик не найден (статус 404).
-
-    """
-    await table_service.delete_table(table_id)
-    return
-
-
-@router.get(
-    '/{table_id}/stats',
-    summary='Получить статистику по столику',
-    responses={
-        404: {'description': Messages.errors[ErrorCode.TABLE_NOT_FOUND]}
-    },
-)
-async def get_table_stats(
-    table_id: int,
-    table_service: TableService = Depends(get_table_service),
-) -> dict:
-    """Получить статистику по столику.
-
-    Args:
-        table_id: Идентификатор столика.
-        table_service: Сервис работы со столиками (внедряется автоматически).
-
-    Returns:
-        dict: Статистика по столику.
-
-    Raises:
-        HTTPException: Если столик не найден (статус 404).
-
-    """
-    return await table_service.get_table_stats(table_id)

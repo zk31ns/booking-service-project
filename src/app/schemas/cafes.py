@@ -41,7 +41,7 @@ class CafeCreate(CafeBase):
     )
     managers_id: list[int] | None = Field(
         default=None,
-        description='ID менеджеров кафе (опционально, можно добавить позже)',
+        description='ID менеджеров кафе',
     )
 
 
@@ -71,6 +71,9 @@ class CafeUpdate(BaseModel):
         default=None,
         description='ID менеджеров кафе',
     )
+    photo_id: UUID = Field(
+        description='ID фотографии кафе',
+    )
 
 
 class CafeInDBBase(AuditedSchema):
@@ -96,6 +99,10 @@ class CafeInDBBase(AuditedSchema):
         description='Описание кафе',
     )
     photo_id: UUID | None = None
+    managers: list[UserShortInfo] = Field(
+        default_factory=list,
+        description='Менеджеры кафе',
+    )
 
 
 class Cafe(CafeInDBBase):

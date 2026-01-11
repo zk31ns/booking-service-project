@@ -5,9 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.dishes.schemas import DishCreate, DishInfo, DishUpdate
 from app.api.v1.dishes.service import DishService
+from app.core.constants import API
 from app.core.database import get_session
 
-router = APIRouter(prefix='/dishes', tags=['dishes'])
+router = APIRouter(prefix='/dishes', tags=API.DISHES)
 
 
 async def get_dish_service(

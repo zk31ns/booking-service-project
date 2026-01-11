@@ -5,12 +5,11 @@
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Body, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.api.dependencies import (
     get_current_manager_or_superuser,
-    get_current_superuser,
     get_current_user,
     get_optional_user,
 )
@@ -23,7 +22,7 @@ from app.core.exceptions import (
     ValidationException,
 )
 from app.models import User
-from app.schemas.types import AuthResponseDict, RefreshTokenResponseDict
+from app.schemas.types import AuthResponseDict
 from app.schemas.users import (
     UserCreate,
     UserInfo,
@@ -52,39 +51,6 @@ async def login(
         result = await service.authenticate_user(
             login=form_data.username,
             password=form_data.password,
-        )
-        user_dict = (
-            result['user'].model_dump()
-            if hasattr(result['user'], 'model_dump')
-            else result['user']
-        )
-        return {
-            'access_token': result['tokens']['access_token'],
-            'refresh_token': result['tokens']['refresh_token'],
-            'token_type': 'bearer',
-            'user': user_dict,
-        }
-    except (AuthenticationException, AuthorizationException) as e:
-        raise e
-
-
-@router.post(
-    '/auth/refresh',
-    response_model=RefreshTokenResponseDict,
-    summary='Обновление access токена',
-    description='Обновляет access токена с помощью refresh токена.',
-)
-async def refresh_tokens(
-    refresh_token: Annotated[
-        str,
-        Body(..., embed=True, description='Refresh токена'),
-    ],
-    service: Annotated[UserService, Depends(get_user_service)],
-) -> RefreshTokenResponseDict:
-    """Обновляет access токен."""
-    try:
-        result = await service.refresh_tokens(
-            refresh_token=refresh_token,
         )
         user_dict = (
             result['user'].model_dump()
@@ -217,8 +183,8 @@ async def get_current_user_info(
     summary='Обновление информации о текущем пользователе',
     description='Обновляет информацию о текущем пользователе.\n\n'
     '**Ограничения:**\n'
-    '- Нельзя изменить поле `is_superuser`\n'
-    '- Нельзя изменить поле `is_staff`',
+    '- Нельзя изменить поля `is_superuser`, `is_blocked`, `active`\n'
+    '- Нельзя изменить поле `managed_cafes`',
 )
 async def update_current_user(
     user_update: UserUpdate,
@@ -229,7 +195,12 @@ async def update_current_user(
     try:
         update_data = user_update.model_dump(exclude_unset=True)
 
-        protected_fields = ['is_superuser', 'is_staff']
+        protected_fields = [
+            'is_superuser',
+            'is_blocked',
+            'active',
+            'managed_cafes',
+        ]
         for field in protected_fields:
             if field in update_data:
                 raise ValidationException(
@@ -251,93 +222,6 @@ async def update_current_user(
         ValidationException,
         ConflictException,
     ) as e:
-        raise e
-
-
-@router.post(
-    '/users/me/password',
-    response_model=UserInfo,
-    summary='Смена пароля текущего пользователя',
-    description='Изменяет пароль текущего пользователя.',
-)
-async def change_password(
-    current_password: Annotated[str, Body(..., description='Текущий пароль')],
-    new_password: Annotated[str, Body(..., description='Новый пароль')],
-    service: Annotated[UserService, Depends(get_user_service)],
-    current_user: Annotated[User, Depends(get_current_user)],
-) -> UserInfo:
-    """Изменяет пароль текущего пользователя."""
-    try:
-        return await service.update_user_password(
-            user_id=current_user.id,
-            current_password=current_password,
-            new_password=new_password,
-            current_user=current_user,
-        )
-    except (
-        NotFoundException,
-        AuthenticationException,
-        AuthorizationException,
-        ValidationException,
-    ) as e:
-        raise e
-
-
-@router.delete(
-    '/users/me',
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary='Деактивация своего аккаунта',
-    description='Деактивирует аккаунт текущего пользователя.',
-)
-async def delete_current_user(
-    service: Annotated[UserService, Depends(get_user_service)],
-    current_user: Annotated[User, Depends(get_current_user)],
-    confirm: Annotated[
-        bool,
-        Body(..., description='Подтверждение удаления аккаунта'),
-    ] = False,
-) -> None:
-    """Деактивирует аккаунт текущего пользователя."""
-    if not confirm:
-        raise ValidationException(ErrorCode.CONFIRMATION_REQUIRED)
-    await service.delete_user(
-        user_id=current_user.id,
-        current_user=current_user,
-    )
-
-
-@router.get(
-    '/users/search',
-    response_model=list[UserInfo],
-    summary='Поиск пользователей',
-    description='Ищет пользователей по строке запроса. '
-    'Только для администраторов.',
-)
-async def search_users(
-    query: Annotated[
-        str,
-        Query(
-            ...,
-            min_length=Limits.MIN_SEARCH_QUERY_LENGTH,
-            description='Строка поиска',
-        ),
-    ],
-    service: Annotated[UserService, Depends(get_user_service)],
-    current_user: Annotated[User, Depends(get_current_superuser)],
-    skip: Annotated[int, Query(ge=0)] = 0,
-    limit: Annotated[
-        int, Query(ge=1, le=Limits.MAX_PAGE_SIZE)
-    ] = Limits.DEFAULT_PAGE_SIZE,
-) -> list[UserInfo]:
-    """Ищет пользователей по строке запроса."""
-    try:
-        return await service.search_users(
-            query=query,
-            skip=skip,
-            limit=limit,
-            current_user=current_user,
-        )
-    except AuthorizationException as e:
         raise e
 
 
@@ -371,7 +255,6 @@ async def get_user_by_id(
     description='Обновляет информацию о пользователе по его ID.\n\n'
     '**Разрешения:**\n'
     '- Администраторы: могут изменять все поля\n'
-    '- Менеджеры: могут изменять только непривилегированные поля\n'
     '- Обычные пользователи: могут изменять только свои данные',
 )
 async def update_user(
@@ -384,7 +267,12 @@ async def update_user(
     try:
         update_data = user_update.model_dump(exclude_unset=True)
 
-        privileged_fields = ['is_superuser', 'is_staff']
+        privileged_fields = [
+            'is_superuser',
+            'is_blocked',
+            'active',
+            'managed_cafes',
+        ]
 
         if not current_user.is_superuser:
             for field in privileged_fields:
@@ -394,7 +282,7 @@ async def update_user(
                         extra={'field': field},
                     )
 
-            if not current_user.is_staff and current_user.id != user_id:
+            if current_user.id != user_id:
                 raise AuthorizationException(
                     ErrorCode.INSUFFICIENT_PERMISSIONS,
                     extra={'message': 'Можно изменять только свой профиль'},
@@ -410,31 +298,5 @@ async def update_user(
         AuthorizationException,
         ValidationException,
         ConflictException,
-    ) as e:
-        raise e
-
-
-@router.delete(
-    '/users/{user_id}',
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary='Деактивация пользователя',
-    description='Деактивирует пользователя (логическое удаление). '
-    'Только для администраторов.',
-)
-async def delete_user(
-    user_id: Annotated[int, ...],
-    service: Annotated[UserService, Depends(get_user_service)],
-    current_user: Annotated[User, Depends(get_current_superuser)],
-) -> None:
-    """Деактивирует пользователя."""
-    try:
-        await service.delete_user(
-            user_id=user_id,
-            current_user=current_user,
-        )
-    except (
-        NotFoundException,
-        AuthorizationException,
-        ValidationException,
     ) as e:
         raise e

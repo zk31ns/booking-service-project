@@ -2,28 +2,23 @@ from uuid import UUID
 
 from pydantic import ConfigDict, Field
 
-from app.schemas.base import TimestampedSchema
+from app.schemas.base import BaseResponse
 
 
-class MediaInfo(TimestampedSchema):
-    """Схема информации о медиа-файле.
+class MediaInfo(BaseResponse):
+    """Media metadata for upload responses (TZ-aligned)."""
 
-    Используется для получения информации об уже загруженном файле.
-    """
-
-    id: UUID = Field(..., description='Уникальный идентификатор файла')
-    mime_type: str = Field(..., description='MIME тип файла')
-    file_size: int = Field(..., description='Размер файла в байтах')
+    media_id: UUID = Field(
+        ..., alias='id', description='Media object identifier'
+    )
 
     model_config = ConfigDict(
         from_attributes=True,
+        populate_by_name=True,
         extra='ignore',
         json_schema_extra={
             'example': {
-                'id': '550e8400-e29b-41d4-a716-446655440000',
-                'mime_type': 'image/jpeg',
-                'file_size': 102400,
-                'created_at': '2025-12-21T00:07:00Z',
+                'media_id': '550e8400-e29b-41d4-a716-446655440000',
             }
         },
     )

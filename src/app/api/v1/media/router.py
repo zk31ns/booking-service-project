@@ -7,10 +7,10 @@ from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_manager_or_superuser
 from app.core.constants import ErrorCode, Messages
 from app.core.database import get_session
-from app.core.exceptions import AuthorizationException, NotFoundException
+from app.core.exceptions import NotFoundException
 from app.models import User
 from app.models.media import Media
 from app.schemas.media import MediaInfo
@@ -26,7 +26,7 @@ router = APIRouter(prefix='/media')
 async def upload_media(
     file: UploadFile = File(...),
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_manager_or_superuser),
 ) -> MediaInfo:
     """Загрузить медиа-файл.
 
@@ -39,9 +39,6 @@ async def upload_media(
         MediaInfo: Информация о загруженном медиа.
 
     """
-    if not current_user.is_superuser:
-        raise AuthorizationException(ErrorCode.INSUFFICIENT_PERMISSIONS)
-
     logger.info(
         f'Начало загрузки файла: {file.filename}, тип: {file.content_type}'
     )

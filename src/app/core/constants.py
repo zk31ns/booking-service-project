@@ -31,16 +31,18 @@ class API:
     V1_PREFIX = '/api/v1'
 
     # Таги для OpenAPI документации
-    ROOT = ['greeting']
-    HEALTH = ['health']
-    USERS = ['users']
-    AUTH = ['auth']
-    CAFES = ['cafes']
-    TABLES = ['tables']
-    SLOTS = ['slots']
-    BOOKING = ['booking']
-    PENDING = ['booking']
-    MEDIA = ['media']
+    ROOT = ['Приветствие']
+    HEALTH = ['Системное здоровье']
+    AUTH = ['Аутентификация']
+    USERS = ['Пользователи']
+    CAFES = ['Кафе']
+    TABLES = ['Столы']
+    SLOTS = ['Слоты']
+    DISHES = ['Блюда']
+    ACTIONS = ['Акции']
+    BOOKING = ['Бронирование']
+    PENDING = ['Ожидающие']
+    MEDIA = ['Медиа файлы']
 
 
 # ========== Размеры и Лимиты ==========

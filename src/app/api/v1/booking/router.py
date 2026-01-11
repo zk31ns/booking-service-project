@@ -3,11 +3,12 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from app.api.dependencies import get_booking_service, get_current_user
+from app.core.constants import API
 from app.models import Booking, User
 from app.schemas import BookingCreate, BookingDB, BookingUpdate
 from app.services.booking import BookingService
 
-router = APIRouter(prefix='/booking', tags=['booking'])
+router = APIRouter(prefix='/booking', tags=API.BOOKING)
 
 
 @router.get(

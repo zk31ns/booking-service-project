@@ -31,16 +31,18 @@ class API:
     V1_PREFIX = '/api/v1'
 
     # Таги для OpenAPI документации
-    ROOT = ['greeting']
-    HEALTH = ['health']
-    USERS = ['users']
-    AUTH = ['auth']
-    CAFES = ['cafes']
-    TABLES = ['tables']
-    SLOTS = ['slots']
-    BOOKING = ['booking']
-    PENDING = ['booking']
-    MEDIA = ['media']
+    ROOT = ['Приветствие']
+    HEALTH = ['Здоровье']
+    AUTH = ['Аутентификация']
+    USERS = ['Пользователи']
+    CAFES = ['Кафе']
+    TABLES = ['Столы']
+    SLOTS = ['Слоты']
+    DISHES = ['Блюда']
+    ACTIONS = ['Акции']
+    BOOKING = ['Бронирование']
+    PENDING = ['Ожидающие']
+    MEDIA = ['Медиа файлы']
 
 
 # ========== Размеры и Лимиты ==========
@@ -256,6 +258,7 @@ class ErrorCode(StrEnum):
     PASSWORD_SAME_AS_OLD = 'password_same_as_old'
     CANNOT_DELETE_OWN_ACCOUNT = 'cannot_delete_own_account'
     INCORRECT_CURRENT_PASSWORD = 'incorrect_current_password'
+    CANNOT_CHANGE_PRIVILEGES = 'cannot_change_privileges'
 
     # Cafe
     CAFE_NOT_FOUND = 'cafe_not_found'
@@ -417,6 +420,9 @@ class Messages:
             'Нельзя удалить свой собственный аккаунт'
         ),
         ErrorCode.INCORRECT_CURRENT_PASSWORD: 'Текущий пароль неверен',
+        ErrorCode.CANNOT_CHANGE_PRIVILEGES: (
+            'Нельзя изменять привилегии пользователя',
+        ),
     }
 
     success_messages = {

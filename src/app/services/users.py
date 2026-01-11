@@ -7,6 +7,7 @@
 from typing import Annotated, Any
 
 from fastapi import Depends
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.constants import ErrorCode, Limits
@@ -20,6 +21,7 @@ from app.core.exceptions import (
     ValidationException,
 )
 from app.core.security import create_tokens_pair, verify_password
+from app.models.cafes import Cafe
 from app.models.users import User
 from app.repositories.users import UserRepository
 from app.schemas.users import (
@@ -165,12 +167,41 @@ class UserService:
                 self.user_repo, user, user_update
             )
             update_data = user_update.model_dump(exclude_unset=True)
+            managed_cafe_ids = update_data.pop('managed_cafes', None)
 
             if 'password' in update_data:
                 if verify_password(
                     update_data['password'], user.password_hash
                 ):
                     raise ValidationException(ErrorCode.PASSWORD_SAME_AS_OLD)
+
+            if managed_cafe_ids is not None:
+                if current_user is None or not current_user.is_superuser:
+                    raise AuthorizationException(
+                        ErrorCode.INSUFFICIENT_PERMISSIONS,
+                        extra={'field': 'managed_cafes'},
+                    )
+
+                cafes: list[Cafe] = []
+                if managed_cafe_ids:
+                    result = await self.session.execute(
+                        select(Cafe).where(Cafe.id.in_(managed_cafe_ids))
+                    )
+                    cafes = list(result.scalars().all())
+
+                    missing_ids = set(managed_cafe_ids) - {
+                        cafe.id for cafe in cafes
+                    }
+                    if missing_ids:
+                        raise NotFoundException(
+                            ErrorCode.CAFE_NOT_FOUND,
+                            extra={
+                                'cafe_ids': sorted(missing_ids),
+                                'user_id': user_id,
+                            },
+                        )
+
+                user.managed_cafes = cafes
 
             updated_user = await self.user_repo.update_user(user, update_data)
             return UserInfo.from_orm(updated_user)

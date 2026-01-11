@@ -7,7 +7,7 @@ services:
   db:
     image: postgres:17-alpine
     env_file:
-      - ../.env
+      - ../src/.env
     environment:
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
@@ -47,7 +47,7 @@ services:
   rabbitmq:
     image: rabbitmq:4-management
     container_name: booking_rabbitmq
-    env_file: ../.env
+    env_file: ../src/.env
     ports:
       - "${RABBITMQ_PORT:-5672}:5672"
       - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
@@ -60,7 +60,7 @@ services:
 
   app:
     container_name: booking_app
-    env_file: ../.env
+    env_file: ../src/.env
     image: ${DOCKER_IMAGE:?set DOCKER_IMAGE env}:${IMAGE_TAG:-latest}
     command: uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
     working_dir: /app
@@ -87,7 +87,7 @@ services:
 
   worker:
     container_name: booking_worker
-    env_file: ../.env
+    env_file: ../src/.env
     image: ${DOCKER_IMAGE:?set DOCKER_IMAGE env}:${IMAGE_TAG:-latest}
     command: celery -A app.core.celery_app:celery_app worker -E --beat --loglevel=info
     working_dir: /app
@@ -105,7 +105,7 @@ services:
 
   flower:
     container_name: booking_flower
-    env_file: ../.env
+    env_file: ../src/.env
     image: ${DOCKER_IMAGE:?set DOCKER_IMAGE env}:${IMAGE_TAG:-latest}
     command: celery -A app.core.celery_app:celery_app flower --port=${FLOWER_PORT:-5555}
     working_dir: /app

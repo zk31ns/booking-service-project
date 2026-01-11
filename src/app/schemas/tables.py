@@ -1,69 +1,101 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.constants import Limits
 from app.schemas.base import AuditedSchema
+from app.schemas.cafes import CafeShortInfo
 
 
 class TableBase(BaseModel):
-    """Базовая схема для столика."""
+    """Base schema for tables."""
 
     seats: int = Field(
         ge=Limits.MIN_SEATS,
         le=Limits.MAX_SEATS,
-        description='Количество мест за столиком',
+        validation_alias='seat_number',
+        serialization_alias='seat_number',
+        description='Number of seats at the table',
     )
     description: str | None = Field(
         default=None,
         max_length=Limits.MAX_DESCRIPTION_LENGTH,
-        description='Описание столика (например, "VIP стол", "у окна")',
+        description='Table description',
     )
 
 
 class TableCreate(TableBase):
-    """Схема для создания столика."""
+    """API schema for creating a table (without cafe_id)."""
 
-    cafe_id: int = Field(description='ID кафе')
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
+class TableCreateDB(TableBase):
+    """Internal schema for table creation with cafe_id."""
+
+    cafe_id: int = Field(description='Cafe ID')
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class TableUpdate(BaseModel):
-    """Схема для обновления столика."""
+    """API schema for updating a table."""
 
     seats: int | None = Field(
         None,
         ge=Limits.MIN_SEATS,
         le=Limits.MAX_SEATS,
+        validation_alias='seat_number',
+        serialization_alias='seat_number',
     )
     description: str | None = Field(
         None,
         max_length=Limits.MAX_DESCRIPTION_LENGTH,
     )
-    active: bool | None = None
+    active: bool | None = Field(
+        None,
+        validation_alias='is_active',
+        serialization_alias='is_active',
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class TableInDBBase(AuditedSchema):
-    """Базовая схема столика в БД."""
+    """DB-backed schema for table responses."""
 
-    cafe_id: int
     seats: int = Field(
         ge=Limits.MIN_SEATS,
         le=Limits.MAX_SEATS,
-        description='Количество мест за столиком',
+        validation_alias='seat_number',
+        serialization_alias='seat_number',
+        description='Number of seats at the table',
     )
     description: str | None = Field(
         default=None,
         max_length=Limits.MAX_DESCRIPTION_LENGTH,
-        description='Описание столика (например, "VIP стол", "у окна")',
+        description='Table description',
     )
+    active: bool = Field(
+        default=True,
+        validation_alias='is_active',
+        serialization_alias='is_active',
+        description='Is active',
+    )
+    cafe: CafeShortInfo | None = Field(
+        default=None,
+        description='Cafe info',
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class Table(TableInDBBase):
-    """Схема для ответа API."""
+    """API schema for table responses."""
 
     pass
 
 
 class TableWithCafe(Table):
-    """Столик с информацией о кафе."""
+    """Table response with extra cafe fields (legacy)."""
 
     cafe_name: str | None = None
     cafe_address: str | None = None

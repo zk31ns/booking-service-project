@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.constants import Limits
 from app.schemas.base import AuditedSchema
@@ -33,6 +33,19 @@ class CafeBase(BaseModel):
     )
 
 
+class CafeShortInfo(BaseModel):
+    """Short cafe info for nested responses."""
+
+    id: int
+    name: str
+    address: str
+    phone: str
+    description: str | None = None
+    photo_id: UUID | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class CafeCreate(CafeBase):
     """Схема для создания кафе."""
 
@@ -41,7 +54,7 @@ class CafeCreate(CafeBase):
     )
     managers_id: list[int] | None = Field(
         default=None,
-        description='ID менеджеров кафе (опционально, можно добавить позже)',
+        description='ID менеджеров кафе',
     )
 
 
@@ -66,11 +79,22 @@ class CafeUpdate(BaseModel):
         None,
         max_length=Limits.MAX_DESCRIPTION_LENGTH,
     )
-    active: bool | None = None
+    active: bool | None = Field(
+        None,
+        validation_alias='is_active',
+        serialization_alias='is_active',
+        description='Флаг активности кафе',
+    )
     managers_id: list[int] | None = Field(
         default=None,
         description='ID менеджеров кафе',
     )
+    photo_id: UUID | None = Field(
+        default=None,
+        description='ID фотографии кафе',
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class CafeInDBBase(AuditedSchema):
@@ -96,6 +120,10 @@ class CafeInDBBase(AuditedSchema):
         description='Описание кафе',
     )
     photo_id: UUID | None = None
+    managers: list[UserShortInfo] = Field(
+        default_factory=list,
+        description='Менеджеры кафе',
+    )
 
 
 class Cafe(CafeInDBBase):

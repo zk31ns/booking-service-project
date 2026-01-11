@@ -1,9 +1,10 @@
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.tables import Table
 from app.repositories.base import BaseCRUD
-from app.schemas.tables import TableCreate, TableUpdate
+from app.schemas.tables import TableCreateDB, TableUpdate
 
 
 class TableRepository(BaseCRUD[Table]):
@@ -34,7 +35,13 @@ class TableRepository(BaseCRUD[Table]):
             Optional[Table]: Столик или None, если не найден.
 
         """
-        return await super().get(table_id)
+        stmt = (
+            select(self.model)
+            .options(selectinload(self.model.cafe))
+            .where(self.model.id == table_id)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
 
     async def get_all_for_cafe(
         self,
@@ -52,6 +59,7 @@ class TableRepository(BaseCRUD[Table]):
 
         """
         stmt = select(self.model).where(self.model.cafe_id == cafe_id)
+        stmt = stmt.options(selectinload(self.model.cafe))
         if active_only:
             stmt = stmt.where(self.model.active)
         result = await self.session.execute(stmt)
@@ -72,15 +80,22 @@ class TableRepository(BaseCRUD[Table]):
             Optional[Table]: Столик или None, если не найден.
 
         """
-        stmt = select(self.model).where(
-            and_(self.model.id == table_id, self.model.cafe_id == cafe_id),
+        stmt = (
+            select(self.model)
+            .options(selectinload(self.model.cafe))
+            .where(
+                and_(
+                    self.model.id == table_id,
+                    self.model.cafe_id == cafe_id,
+                ),
+            )
         )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
     async def create(
         self,
-        table_create: TableCreate,
+        table_create: TableCreateDB,
     ) -> Table:
         """Создать новый столик.
 

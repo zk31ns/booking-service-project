@@ -9,9 +9,10 @@ from app.api.v1.actions.schemas import (
     ActionUpdate,
 )
 from app.api.v1.actions.service import ActionService
+from app.core.constants import API
 from app.core.database import get_session
 
-router = APIRouter(prefix='/actions', tags=['actions'])
+router = APIRouter(prefix='/actions', tags=API.ACTIONS)
 
 
 async def get_action_service(

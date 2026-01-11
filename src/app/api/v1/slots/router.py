@@ -2,13 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.constants import ErrorCode, RedisKey, Times
+from app.core.constants import API, ErrorCode, RedisKey, Times
 from app.core.database import get_session
 from app.core.redis_cache import RedisCache
 from app.schemas.slot import SlotCreate, SlotInfo, SlotUpdate
 from app.services.slot import SlotService
 
-router = APIRouter(prefix='/cafes/{cafe_id}/slots')
+router = APIRouter(prefix='/cafes/{cafe_id}/slots', tags=API.SLOTS)
 
 
 @router.get('', response_model=list[SlotInfo], status_code=status.HTTP_200_OK)

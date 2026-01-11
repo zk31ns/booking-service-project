@@ -2,6 +2,7 @@ from datetime import datetime
 
 from pydantic import (
     BaseModel,
+    ConfigDict,
     EmailStr,
     Field,
     field_validator,
@@ -155,11 +156,17 @@ class UserUpdate(BaseModel):
         None,
         description='Флаг активности пользователя',
     )
+    managed_cafes: list[int] | None = Field(
+        None,
+        description='ID кафе, которыми управляет пользователь',
+    )
 
     @field_validator('phone')
     def validate_phone(cls, phone: str | None) -> str | None:  # noqa: N805
         """Валидирует формат телефонного номера."""
         return validate_phone_format(phone)
+
+    model_config = ConfigDict(extra='forbid')
 
 
 class UserInfo(UserBase):

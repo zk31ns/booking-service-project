@@ -52,13 +52,19 @@ app.add_middleware(
 
 # ========== Routers ==========
 # Greeting message
-app.include_router(root.router, prefix=API.V1_PREFIX, tags=API.ROOT)
+app.include_router(root.router, prefix=API.V1_PREFIX)
 
 # Users and Authentication
 app.include_router(users_router, prefix=API.V1_PREFIX)
 
-# Slots
-app.include_router(slots_router, prefix=API.V1_PREFIX, tags=API.SLOTS)
+# Cafes
+app.include_router(cafes_router, prefix=API.V1_PREFIX)
+
+# Tables
+app.include_router(tables_router, prefix=API.V1_PREFIX)
+
+# Time slots
+app.include_router(slots_router, prefix=API.V1_PREFIX)
 
 # Dishes
 app.include_router(dishes_router, prefix=API.V1_PREFIX)
@@ -66,15 +72,9 @@ app.include_router(dishes_router, prefix=API.V1_PREFIX)
 # Actions
 app.include_router(actions_router, prefix=API.V1_PREFIX)
 
-# Media
-app.include_router(media_router, prefix=API.V1_PREFIX, tags=API.MEDIA)
-
 # Booking
-app.include_router(booking_router, prefix=API.V1_PREFIX, tags=API.BOOKING)
+app.include_router(booking_router, prefix=API.V1_PREFIX)
 
-# Cafes
-app.include_router(cafes_router, prefix=API.V1_PREFIX, tags=API.CAFES)
-
-# Tables
-app.include_router(tables_router, prefix=API.V1_PREFIX, tags=API.TABLES)
+# Media
+app.include_router(media_router, prefix=API.V1_PREFIX)
 # ===========================

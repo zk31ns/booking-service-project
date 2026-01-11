@@ -25,7 +25,7 @@ class RootResponse(BaseModel):
     '/',
     response_model=RootResponse,
     status_code=status.HTTP_200_OK,
-    summary='Send greeting message',
+    summary='Отправляем приветственное сообщение',
     description='Приветственное сообщение',
 )
 async def root_message() -> RootResponse:

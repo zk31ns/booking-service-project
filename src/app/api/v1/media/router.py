@@ -16,7 +16,7 @@ from app.models.media import Media
 from app.schemas.media import MediaInfo
 from app.services.media import MediaService
 
-router = APIRouter(prefix='/media')
+router = APIRouter(prefix='/media', tags=API.MEDIA)
 
 
 @router.post(

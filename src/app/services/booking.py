@@ -602,8 +602,10 @@ class BookingService:
 
         if (
             booking.status != BookingStatus.CANCELLED
-            and remind_at > datetime.now() and user.tg_id
+            and remind_at > datetime.now()
+            and user.tg_id
         ):
+            # TODO: add email notifications when tg_id is missing.
             send_booking_reminder.apply_async(
                 kwargs={
                     'booking_id': booking.id,

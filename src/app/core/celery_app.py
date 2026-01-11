@@ -13,8 +13,8 @@ from app.core.logging import logger, setup_logging
 
 celery_app = Celery(
     'booking',
-    broker=settings.rabbitmq_url,
-    backend=settings.celery_result_backend,
+    broker=settings.celery_broker,
+    backend=settings.celery_backend,
 )
 
 # Настройка Celery

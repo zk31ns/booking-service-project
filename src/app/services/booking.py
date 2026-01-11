@@ -3,7 +3,6 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from typing import Any
 
-from app.core.celery_app import celery_app
 from app.core.constants import (
     BookingRules,
     BookingStatus,
@@ -574,6 +573,7 @@ class BookingService:
             create: признак создания нового бронирования
 
         """
+        from app.core.celery_app import celery_app
         from app.core.celery_tasks import notify_manager, send_booking_reminder
 
         first_slot = min(
@@ -603,7 +603,9 @@ class BookingService:
         if (
             booking.status != BookingStatus.CANCELLED
             and remind_at > datetime.now()
+            and user.tg_id
         ):
+            # TODO: add email notifications when tg_id is missing.
             send_booking_reminder.apply_async(
                 kwargs={
                     'booking_id': booking.id,

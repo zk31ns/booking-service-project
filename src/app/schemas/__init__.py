@@ -6,7 +6,13 @@ from .bookings import (
     TableSlotSchema,
 )
 from .cafes import Cafe, CafeCreate, CafeUpdate, CafeWithRelations
-from .tables import Table, TableCreate, TableUpdate, TableWithCafe
+from .tables import (
+    Table,
+    TableCreate,
+    TableCreateDB,
+    TableUpdate,
+    TableWithCafe,
+)
 
 __all__ = [
     'Cafe',
@@ -15,6 +21,7 @@ __all__ = [
     'CafeWithRelations',
     'Table',
     'TableCreate',
+    'TableCreateDB',
     'TableUpdate',
     'TableWithCafe',
     'BookingBase',

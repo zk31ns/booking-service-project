@@ -4,7 +4,7 @@ from app.core.constants import ErrorCode, Limits, Messages
 from app.models.tables import Table
 from app.repositories.cafes import CafeRepository
 from app.repositories.tables import TableRepository
-from app.schemas.tables import TableCreate, TableUpdate
+from app.schemas.tables import TableCreateDB, TableUpdate
 
 
 class TableService:
@@ -130,7 +130,7 @@ class TableService:
 
         return table
 
-    async def create_table(self, table_create: TableCreate) -> Table:
+    async def create_table(self, table_create: TableCreateDB) -> Table:
         """Создать новый столик.
 
         Args:

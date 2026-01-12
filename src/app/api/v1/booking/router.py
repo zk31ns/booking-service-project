@@ -11,10 +11,7 @@ from app.services.booking import BookingService
 router = APIRouter(prefix='/booking', tags=API.BOOKING)
 
 
-@router.get(
-    '/',
-    response_model=list[BookingDB],
-)
+@router.get('', response_model=list[BookingDB])
 async def get_all_bookings(
     current_user: Annotated[User, Depends(get_current_user)],
     show_all: bool = True,
@@ -47,10 +44,7 @@ async def get_all_bookings(
     )
 
 
-@router.post(
-    '/',
-    response_model=BookingDB,
-)
+@router.post('', response_model=BookingDB)
 async def create_booking(
     booking_in: BookingCreate,
     user: User = Depends(get_current_user),

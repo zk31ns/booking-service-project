@@ -1,8 +1,4 @@
-"""Кастомные исключения приложения.
-
-Содержит иерархию исключений для централизованной обработки ошибок.
-Все исключения наследуются от AppException и преобразуются в HTTPException.
-"""
+"""Исключения приложения и форматирование ошибок для API."""
 
 from typing import Any
 
@@ -12,17 +8,14 @@ from app.core.constants import ErrorCode, Messages
 
 
 class AppException(HTTPException):
-    """Базовое исключение приложения.
-
-    Наследуется от HTTPException и добавляет поддержку кодов ошибок
-    и структурированных деталей.
+    """Базовое исключение приложения с единым форматом ответа.
 
     Attributes:
-        error_code: Код ошибки из ErrorCode enum.
-        status_code: HTTP статус код.
-        detail: Детальное сообщение об ошибке.
-        headers: HTTP заголовки ответа.
-        extra: Дополнительные данные об ошибке.
+        error_code: Код ошибки из перечисления ErrorCode.
+        status_code: HTTP статус.
+        detail: Сформированное тело ошибки.
+        headers: Заголовки ответа.
+        extra: Дополнительные поля ответа.
 
     """
 
@@ -34,14 +27,14 @@ class AppException(HTTPException):
         headers: dict[str, str] | None = None,
         extra: dict[str, Any] | None = None,
     ) -> None:
-        """Инициализирует исключение.
+        """Инициализировать исключение с кодом и деталями.
 
         Args:
-            error_code: Код ошибки из ErrorCode.
-            status_code: HTTP статус код (по умолчанию 400).
-            detail: Сообщение об ошибке. Если не указано, берётся из Messages.
-            headers: Дополнительные HTTP заголовки.
-            extra: Дополнительные данные для включения в ответ.
+            error_code: Код ошибки ErrorCode.
+            status_code: HTTP статус (по умолчанию 400).
+            detail: Текст ошибки; если не указан, берется из Messages.
+            headers: Заголовки HTTP ответа.
+            extra: Дополнительные поля ответа.
 
         """
         self.error_code = error_code
@@ -56,13 +49,13 @@ class AppException(HTTPException):
         )
 
     def _format_detail(self, detail: str) -> dict[str, Any]:
-        """Форматирует детали ошибки в структурированный вид.
+        """Сформировать тело ошибки в едином формате.
 
         Args:
             detail: Текст сообщения об ошибке.
 
         Returns:
-            Словарь с детализированной информацией об ошибке.
+            dict[str, Any]: Словарь с кодом, сообщением и timestamp.
 
         """
         return {
@@ -74,12 +67,7 @@ class AppException(HTTPException):
 
 
 class AuthenticationException(AppException):
-    """Исключение аутентификации.
-
-    Используется для ошибок связанных с аутентификацией пользователя.
-    Статус код: 401 UNAUTHORIZED.
-
-    """
+    """Ошибка аутентификации (HTTP 401)."""
 
     def __init__(
         self,
@@ -88,13 +76,13 @@ class AuthenticationException(AppException):
         headers: dict[str, str] | None = None,
         extra: dict[str, Any] | None = None,
     ) -> None:
-        """Инициализирует исключение аутентификации.
+        """Создать исключение для ошибки аутентификации.
 
         Args:
-            error_code: Код ошибки аутентификации.
-            detail: Сообщение об ошибке.
-            headers: HTTP заголовки.
-            extra: Дополнительные данные.
+            error_code: Код ошибки ErrorCode.
+            detail: Текст сообщения об ошибке.
+            headers: Заголовки HTTP ответа.
+            extra: Дополнительные поля ответа.
 
         """
         super().__init__(
@@ -107,12 +95,7 @@ class AuthenticationException(AppException):
 
 
 class AuthorizationException(AppException):
-    """Исключение авторизации.
-
-    Используется для ошибок связанных с правами доступа.
-    Статус код: 403 FORBIDDEN.
-
-    """
+    """Ошибка авторизации (HTTP 403)."""
 
     def __init__(
         self,
@@ -121,13 +104,13 @@ class AuthorizationException(AppException):
         headers: dict[str, str] | None = None,
         extra: dict[str, Any] | None = None,
     ) -> None:
-        """Инициализирует исключение авторизации.
+        """Создать исключение для ошибки авторизации.
 
         Args:
-            error_code: Код ошибки авторизации.
-            detail: Сообщение об ошибке.
-            headers: HTTP заголовки.
-            extra: Дополнительные данные.
+            error_code: Код ошибки ErrorCode.
+            detail: Текст сообщения об ошибке.
+            headers: Заголовки HTTP ответа.
+            extra: Дополнительные поля ответа.
 
         """
         super().__init__(
@@ -140,12 +123,7 @@ class AuthorizationException(AppException):
 
 
 class NotFoundException(AppException):
-    """Исключение 'Не найдено'.
-
-    Используется когда запрашиваемый ресурс не существует.
-    Статус код: 404 NOT FOUND.
-
-    """
+    """Ошибка отсутствия ресурса (HTTP 404)."""
 
     def __init__(
         self,
@@ -154,13 +132,13 @@ class NotFoundException(AppException):
         headers: dict[str, str] | None = None,
         extra: dict[str, Any] | None = None,
     ) -> None:
-        """Инициализирует исключение 'Не найдено'.
+        """Создать исключение для отсутствующего ресурса.
 
         Args:
-            error_code: Код ошибки.
-            detail: Сообщение об ошибке.
-            headers: HTTP заголовки.
-            extra: Дополнительные данные.
+            error_code: Код ошибки ErrorCode.
+            detail: Текст сообщения об ошибке.
+            headers: Заголовки HTTP ответа.
+            extra: Дополнительные поля ответа.
 
         """
         super().__init__(
@@ -173,12 +151,7 @@ class NotFoundException(AppException):
 
 
 class ConflictException(AppException):
-    """Исключение конфликта.
-
-    Используется когда запрос конфликтует с текущим состоянием ресурса.
-    Статус код: 409 CONFLICT.
-
-    """
+    """Ошибка конфликта данных (HTTP 409)."""
 
     def __init__(
         self,
@@ -187,13 +160,13 @@ class ConflictException(AppException):
         headers: dict[str, str] | None = None,
         extra: dict[str, Any] | None = None,
     ) -> None:
-        """Инициализирует исключение конфликта.
+        """Создать исключение для конфликта данных.
 
         Args:
-            error_code: Код ошибки конфликта.
-            detail: Сообщение об ошибке.
-            headers: HTTP заголовки.
-            extra: Дополнительные данные.
+            error_code: Код ошибки ErrorCode.
+            detail: Текст сообщения об ошибке.
+            headers: Заголовки HTTP ответа.
+            extra: Дополнительные поля ответа.
 
         """
         super().__init__(
@@ -206,12 +179,7 @@ class ConflictException(AppException):
 
 
 class ValidationException(AppException):
-    """Исключение валидации.
-
-    Используется для ошибок валидации входных данных.
-    Статус код: 422 UNPROCESSABLE ENTITY.
-
-    """
+    """Ошибка валидации данных (HTTP 422)."""
 
     def __init__(
         self,
@@ -220,13 +188,13 @@ class ValidationException(AppException):
         headers: dict[str, str] | None = None,
         extra: dict[str, Any] | None = None,
     ) -> None:
-        """Инициализирует исключение валидации.
+        """Создать исключение для ошибки валидации.
 
         Args:
-            error_code: Код ошибки валидации.
-            detail: Сообщение об ошибке.
-            headers: HTTP заголовки.
-            extra: Дополнительные данные.
+            error_code: Код ошибки ErrorCode.
+            detail: Текст сообщения об ошибке.
+            headers: Заголовки HTTP ответа.
+            extra: Дополнительные поля ответа.
 
         """
         super().__init__(
@@ -239,12 +207,7 @@ class ValidationException(AppException):
 
 
 class InternalServerException(AppException):
-    """Исключение внутренней ошибки сервера.
-
-    Используется для непредвиденных ошибок сервера.
-    Статус код: 500 INTERNAL SERVER ERROR.
-
-    """
+    """Внутренняя ошибка сервера (HTTP 500)."""
 
     def __init__(
         self,
@@ -253,13 +216,13 @@ class InternalServerException(AppException):
         headers: dict[str, str] | None = None,
         extra: dict[str, Any] | None = None,
     ) -> None:
-        """Инициализирует исключение внутренней ошибки.
+        """Создать исключение для внутренней ошибки сервера.
 
         Args:
-            error_code: Код ошибки (по умолчанию INTERNAL_SERVER_ERROR).
-            detail: Сообщение об ошибке.
-            headers: HTTP заголовки.
-            extra: Дополнительные данные.
+            error_code: Код ошибки ErrorCode.
+            detail: Текст сообщения об ошибке.
+            headers: Заголовки HTTP ответа.
+            extra: Дополнительные поля ответа.
 
         """
         super().__init__(
@@ -272,12 +235,7 @@ class InternalServerException(AppException):
 
 
 class ServiceUnavailableException(AppException):
-    """Исключение 'Сервис недоступен'.
-
-    Используется когда сервис временно недоступен.
-    Статус код: 503 SERVICE UNAVAILABLE.
-
-    """
+    """Сервис временно недоступен (HTTP 503)."""
 
     def __init__(
         self,
@@ -286,13 +244,13 @@ class ServiceUnavailableException(AppException):
         headers: dict[str, str] | None = None,
         extra: dict[str, Any] | None = None,
     ) -> None:
-        """Инициализирует исключение 'Сервис недоступен'.
+        """Создать исключение для недоступного сервиса.
 
         Args:
-            error_code: Код ошибки (по умолчанию SERVICE_UNAVAILABLE).
-            detail: Сообщение об ошибке.
-            headers: HTTP заголовки.
-            extra: Дополнительные данные.
+            error_code: Код ошибки ErrorCode.
+            detail: Текст сообщения об ошибке.
+            headers: Заголовки HTTP ответа.
+            extra: Дополнительные поля ответа.
 
         """
         super().__init__(
@@ -305,12 +263,7 @@ class ServiceUnavailableException(AppException):
 
 
 class TelegramApiException(AppException):
-    """Исключение 'Ошибка API Telegram'.
-
-    Используется при неожиданном ответе API Telegram.
-    Статус код: 502 Bad Gateway.
-
-    """
+    """Ошибка взаимодействия с Telegram API (HTTP 502)."""
 
     def __init__(
         self,
@@ -319,13 +272,13 @@ class TelegramApiException(AppException):
         headers: dict[str, str] | None = None,
         extra: dict[str, Any] | None = None,
     ) -> None:
-        """Инициализирует исключение 'Сервис недоступен'.
+        """Создать исключение для ошибки Telegram API.
 
         Args:
-            error_code: Код ошибки (по умолчанию SERVICE_UNAVAILABLE).
-            detail: Сообщение об ошибке.
-            headers: HTTP заголовки.
-            extra: Дополнительные данные.
+            error_code: Код ошибки ErrorCode.
+            detail: Текст сообщения об ошибке.
+            headers: Заголовки HTTP ответа.
+            extra: Дополнительные поля ответа.
 
         """
         super().__init__(

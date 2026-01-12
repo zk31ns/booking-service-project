@@ -6,38 +6,38 @@ from app.schemas.cafes import CafeShortInfo
 
 
 class TableBase(BaseModel):
-    """Base schema for tables."""
+    """Базовая схема столика."""
 
     seats: int = Field(
         ge=Limits.MIN_SEATS,
         le=Limits.MAX_SEATS,
         validation_alias='seat_number',
         serialization_alias='seat_number',
-        description='Number of seats at the table',
+        description='Количество мест за столом',
     )
     description: str | None = Field(
         default=None,
         max_length=Limits.MAX_DESCRIPTION_LENGTH,
-        description='Table description',
+        description='Описание столика',
     )
 
 
 class TableCreate(TableBase):
-    """API schema for creating a table (without cafe_id)."""
+    """Схема создания столика (без cafe_id)."""
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class TableCreateDB(TableBase):
-    """Internal schema for table creation with cafe_id."""
+    """Внутренняя схема создания столика с cafe_id."""
 
-    cafe_id: int = Field(description='Cafe ID')
+    cafe_id: int = Field(description='ID кафе')
 
     model_config = ConfigDict(populate_by_name=True)
 
 
 class TableUpdate(BaseModel):
-    """API schema for updating a table."""
+    """Схема обновления столика."""
 
     seats: int | None = Field(
         None,
@@ -60,42 +60,42 @@ class TableUpdate(BaseModel):
 
 
 class TableInDBBase(AuditedSchema):
-    """DB-backed schema for table responses."""
+    """Схема ответа о столике из БД."""
 
     seats: int = Field(
         ge=Limits.MIN_SEATS,
         le=Limits.MAX_SEATS,
         validation_alias='seat_number',
         serialization_alias='seat_number',
-        description='Number of seats at the table',
+        description='Количество мест за столом',
     )
     description: str | None = Field(
         default=None,
         max_length=Limits.MAX_DESCRIPTION_LENGTH,
-        description='Table description',
+        description='Описание столика',
     )
     active: bool = Field(
         default=True,
         validation_alias='is_active',
         serialization_alias='is_active',
-        description='Is active',
+        description='Активен',
     )
     cafe: CafeShortInfo | None = Field(
         default=None,
-        description='Cafe info',
+        description='Информация о кафе',
     )
 
     model_config = ConfigDict(populate_by_name=True)
 
 
 class Table(TableInDBBase):
-    """API schema for table responses."""
+    """Схема ответа о столике."""
 
     pass
 
 
 class TableWithCafe(Table):
-    """Table response with extra cafe fields (legacy)."""
+    """Схема ответа о столике с данными кафе (legacy)."""
 
     cafe_name: str | None = None
     cafe_address: str | None = None

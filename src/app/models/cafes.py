@@ -10,7 +10,7 @@ from app.models.media import Media
 from app.models.tables import Table
 
 if TYPE_CHECKING:
-    from app.models import User
+    from app.models import Action, Dish, User
 
 
 class Cafe(TimestampedModel):
@@ -60,6 +60,18 @@ class Cafe(TimestampedModel):
         'User',
         secondary='cafe_managers',
         back_populates='managed_cafes',
+        lazy='selectin',
+    )
+    dishes: Mapped[list['Dish']] = relationship(
+        'Dish',
+        secondary='dish_cafes',
+        back_populates='cafes',
+        lazy='selectin',
+    )
+    actions: Mapped[list['Action']] = relationship(
+        'Action',
+        secondary='action_cafes',
+        back_populates='cafes',
         lazy='selectin',
     )
 

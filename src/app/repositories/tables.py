@@ -14,7 +14,7 @@ class TableRepository(BaseCRUD[Table]):
         self,
         session: AsyncSession,
     ) -> None:
-        """Инициализация репозитория столиков.
+        """Инициализировать репозиторий.
 
         Args:
             session: Асинхронная сессия SQLAlchemy.
@@ -32,7 +32,7 @@ class TableRepository(BaseCRUD[Table]):
             table_id: Идентификатор столика.
 
         Returns:
-            Optional[Table]: Столик или None, если не найден.
+            Table | None: Объект столика или None.
 
         """
         stmt = (
@@ -48,14 +48,14 @@ class TableRepository(BaseCRUD[Table]):
         cafe_id: int,
         active_only: bool = True,
     ) -> list[Table]:
-        """Получить все столики для кафе.
+        """Получить список столиков для кафе.
 
         Args:
             cafe_id: Идентификатор кафе.
-            active_only: Флаг для фильтрации только активных столиков.
+            active_only: Флаг возврата только активных столиков.
 
         Returns:
-            List[Table]: Список столиков кафе.
+            list[Table]: Список столиков.
 
         """
         stmt = select(self.model).where(self.model.cafe_id == cafe_id)
@@ -77,7 +77,7 @@ class TableRepository(BaseCRUD[Table]):
             table_id: Идентификатор столика.
 
         Returns:
-            Optional[Table]: Столик или None, если не найден.
+            Table | None: Объект столика или None.
 
         """
         stmt = (
@@ -97,7 +97,7 @@ class TableRepository(BaseCRUD[Table]):
         self,
         table_create: TableCreateDB,
     ) -> Table:
-        """Создать новый столик.
+        """Создать столик.
 
         Args:
             table_create: Данные для создания столика.
@@ -108,8 +108,7 @@ class TableRepository(BaseCRUD[Table]):
         """
         table = await super().create(table_create)
         await self.session.commit()
-        await self.session.refresh(table)
-        return table
+        return await self.get_by_id(table.id)
 
     async def update(
         self,
@@ -120,10 +119,10 @@ class TableRepository(BaseCRUD[Table]):
 
         Args:
             table_id: Идентификатор столика.
-            table_update: Данные для обновления столика.
+            table_update: Данные для обновления.
 
         Returns:
-            Optional[Table]: Обновленный столик или None, если не найден.
+            Table | None: Обновленный столик или None.
 
         """
         table = await super().get(table_id)
@@ -131,8 +130,7 @@ class TableRepository(BaseCRUD[Table]):
             return None
         updated_table = await super().update(table, table_update)
         await self.session.commit()
-        await self.session.refresh(updated_table)
-        return updated_table
+        return await self.get_by_id(updated_table.id)
 
     async def delete(
         self,
@@ -144,7 +142,7 @@ class TableRepository(BaseCRUD[Table]):
             table_id: Идентификатор столика.
 
         Returns:
-            bool: True, если удаление успешно, иначе False.
+            bool: True, если удаление прошло успешно.
 
         """
         table = await super().get(table_id)
@@ -160,13 +158,13 @@ class TableRepository(BaseCRUD[Table]):
         self,
         cafe_id: int,
     ) -> int:
-        """Количество столиков в кафе.
+        """Посчитать количество активных столиков для кафе.
 
         Args:
             cafe_id: Идентификатор кафе.
 
         Returns:
-            int: Количество активных столиков в кафе.
+            int: Количество активных столиков.
 
         """
         stmt = select(self.model).where(
@@ -185,7 +183,7 @@ class TableRepository(BaseCRUD[Table]):
             table_id: Идентификатор столика.
 
         Returns:
-            bool: True, если столик существует, иначе False.
+            bool: True, если столик существует.
 
         """
         return await super().get(table_id) is not None

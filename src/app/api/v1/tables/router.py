@@ -14,20 +14,28 @@ router = APIRouter(prefix='/cafe/{cafe_id}/tables', tags=API.TABLES)
 def get_table_service(
     db: AsyncSession = Depends(get_db),
 ) -> TableService:
-    """Создать сервис для работы со столиками."""
+    """Создать сервис для работы со столиками.
+
+    Args:
+        db: Асинхронная сессия БД.
+
+    Returns:
+        TableService: Сервис работы со столиками.
+
+    """
     cafe_repository = CafeRepository(db)
     table_repository = TableRepository(db)
     return TableService(cafe_repository, table_repository)
 
 
 @router.get(
-    '/',
+    '',
     response_model=list[Table],
-    summary='Список столов в кафе',
+    summary='Список столиков в кафе',
     description=(
-        'Получение списка доступных для бронирования столов в кафе. '
-        'Для администраторов и менеджеров — все столы, '
-        'для пользователей — только активные.'
+        'Получение списка столиков для выбранного кафе. '
+        'Администратор и менеджер могут видеть все столики, '
+        'обычные пользователи — только активные.'
     ),
 )
 async def get_tables_for_cafe(
@@ -35,13 +43,23 @@ async def get_tables_for_cafe(
     show_all: bool = Query(
         False,
         description=(
-            'Показывать все столы в кафе или нет. '
-            'По умолчанию показывает все столы'
+            'Показывать все столики, включая неактивные. '
+            'По умолчанию возвращаются только активные.'
         ),
     ),
     table_service: TableService = Depends(get_table_service),
 ) -> list[Table]:
-    """Получить список столов в кафе."""
+    """Получить список столиков для кафе.
+
+    Args:
+        cafe_id: ID кафе.
+        show_all: Флаг показа всех столиков.
+        table_service: Сервис для работы со столиками.
+
+    Returns:
+        list[Table]: Список столиков.
+
+    """
     return await table_service.get_all_tables_for_cafe(
         cafe_id=cafe_id,
         active_only=not show_all,
@@ -51,7 +69,7 @@ async def get_tables_for_cafe(
 @router.get(
     '/{table_id}',
     response_model=Table,
-    summary='Информация о столе в кафе по его ID',
+    summary='Получение информации о столике в кафе по его ID',
     responses={
         404: {'description': Messages.errors[ErrorCode.TABLE_NOT_FOUND]},
         410: {'description': Messages.errors[ErrorCode.TABLE_INACTIVE]},
@@ -62,15 +80,25 @@ async def get_table(
     table_id: int,
     table_service: TableService = Depends(get_table_service),
 ) -> Table:
-    """Получить информацию о столе по ID в рамках кафе."""
+    """Получить информацию о столике по ID и ID кафе.
+
+    Args:
+        cafe_id: ID кафе.
+        table_id: ID столика.
+        table_service: Сервис для работы со столиками.
+
+    Returns:
+        Table: Данные столика.
+
+    """
     return await table_service.get_table_by_cafe_and_id(cafe_id, table_id)
 
 
 @router.post(
-    '/',
+    '',
     response_model=Table,
     status_code=status.HTTP_201_CREATED,
-    summary='Новый стол в кафе',
+    summary='Создать новый столик в кафе',
     responses={
         404: {'description': Messages.errors[ErrorCode.CAFE_NOT_FOUND]},
         400: {'description': Messages.errors[ErrorCode.CAFE_INACTIVE]},
@@ -81,7 +109,17 @@ async def create_table(
     table_create: TableCreate,
     table_service: TableService = Depends(get_table_service),
 ) -> Table:
-    """Создать новый стол в кафе."""
+    """Создать новый столик в кафе.
+
+    Args:
+        cafe_id: ID кафе.
+        table_create: Данные для создания столика.
+        table_service: Сервис для работы со столиками.
+
+    Returns:
+        Table: Созданный столик.
+
+    """
     table_create_db = TableCreateDB.model_validate({
         **table_create.model_dump(),
         'cafe_id': cafe_id,
@@ -92,7 +130,7 @@ async def create_table(
 @router.patch(
     '/{table_id}',
     response_model=Table,
-    summary='Обновление информации о столе в кафе по его ID',
+    summary='Обновление информации о столике в кафе по его ID',
     responses={
         404: {'description': Messages.errors[ErrorCode.TABLE_NOT_FOUND]},
         400: {'description': Messages.errors[ErrorCode.INVALID_SEATS_COUNT]},
@@ -104,6 +142,17 @@ async def update_table(
     table_update: TableUpdate,
     table_service: TableService = Depends(get_table_service),
 ) -> Table:
-    """Обновить информацию о столе в кафе."""
+    """Обновить информацию о столике в кафе.
+
+    Args:
+        cafe_id: ID кафе.
+        table_id: ID столика.
+        table_update: Данные для обновления.
+        table_service: Сервис для работы со столиками.
+
+    Returns:
+        Table: Обновленный столик.
+
+    """
     await table_service.get_table_by_cafe_and_id(cafe_id, table_id)
     return await table_service.update_table(table_id, table_update)

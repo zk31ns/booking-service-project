@@ -8,6 +8,7 @@ from app.core.constants import (
     BookingStatus,
     CeleryTasks,
     ErrorCode,
+    Times,
     UserRole,
 )
 from app.core.exceptions import (
@@ -603,34 +604,35 @@ class BookingService:
         if (
             booking.status != BookingStatus.CANCELLED
             and remind_at > datetime.now()
-            and user.tg_id
         ):
-            # TODO: add email notifications when tg_id is missing.
-            send_booking_reminder.apply_async(
-                kwargs={
-                    'booking_id': booking.id,
-                    'telegram_id': user.tg_id,
-                    'cafe_name': cafe.name,
-                    'cafe_address': cafe.address,
-                    'booking_date': booking.booking_date.isoformat(),
-                    'start_time': start_time.strftime('%H:%M'),
-                },
-                eta=remind_at,
-                task_id=user_task_id,
-            )
+            if user.tg_id or user.email:
+                send_booking_reminder.apply_async(
+                    kwargs={
+                        'booking_id': booking.id,
+                        'telegram_id': user.tg_id,
+                        'email': user.email,
+                        'cafe_name': cafe.name,
+                        'cafe_address': cafe.address,
+                        'booking_date': booking.booking_date.isoformat(),
+                        'start_time': start_time.strftime(Times.TIME_FORMAT),
+                    },
+                    eta=remind_at,
+                    task_id=user_task_id,
+                )
 
         for manager in cafe.managers:
-            if manager.tg_id:
+            if manager.tg_id or manager.email:
                 notify_manager.apply_async(
                     kwargs={
                         'booking_id': booking.id,
                         'telegram_id': manager.tg_id,
+                        'email': manager.email,
                         'cafe_name': cafe.name,
                         'user_name': user.username,
                         'table_seats': table_seats,
                         'table_description': table_description,
-                        'start_time': start_time.strftime('%H:%M'),
-                        'end_time': end_time.strftime('%H:%M'),
+                        'start_time': start_time.strftime(Times.TIME_FORMAT),
+                        'end_time': end_time.strftime(Times.TIME_FORMAT),
                         'cancellation': cancellation,
                     },
                     task_id=None,

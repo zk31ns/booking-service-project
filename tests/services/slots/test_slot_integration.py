@@ -2,10 +2,10 @@ from datetime import time
 from uuid import uuid4
 
 import pytest
-from app.models.cafe import Cafe
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ConflictException
+from app.models.cafes import Cafe
 from app.services.slot import SlotService
 
 

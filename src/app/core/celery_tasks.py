@@ -1,7 +1,9 @@
-"""Создание задач Celery."""
+"""Задачи Celery и уведомления для бронирований."""
 
 import asyncio
+import smtplib
 from datetime import date, datetime
+from email.message import EmailMessage
 from http import HTTPStatus
 from typing import Any
 
@@ -19,7 +21,7 @@ from app.core.logging import logger
 
 
 class TelegramAPIResponse(BaseModel):
-    """Схема ответа Telegram Bot API."""
+    """Ответ Telegram Bot API."""
 
     ok: bool
     description: str | None = None
@@ -34,39 +36,50 @@ class TelegramAPIResponse(BaseModel):
 def send_booking_reminder(
     self: Task,
     booking_id: int,
-    telegram_id: str,
+    telegram_id: str | None,
+    email: str | None,
     cafe_name: str,
     cafe_address: str,
     booking_date: str,
     start_time: str,
 ) -> None:
-    """Отправка напоминания о бронировании в Telegram.
+    """Отправить напоминание о бронировании пользователю.
 
-    Запускает асинхронный код.
-    Задача Выполняется один раз в указанное время.
+    Уведомление отправляется параллельно в Telegram и на email (если есть).
 
     Args:
-        self: экземпляр задачи
-        booking_id: ID бронирования
-        telegram_id: ID пользователя в Telegram
-        cafe_name: название кафе
-        cafe_address: адрес кафе
-        booking_date: дата бронирования
-        start_time: дата начала слота бронирования
+        self: Экземпляр задачи Celery.
+        booking_id: Идентификатор бронирования.
+        telegram_id: Telegram ID пользователя.
+        email: Email пользователя.
+        cafe_name: Название кафе.
+        cafe_address: Адрес кафе.
+        booking_date: Дата бронирования (ISO-строка).
+        start_time: Время начала (HH:MM).
 
     Returns:
         None
 
     """
-    asyncio.run(
-        _send_reminder_async(
-            booking_id,
-            telegram_id,
-            cafe_name,
-            cafe_address,
-            date.fromisoformat(booking_date),
-            start_time,
+    booking_date_obj = date.fromisoformat(booking_date)
+    if telegram_id:
+        asyncio.run(
+            _send_reminder_async(
+                booking_id,
+                telegram_id,
+                cafe_name,
+                cafe_address,
+                booking_date_obj,
+                start_time,
+            )
         )
+    _send_email_reminder(
+        booking_id=booking_id,
+        email=email,
+        cafe_name=cafe_name,
+        cafe_address=cafe_address,
+        booking_date=booking_date_obj,
+        start_time=start_time,
     )
 
 
@@ -78,27 +91,27 @@ async def _send_reminder_async(
     booking_date: date,
     start_time: str,
 ) -> None:
-    """Асинхронная отправка напоминания.
+    """Асинхронно отправить напоминание в Telegram.
 
     Args:
-        booking_id: ID бронирования
-        telegram_id: ID пользователя в Telegram
-        cafe_name: название кафе
-        cafe_address: адрес кафе
-        booking_date: дата бронирования
-        start_time: дата начала слота бронирования
+        booking_id: Идентификатор бронирования.
+        telegram_id: Telegram ID пользователя.
+        cafe_name: Название кафе.
+        cafe_address: Адрес кафе.
+        booking_date: Дата бронирования.
+        start_time: Время начала.
 
     Returns:
         None
 
     """
-    date_formatted = booking_date.strftime('%d.%m.%Y')
-    message_text = f"""🔔 <b>Напоминание о бронировании</b>
-    📅 <b>Дата:</b> {date_formatted}
-    🏠 <b>Заведение:</b> {cafe_name}
-    🗺️ <b>Адрес:</b> {cafe_address}
-    ⏰ <b>Время бронирования:</b> {start_time}
-    Ждём вас!"""
+    date_formatted = booking_date.strftime(Times.DATE_FORMAT)
+    message_text = f"""<b>Напоминание о бронировании</b>
+<b>Дата:</b> {date_formatted}
+<b>Кафе:</b> {cafe_name}
+<b>Адрес:</b> {cafe_address}
+<b>Время:</b> {start_time}
+"""
 
     await _send_telegram_message(telegram_id=telegram_id, text=message_text)
 
@@ -116,7 +129,8 @@ async def _send_reminder_async(
 def notify_manager(
     self: Task,
     booking_id: int,
-    telegram_id: str,
+    telegram_id: str | None,
+    email: str | None,
     cafe_name: str,
     user_name: str,
     table_seats: int,
@@ -125,39 +139,51 @@ def notify_manager(
     end_time: str,
     cancellation: bool,
 ) -> None:
-    """Отправка напоминания о бронировании столика менеджеру в Telegram.
+    """Уведомить менеджера о бронировании или отмене.
 
-    Запускает асинхронный код.
-    Задача Выполняется один раз немедленно.
+    Уведомление отправляется параллельно в Telegram и на email (если есть).
 
     Args:
-        self: экземпляр задачи
-        booking_id: ID бронирования
-        telegram_id: ID менеджера в Telegram
-        cafe_name: название кафе
-        user_name: имя пользователя, сделавшего бронирование
-        table_seats: число мест за столом,
-        table_description: описание стола,
-        start_time: время начала слота бронирования
-        end_time: время окончания слота бронирования
-        cancellation: признак отмены бронирования
+        self: Экземпляр задачи Celery.
+        booking_id: Идентификатор бронирования.
+        telegram_id: Telegram ID менеджера.
+        email: Email менеджера.
+        cafe_name: Название кафе.
+        user_name: Имя пользователя.
+        table_seats: Количество мест за столом.
+        table_description: Описание столика.
+        start_time: Время начала.
+        end_time: Время окончания.
+        cancellation: Признак отмены бронирования.
 
     Returns:
         None
 
     """
-    asyncio.run(
-        _notify_manager_async(
-            booking_id,
-            telegram_id,
-            cafe_name,
-            user_name,
-            table_seats,
-            table_description,
-            start_time,
-            end_time,
-            cancellation,
+    if telegram_id:
+        asyncio.run(
+            _notify_manager_async(
+                booking_id,
+                telegram_id,
+                cafe_name,
+                user_name,
+                table_seats,
+                table_description,
+                start_time,
+                end_time,
+                cancellation,
+            )
         )
+    _send_email_manager_notification(
+        booking_id=booking_id,
+        email=email,
+        cafe_name=cafe_name,
+        user_name=user_name,
+        table_seats=table_seats,
+        table_description=table_description,
+        start_time=start_time,
+        end_time=end_time,
+        cancellation=cancellation,
     )
 
 
@@ -172,34 +198,34 @@ async def _notify_manager_async(
     end_time: str,
     cancellation: bool,
 ) -> None:
-    """Асинхронная отправка уведомления менеджеру.
+    """Асинхронно отправить уведомление менеджеру в Telegram.
 
     Args:
-        booking_id: ID бронирования
-        telegram_id: ID менеджера в Telegram
-        cafe_name: название кафе
-        user_name: имя пользователя, сделавшего бронирование
-        table_seats: число мест за столом,
-        table_description: описание стола,
-        start_time: время начала слота бронирования
-        end_time: время окончания слота бронирования
-        cancellation: признак отмены бронирования
+        booking_id: Идентификатор бронирования.
+        telegram_id: Telegram ID менеджера.
+        cafe_name: Название кафе.
+        user_name: Имя пользователя.
+        table_seats: Количество мест за столом.
+        table_description: Описание столика.
+        start_time: Время начала.
+        end_time: Время окончания.
+        cancellation: Признак отмены бронирования.
 
     Returns:
         None
 
     """
-    message_type = '🔔 <b>Напоминание о новом бронировании</b>'
+    message_type = '<b>Новое бронирование</b>'
     if cancellation:
-        message_type = '❌ <b>Напоминание об отмене бронирования</b>'
+        message_type = '<b>Отмена бронирования</b>'
     message_text = f"""{message_type}
-    🏠 <b>Заведение:</b> {cafe_name}
-    🧑 <b>Посетитель:</b> {user_name}
-    🪑 <b>Число мест:</b> {table_seats}
-    📃 <b>Описание столика:</b> {table_description}
-    ⏰ <b>Начало слота бронирования:</b> {start_time}
-    ⏰ <b>Окончание слота бронирования:</b> {end_time}
-    """
+<b>Кафе:</b> {cafe_name}
+<b>Пользователь:</b> {user_name}
+<b>Мест:</b> {table_seats}
+<b>Описание столика:</b> {table_description}
+<b>Начало:</b> {start_time}
+<b>Окончание:</b> {end_time}
+"""
 
     await _send_telegram_message(telegram_id=telegram_id, text=message_text)
     logger.info(
@@ -214,16 +240,13 @@ async def _notify_manager_async(
     base=BaseTask,
 )
 def cleanup_expired_bookings(self: Task) -> dict[str, Any]:
-    """Очистка истёкших бронирований.
+    """Очистить просроченные бронирования.
 
-    Периодическая задача.
-    Находит бронирования, у которых:
-    - Дата бронирования прошла
-    - Статус всё ещё 'active' или 'pending'
-    Меняет их статус на 'expired'.
+    Меняет статус активных бронирований со статусом PENDING/CONFIRMED
+    на COMPLETED и деактивирует их.
 
     Returns:
-        dict: Результат выполнения с количеством обработанных записей
+        dict: Количество обработанных записей и время выполнения.
 
     """
     logger.info(f'SYSTEM: {EventType.TASK_STARTED} for bookings cleanup ')
@@ -237,15 +260,13 @@ def cleanup_expired_bookings(self: Task) -> dict[str, Any]:
 
 
 async def _cleanup_expired_bookings_async() -> int:
-    """Асинхронная очистка истёкших бронирований.
+    """Очистить просроченные бронирования в отдельной сессии БД.
 
-    Создает собственное подключение к БД с NullPool для безопасной работы
-    в многопроцессной среде Celery. NullPool не использует пул соединений,
-    а создает новое соединение для каждой операции, что предотвращает
-    конфликты между процессами worker'ов.
+    Используется NullPool, чтобы избежать проблем с соединениями
+    внутри Celery worker.
 
     Returns:
-        Количество обработанных записей
+        int: Количество просроченных бронирований.
 
     """
     from sqlalchemy.ext.asyncio import (
@@ -298,11 +319,11 @@ async def _send_telegram_message(
     telegram_id: str,
     text: str,
 ) -> None:
-    """Отправка сообщения в Telegram пользователя.
+    """Отправить сообщение в Telegram.
 
     Args:
-        telegram_id: ID пользователя в Telegram
-        text: текст сообщения
+        telegram_id: Telegram ID пользователя.
+        text: Текст сообщения.
 
     Returns:
         None
@@ -338,3 +359,134 @@ async def _send_telegram_message(
                 raise TelegramApiException(
                     detail=ErrorCode.BAD_GATEWAY,
                 )
+
+
+def _send_email_message(
+    to_email: str | None,
+    subject: str,
+    body: str,
+) -> None:
+    """Отправить email уведомление, если настроен SMTP.
+
+    Args:
+        to_email: Email получателя.
+        subject: Тема письма.
+        body: Текст письма.
+
+    Returns:
+        None
+
+    """
+    if not to_email:
+        return
+    if not settings.smtp_server:
+        logger.info('SYSTEM: Email skipped: SMTP is not configured.')
+        return
+
+    message = EmailMessage()
+    message['Subject'] = subject
+    message['From'] = settings.smtp_user or 'no-reply@booking.local'
+    message['To'] = to_email
+    message.set_content(body)
+
+    try:
+        if settings.smtp_port == 465:
+            with smtplib.SMTP_SSL(
+                settings.smtp_server, settings.smtp_port
+            ) as smtp:
+                if settings.smtp_user and settings.smtp_password:
+                    smtp.login(settings.smtp_user, settings.smtp_password)
+                smtp.send_message(message)
+        else:
+            with smtplib.SMTP(
+                settings.smtp_server, settings.smtp_port
+            ) as smtp:
+                smtp.ehlo()
+                if settings.smtp_user and settings.smtp_password:
+                    smtp.starttls()
+                    smtp.login(settings.smtp_user, settings.smtp_password)
+                smtp.send_message(message)
+    except Exception:
+        logger.exception(
+            'SYSTEM: Email send failed for recipient: %s', to_email
+        )
+
+
+def _send_email_reminder(
+    booking_id: int,
+    email: str | None,
+    cafe_name: str,
+    cafe_address: str,
+    booking_date: date,
+    start_time: str,
+) -> None:
+    """Отправить email-напоминание пользователю о бронировании.
+
+    Args:
+        booking_id: Идентификатор бронирования.
+        email: Email пользователя.
+        cafe_name: Название кафе.
+        cafe_address: Адрес кафе.
+        booking_date: Дата бронирования.
+        start_time: Время начала.
+
+    Returns:
+        None
+
+    """
+    date_formatted = booking_date.strftime(Times.DATE_FORMAT)
+    subject = f'Напоминание о бронировании #{booking_id}'
+    body = (
+        'Напоминание о бронировании\n'
+        f'Дата: {date_formatted}\n'
+        f'Кафе: {cafe_name}\n'
+        f'Адрес: {cafe_address}\n'
+        f'Время: {start_time}\n'
+    )
+    _send_email_message(email, subject, body)
+
+
+def _send_email_manager_notification(
+    booking_id: int,
+    email: str | None,
+    cafe_name: str,
+    user_name: str,
+    table_seats: int,
+    table_description: str,
+    start_time: str,
+    end_time: str,
+    cancellation: bool,
+) -> None:
+    """Отправить email менеджеру о бронировании или отмене.
+
+    Args:
+        booking_id: Идентификатор бронирования.
+        email: Email менеджера.
+        cafe_name: Название кафе.
+        user_name: Имя пользователя.
+        table_seats: Количество мест за столом.
+        table_description: Описание столика.
+        start_time: Время начала.
+        end_time: Время окончания.
+        cancellation: Признак отмены бронирования.
+
+    Returns:
+        None
+
+    """
+    if cancellation:
+        subject = f'Отмена бронирования #{booking_id}'
+        header = 'Отмена бронирования'
+    else:
+        subject = f'Новое бронирование #{booking_id}'
+        header = 'Новое бронирование'
+    body = (
+        f'{header}\n'
+        f'Кафе: {cafe_name}\n'
+        f'Пользователь: {user_name}\n'
+        f'Мест: {table_seats}\n'
+        f'Описание столика: {table_description}\n'
+        f'Начало: {start_time}\n'
+        f'Окончание: {end_time}\n'
+    )
+    _send_email_message(email, subject, body)

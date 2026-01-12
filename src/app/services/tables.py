@@ -15,7 +15,7 @@ class TableService:
         cafe_repository: CafeRepository,
         table_repository: TableRepository,
     ) -> None:
-        """Инициализация сервиса столиков.
+        """Инициализировать сервис.
 
         Args:
             cafe_repository: Репозиторий для работы с кафе.
@@ -30,17 +30,17 @@ class TableService:
         cafe_id: int,
         active_only: bool = True,
     ) -> list[Table]:
-        """Получить список столиков для указанного кафе.
+        """Получить список столиков для кафе.
 
         Args:
             cafe_id: Идентификатор кафе.
-            active_only: Флаг фильтрации только активных столиков.
+            active_only: Возвращать только активные столики.
 
         Returns:
-            List[Table]: Список объектов столиков.
+            list[Table]: Список столиков.
 
         Raises:
-            HTTPException: Если кафе не найдено или удалено (статус 404).
+            HTTPException: Если кафе не найдено или неактивно.
 
         """
         cafe = await self.cafe_repository.get_by_id(cafe_id)
@@ -60,18 +60,16 @@ class TableService:
         )
 
     async def get_table_by_id(self, table_id: int) -> Table:
-        """Получить столик по идентификатору.
+        """Получить столик по ID.
 
         Args:
             table_id: Идентификатор столика.
 
         Returns:
-            Table: Объект столика.
+            Table: Столик.
 
         Raises:
-            HTTPException: Если столик не найден (статус 404).
-            HTTPException: Если столик удален (статус 410).
-            HTTPException: Если кафе столика удалено (статус 410).
+            HTTPException: Если столик не найден или неактивен.
 
         """
         table = await self.table_repository.get_by_id(table_id)
@@ -99,18 +97,17 @@ class TableService:
         cafe_id: int,
         table_id: int,
     ) -> Table:
-        """Получить столик по идентификаторам кафе и столика.
+        """Получить столик по ID кафе и ID столика.
 
         Args:
             cafe_id: Идентификатор кафе.
             table_id: Идентификатор столика.
 
         Returns:
-            Table: Объект столика.
+            Table: Столик.
 
         Raises:
-            HTTPException: Если столик не найден в указанном кафе (статус 404).
-            HTTPException: Если столик удален (статус 410).
+            HTTPException: Если столик не найден или неактивен.
 
         """
         table = await self.table_repository.get_by_cafe_and_id(
@@ -131,18 +128,17 @@ class TableService:
         return table
 
     async def create_table(self, table_create: TableCreateDB) -> Table:
-        """Создать новый столик.
+        """Создать столик.
 
         Args:
             table_create: Данные для создания столика.
 
         Returns:
-            Table: Созданный объект столика.
+            Table: Созданный столик.
 
         Raises:
-            HTTPException: Если кафе не найдено (статус 404).
-            HTTPException: Если кафе удалено (статус 400).
-            HTTPException: Если количество мест меньше 1 (статус 400).
+            HTTPException: Если кафе не найдено, неактивно
+            или некорректны места.
 
         """
         cafe = await self.cafe_repository.get_by_id(table_create.cafe_id)
@@ -168,21 +164,18 @@ class TableService:
         table_id: int,
         table_update: TableUpdate,
     ) -> Table:
-        """Обновить данные столика.
+        """Обновить столик.
 
         Args:
             table_id: Идентификатор столика.
-            table_update: Данные для обновления столика.
+            table_update: Данные для обновления.
 
         Returns:
-            Table: Обновленный объект столика.
+            Table: Обновленный столик.
 
         Raises:
-            HTTPException: Если столик не найден (статус 404).
-            HTTPException: Если столик удален (статус 410).
-            HTTPException: Если кафе столика удалено (статус 410).
-            HTTPException: Если количество мест меньше 1 (статус 400).
-            HTTPException: Если не удалось обновить столик (статус 500).
+            HTTPException: Если столик не найден/неактивен
+            или валидация не прошла.
 
         """
         await self.get_table_by_id(table_id)
@@ -207,19 +200,16 @@ class TableService:
         return updated_table
 
     async def delete_table(self, table_id: int) -> bool:
-        """Удалить столик (логическое удаление).
+        """Деактивировать столик.
 
         Args:
             table_id: Идентификатор столика.
 
         Returns:
-            bool: True, если удаление выполнено успешно.
+            bool: True, если столик деактивирован.
 
         Raises:
-            HTTPException: Если столик не найден (статус 404).
-            HTTPException: Если столик удален (статус 410).
-            HTTPException: Если кафе столика удалено (статус 410).
-            HTTPException: Если не удалось удалить столик (статус 500).
+            HTTPException: Если столик не найден или неактивен.
 
         """
         await self.get_table_by_id(table_id)
@@ -229,33 +219,4 @@ class TableService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=Messages.errors[ErrorCode.INTERNAL_SERVER_ERROR],
             )
-
         return True
-
-    async def get_table_stats(self, table_id: int) -> dict:
-        """Получить статистику по столику.
-
-        Args:
-            table_id: Идентификатор столика.
-
-        Returns:
-            dict: Статистика по столику.
-
-        Raises:
-            HTTPException: Если столик не найден (статус 404).
-            HTTPException: Если столик удален (статус 410).
-            HTTPException: Если кафе столика удалено (статус 410).
-
-        """
-        table = await self.get_table_by_id(table_id)
-        cafe = await self.cafe_repository.get_by_id(table.cafe_id)
-
-        return {
-            'table_id': table_id,
-            'cafe_id': table.cafe_id,
-            'cafe_name': cafe.name if cafe else None,
-            'seats': table.seats,
-            'is_active': table.active,
-            'created_at': table.created_at,
-            'updated_at': table.updated_at,
-        }

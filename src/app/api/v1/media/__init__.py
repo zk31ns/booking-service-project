@@ -1,4 +1,4 @@
-"""Media router module."""
+"""Модуль роутера для эндпоинтов медиа."""
 
 from app.api.v1.media.router import router
 

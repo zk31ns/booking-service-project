@@ -1,4 +1,4 @@
-"""Actions router module."""
+"""Модуль роутера для эндпоинтов акций."""
 
 from app.api.v1.actions.router import router
 

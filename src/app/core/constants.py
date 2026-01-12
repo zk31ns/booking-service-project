@@ -143,7 +143,7 @@ class Times:
     CLEANUP_EXPIRED_BOOKINGS_START_MINUTES = 0  # время запуска задачи (минуты)
 
     # Celery задачи
-    CELERY_TASK_RETRY_DELAY = 60  # 1 vbyenf
+    CELERY_TASK_RETRY_DELAY = 60  # 1 минута
     CELERY_TASK_TIMEOUT = 300  # 5 минут
     CELERY_BEAT_EXPIRED = 3600  # 1 час
 

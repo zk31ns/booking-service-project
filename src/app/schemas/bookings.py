@@ -4,15 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.constants import BookingStatus, Limits
 from app.schemas.users import UserShortInfo
-
-
-class CafeShort(BaseModel):
-    """Краткая информация о кафе.
-
-    Используется в ответах, чтобы не передавать все поля кафе.
-    """
-
-    id: int = Field(description='ID кафе')
+from app.schemas.cafes import CafeShortInfo
 
 
 class TableSlotSchema(BaseModel):
@@ -109,6 +101,11 @@ class BookingUpdate(BookingBase):
         json_schema_extra={
             'examples': [
                 {
+                    'guest_number': 2,
+                    'cafe_id': 1,
+                    'table_slots': [
+                        {'table_id': 3, 'slot_id': 5},
+                    ],
                     'booking_date': '2026-01-20',
                     'note': 'Перенести на вечер',
                     'status': 'confirmed',
@@ -128,7 +125,7 @@ class BookingDB(BookingBase):
 
     id: int = Field(description='ID бронирования')
     user: UserShortInfo = Field(description='Пользователь')
-    cafe: CafeShort = Field(description='Кафе')
+    cafe: CafeShortInfo = Field(description='Кафе')
     table_slots: list[TableSlotSchema] = Field(
         description='Список связок столов и временных слотов'
     )

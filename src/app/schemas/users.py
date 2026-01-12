@@ -10,7 +10,7 @@ from pydantic import (
 )
 
 from app.core.constants import Limits
-from app.models.users import User
+from app.models import User
 from app.utils.validators import validate_phone_format
 
 
@@ -197,6 +197,10 @@ class UserInfo(UserBase):
         ...,
         description='Дата и время обновления записи',
     )
+    managed_cafes: list[int] = Field(
+        None,
+        description='Список ID кафе, которыми управляет пользователь'
+    )
 
     @classmethod
     def from_orm(cls, obj: User) -> 'UserInfo':
@@ -209,7 +213,17 @@ class UserInfo(UserBase):
             UserInfo: Экземпляр UserInfo.
 
         """
-        return cls.model_validate(obj, from_attributes=True)
+
+        instance = {}
+
+        for key in cls.model_fields.keys():
+            if key != 'managed_cafes' and hasattr(obj, key):
+                instance[key] = getattr(obj, key)
+
+        if hasattr(obj, 'managed_cafes') and obj.managed_cafes:
+            instance['managed_cafes'] = [cafe.id for cafe in obj.managed_cafes]
+
+        return cls.model_validate(instance, from_attributes=True)
 
     class Config:
         """Конфигурация Pydantic схемы."""

@@ -17,6 +17,15 @@ class SlotCreate(BaseModel):
     start_time: time = Field(..., description='Время начала слота')
     end_time: time = Field(..., description='Время окончания слота')
 
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "end_time": "10:00",
+                "start_time": "09:05"
+            }
+        }
+    }
+
 
 class SlotUpdate(BaseModel):
     """Входные данные для обновления слота.
@@ -31,6 +40,16 @@ class SlotUpdate(BaseModel):
     start_time: time | None = Field(None, description='Время начала слота')
     end_time: time | None = Field(None, description='Время окончания слота')
     active: bool | None = Field(None, description='Активен ли слот')
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "active": True,
+                "end_time": "10:00",
+                "start_time": "09:05"
+            }
+        }
+    }
 
 
 class SlotInfo(AuditedSchema):

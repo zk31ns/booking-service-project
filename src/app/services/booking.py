@@ -196,6 +196,10 @@ class BookingService:
         """
         booking = await self.__get_booking_or_404(booking_id)
 
+        await self._check_booking_permissions(
+            current_user=current_user, booking=booking
+        )
+
         user_role = await self._get_user_role(current_user)
 
         if not booking.active and user_role != UserRole.ADMIN:
@@ -220,10 +224,6 @@ class BookingService:
                 update_data=update_data,
                 new_status=update_booking.status,
             )
-
-        await self._check_booking_permissions(
-            current_user=current_user, booking=booking
-        )
 
         booking_date = booking.booking_date
         cafe_id = booking.cafe_id

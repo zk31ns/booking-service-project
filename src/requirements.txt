@@ -19,7 +19,7 @@ psycopg2-binary==2.9.9   # НУЖЕН только для Alembic
 # ---------- Auth ----------
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
-bcrypt==4.2.1            # фиксируем, чтобы избежать конфликтов
+bcrypt==4.0.0            # фиксируем, чтобы избежать конфликтов
 
 # ---------- Celery / Redis ----------
 celery==5.3.4

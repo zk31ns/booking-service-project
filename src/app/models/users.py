@@ -89,6 +89,7 @@ class User(TimestampedModel):
         'Cafe',
         secondary='cafe_managers',
         back_populates='managers',
+        lazy='selectin',
     )
 
     def __repr__(self) -> str:

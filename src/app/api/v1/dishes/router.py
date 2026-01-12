@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
@@ -71,16 +71,8 @@ async def get_dish(
     Returns:
         DishInfo: Блюдо.
 
-    Raises:
-        HTTPException: Если блюдо не найдено.
-
     """
-    dish = await service.get_dish(dish_id)
-    if not dish:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='Dish not found'
-        )
-    return dish
+    return await service.get_dish(dish_id)
 
 
 @router.post('', response_model=DishInfo, status_code=status.HTTP_201_CREATED)
@@ -121,13 +113,5 @@ async def update_dish(
     Returns:
         DishInfo: Обновленное блюдо.
 
-    Raises:
-        HTTPException: Если блюдо не найдено.
-
     """
-    dish = await service.update_dish(dish_id, dish_data)
-    if not dish:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='Dish not found'
-        )
-    return dish
+    return await service.update_dish(dish_id, dish_data)

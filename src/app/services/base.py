@@ -6,10 +6,15 @@
 
 from typing import Generic, TypeVar
 
-from fastapi import HTTPException, status
+from fastapi import status
 
 from app.core.base import TimestampedModel
 from app.core.constants import ErrorCode, Messages
+from app.core.exceptions import (
+    AppException,
+    ConflictException,
+    NotFoundException,
+)
 
 ModelType = TypeVar('ModelType', bound=TimestampedModel)
 
@@ -45,7 +50,7 @@ class EntityValidationMixin(Generic[ModelType]):
             Проверенная сущность.
 
         Raises:
-            HTTPException: Если сущность не найдена или None.
+            AppException: Если сущность не найдена или None.
 
         Examples:
             >>> cafe = await self.cafe_repository.get(cafe_id)
@@ -55,12 +60,14 @@ class EntityValidationMixin(Generic[ModelType]):
 
         """
         if not entity:
-            raise HTTPException(
+            detail = Messages.errors.get(
+                error_code,
+                f'{entity_name} not found',
+            )
+            raise AppException(
+                error_code=error_code,
                 status_code=status_code,
-                detail=Messages.errors.get(
-                    error_code,
-                    f'{entity_name} not found',
-                ),
+                detail=detail,
             )
         return entity
 
@@ -83,7 +90,7 @@ class EntityValidationMixin(Generic[ModelType]):
             Проверенная активная сущность.
 
         Raises:
-            HTTPException: Если сущность неактивна.
+            AppException: Если сущность неактивна.
 
         Examples:
             >>> cafe = await self.cafe_repository.get(cafe_id)
@@ -96,12 +103,14 @@ class EntityValidationMixin(Generic[ModelType]):
 
         """
         if not entity.active:
-            raise HTTPException(
+            detail = Messages.errors.get(
+                error_code,
+                f'{entity_name} is inactive',
+            )
+            raise AppException(
+                error_code=error_code,
                 status_code=status_code,
-                detail=Messages.errors.get(
-                    error_code,
-                    f'{entity_name} is inactive',
-                ),
+                detail=detail,
             )
         return entity
 
@@ -126,7 +135,7 @@ class EntityValidationMixin(Generic[ModelType]):
             Проверенная активная сущность.
 
         Raises:
-            HTTPException: Если сущность не найдена или неактивна.
+            AppException: Если сущность не найдена или неактивна.
 
         Examples:
             >>> cafe = await self.cafe_repository.get(cafe_id)
@@ -164,11 +173,11 @@ class EntityValidationMixin(Generic[ModelType]):
             detail: Дополнительное описание ошибки.
 
         Raises:
-            HTTPException: С статусом 409 Conflict.
+            ConflictException: С статусом 409 Conflict.
 
         """
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
+        raise ConflictException(
+            error_code=error_code,
             detail=detail or Messages.errors.get(error_code, 'Conflict'),
         )
 
@@ -184,15 +193,16 @@ class EntityValidationMixin(Generic[ModelType]):
             entity_name: Название сущности для сообщения.
 
         Raises:
-            HTTPException: С статусом 404 Not Found.
+            NotFoundException: С статусом 404 Not Found.
 
         """
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=Messages.errors.get(
-                error_code,
-                f'{entity_name} not found',
-            ),
+        detail = Messages.errors.get(
+            error_code,
+            f'{entity_name} not found',
+        )
+        raise NotFoundException(
+            error_code=error_code,
+            detail=detail,
         )
 
     async def _raise_inactive(
@@ -207,15 +217,17 @@ class EntityValidationMixin(Generic[ModelType]):
             entity_name: Название сущности для сообщения.
 
         Raises:
-            HTTPException: С статусом 410 Gone.
+            AppException: С статусом 410 Gone.
 
         """
-        raise HTTPException(
+        detail = Messages.errors.get(
+            error_code,
+            f'{entity_name} is inactive',
+        )
+        raise AppException(
+            error_code=error_code,
             status_code=status.HTTP_410_GONE,
-            detail=Messages.errors.get(
-                error_code,
-                f'{entity_name} is inactive',
-            ),
+            detail=detail,
         )
 
 

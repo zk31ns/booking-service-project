@@ -1,4 +1,3 @@
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,6 +7,8 @@ from app.api.v1.actions.schemas import (
     ActionInfo,
     ActionUpdate,
 )
+from app.core.constants import ErrorCode
+from app.core.exceptions import NotFoundException
 from app.models import Cafe
 
 
@@ -41,19 +42,22 @@ class ActionService:
         )
         return [ActionInfo.model_validate(action) for action in actions]
 
-    async def get_action(self, action_id: int) -> ActionInfo | None:
+    async def get_action(self, action_id: int) -> ActionInfo:
         """Получить акцию по ID.
 
         Args:
             action_id: Идентификатор акции.
 
         Returns:
-            ActionInfo | None: Акция или None.
+            ActionInfo: Акция.
 
         """
         action = await self.repository.get_by_id(action_id)
         if not action:
-            return None
+            raise NotFoundException(
+                ErrorCode.ACTION_NOT_FOUND,
+                extra={'action_id': action_id},
+            )
         return ActionInfo.model_validate(action)
 
     async def create_action(self, action_data: ActionCreate) -> ActionInfo:
@@ -72,7 +76,7 @@ class ActionService:
 
     async def update_action(
         self, action_id: int, action_data: ActionUpdate
-    ) -> ActionInfo | None:
+    ) -> ActionInfo:
         """Обновить акцию.
 
         Args:
@@ -80,7 +84,7 @@ class ActionService:
             action_data: Данные для обновления.
 
         Returns:
-            ActionInfo | None: Обновленная акция или None.
+            ActionInfo: Обновленная акция.
 
         """
         cafes = None
@@ -88,7 +92,10 @@ class ActionService:
             cafes = await self._get_cafes(action_data.cafes_id)
         action = await self.repository.update(action_id, action_data, cafes)
         if not action:
-            return None
+            raise NotFoundException(
+                ErrorCode.ACTION_NOT_FOUND,
+                extra={'action_id': action_id},
+            )
         return ActionInfo.model_validate(action)
 
     async def delete_action(self, action_id: int) -> bool:
@@ -113,7 +120,7 @@ class ActionService:
             list[Cafe]: Список кафе.
 
         Raises:
-            HTTPException: Если хотя бы одно кафе не найдено.
+            NotFoundException: Если хотя бы одно кафе не найдено.
 
         """
         if not cafes_id:
@@ -121,9 +128,10 @@ class ActionService:
         stmt = select(Cafe).where(Cafe.id.in_(cafes_id))
         result = await self.repository.session.execute(stmt)
         cafes = list(result.scalars().all())
-        if len(cafes) != len(set(cafes_id)):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Cafe not found',
+        missing_ids = sorted(set(cafes_id) - {cafe.id for cafe in cafes})
+        if missing_ids:
+            raise NotFoundException(
+                ErrorCode.CAFE_NOT_FOUND,
+                extra={'cafe_ids': missing_ids},
             )
         return cafes

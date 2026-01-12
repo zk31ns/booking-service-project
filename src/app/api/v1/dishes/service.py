@@ -1,9 +1,10 @@
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.dishes.repository import DishRepository
 from app.api.v1.dishes.schemas import DishCreate, DishInfo, DishUpdate
+from app.core.constants import ErrorCode
+from app.core.exceptions import NotFoundException
 from app.models import Cafe
 
 
@@ -37,19 +38,22 @@ class DishService:
         )
         return [DishInfo.model_validate(dish) for dish in dishes]
 
-    async def get_dish(self, dish_id: int) -> DishInfo | None:
+    async def get_dish(self, dish_id: int) -> DishInfo:
         """Получить блюдо по ID.
 
         Args:
             dish_id: Идентификатор блюда.
 
         Returns:
-            DishInfo | None: Блюдо или None.
+            DishInfo: Блюдо.
 
         """
         dish = await self.repository.get_by_id(dish_id)
         if not dish:
-            return None
+            raise NotFoundException(
+                ErrorCode.DISH_NOT_FOUND,
+                extra={'dish_id': dish_id},
+            )
         return DishInfo.model_validate(dish)
 
     async def create_dish(self, dish_data: DishCreate) -> DishInfo:
@@ -68,7 +72,7 @@ class DishService:
 
     async def update_dish(
         self, dish_id: int, dish_data: DishUpdate
-    ) -> DishInfo | None:
+    ) -> DishInfo:
         """Обновить блюдо.
 
         Args:
@@ -76,7 +80,7 @@ class DishService:
             dish_data: Данные для обновления.
 
         Returns:
-            DishInfo | None: Обновленное блюдо или None.
+            DishInfo: Обновленное блюдо.
 
         """
         cafes = None
@@ -84,7 +88,10 @@ class DishService:
             cafes = await self._get_cafes(dish_data.cafes_id)
         dish = await self.repository.update(dish_id, dish_data, cafes)
         if not dish:
-            return None
+            raise NotFoundException(
+                ErrorCode.DISH_NOT_FOUND,
+                extra={'dish_id': dish_id},
+            )
         return DishInfo.model_validate(dish)
 
     async def delete_dish(self, dish_id: int) -> bool:
@@ -109,7 +116,7 @@ class DishService:
             list[Cafe]: Список кафе.
 
         Raises:
-            HTTPException: Если хотя бы одно кафе не найдено.
+            NotFoundException: Если хотя бы одно кафе не найдено.
 
         """
         if not cafes_id:
@@ -117,9 +124,10 @@ class DishService:
         stmt = select(Cafe).where(Cafe.id.in_(cafes_id))
         result = await self.repository.session.execute(stmt)
         cafes = list(result.scalars().all())
-        if len(cafes) != len(set(cafes_id)):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Cafe not found',
+        missing_ids = sorted(set(cafes_id) - {cafe.id for cafe in cafes})
+        if missing_ids:
+            raise NotFoundException(
+                ErrorCode.CAFE_NOT_FOUND,
+                extra={'cafe_ids': missing_ids},
             )
         return cafes

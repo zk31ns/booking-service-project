@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
@@ -75,17 +75,8 @@ async def get_action(
     Returns:
         ActionInfo: Акция.
 
-    Raises:
-        HTTPException: Если акция не найдена.
-
     """
-    action = await service.get_action(action_id)
-    if not action:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail='Action not found',
-        )
-    return action
+    return await service.get_action(action_id)
 
 
 @router.post(
@@ -128,14 +119,5 @@ async def update_action(
     Returns:
         ActionInfo: Обновленная акция.
 
-    Raises:
-        HTTPException: Если акция не найдена.
-
     """
-    action = await service.update_action(action_id, action_data)
-    if not action:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail='Action not found',
-        )
-    return action
+    return await service.update_action(action_id, action_data)

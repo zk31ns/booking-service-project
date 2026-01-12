@@ -1,11 +1,18 @@
 from uuid import UUID
 
-from fastapi import HTTPException, status
+from fastapi import status
 from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.constants import ErrorCode, Messages
+from app.core.constants import ErrorCode
+from app.core.exceptions import (
+    AppException,
+    ConflictException,
+    InternalServerException,
+    NotFoundException,
+)
 from app.models.cafes import Cafe
+from app.models.media import Media
 from app.models.users import User, cafe_managers
 from app.repositories.cafes import CafeRepository
 from app.repositories.tables import TableRepository
@@ -61,8 +68,8 @@ class CafeService(EntityValidationMixin[Cafe]):
             Cafe: Объект кафе.
 
         Raises:
-            HTTPException: Если кафе не найдено (статус 404).
-            HTTPException: Если кафе удалено (статус 410).
+            AppException: Если кафе не найдено (статус 404).
+            AppException: Если кафе удалено (статус 410).
 
         """
         cafe = await self.cafe_repository.get_by_id(cafe_id)
@@ -83,9 +90,9 @@ class CafeService(EntityValidationMixin[Cafe]):
             Cafe: Созданный объект кафе.
 
         Raises:
-            HTTPException: Если кафе с таким названием уже существует
+            AppException: Если кафе с таким названием уже существует
                 (статус 409).
-            HTTPException: Если менеджеры не указаны или не найдены
+            AppException: Если менеджеры не указаны или не найдены
                 (статус 400/404).
 
         """
@@ -95,21 +102,13 @@ class CafeService(EntityValidationMixin[Cafe]):
         if existing_cafe:
             await self._raise_conflict(ErrorCode.CAFE_ALREADY_EXISTS)
 
-        if not cafe_create.managers_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=Messages.errors[ErrorCode.VALIDATION_ERROR],
-            )
+        if cafe_create.photo_id is not None:
+            await self._validate_photo_exists(cafe_create.photo_id)
 
-        managers_result = await self.session.execute(
-            select(User).where(User.id.in_(cafe_create.managers_id))
+        managers = await self._get_managers_by_ids(
+            cafe_create.managers_id,
+            allow_empty=False,
         )
-        managers = managers_result.scalars().all()
-        if len(managers) != len(cafe_create.managers_id):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=Messages.errors[ErrorCode.USER_NOT_FOUND],
-            )
 
         cafe_data = cafe_create.model_dump(exclude={'managers_id'})
         cafe = await self.cafe_repository.create(cafe_data)
@@ -131,12 +130,12 @@ class CafeService(EntityValidationMixin[Cafe]):
             Cafe: Обновленный объект кафе.
 
         Raises:
-            HTTPException: Если кафе не найдено (статус 404).
-            HTTPException: Если кафе удалено (статус 410).
-            HTTPException: Если кафе с таким названием уже существует
+            AppException: Если кафе не найдено (статус 404).
+            AppException: Если кафе удалено (статус 410).
+            AppException: Если кафе с таким названием уже существует
                 (статус 400).
-            HTTPException: Если не удалось обновить кафе (статус 500).
-            HTTPException: Если хотя бы один менеджер не найден (статус 404).
+            AppException: Если не удалось обновить кафе (статус 500).
+            AppException: Если хотя бы один менеджер не найден (статус 404).
 
         """
         cafe = await self.get_cafe_by_id(cafe_id)
@@ -145,29 +144,17 @@ class CafeService(EntityValidationMixin[Cafe]):
                 cafe_update.name,
             )
             if existing_cafe and existing_cafe.id != cafe_id:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=Messages.errors[ErrorCode.CAFE_ALREADY_EXISTS],
-                )
+                await self._raise_conflict(ErrorCode.CAFE_ALREADY_EXISTS)
+
+        if cafe_update.photo_id is not None:
+            await self._validate_photo_exists(cafe_update.photo_id)
 
         if cafe_update.managers_id is not None:
             if cafe_update.managers_id:
-                managers_result = await self.session.execute(
-                    select(User).where(User.id.in_(cafe_update.managers_id))
+                cafe.managers = await self._get_managers_by_ids(
+                    cafe_update.managers_id,
+                    allow_empty=True,
                 )
-                managers = managers_result.scalars().all()
-                if len(managers) != len(cafe_update.managers_id):
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail=Messages.errors[ErrorCode.USER_NOT_FOUND],
-                    )
-            if cafe_update.managers_id:
-                managers_result = await self.session.execute(
-                    select(User).where(User.id.in_(cafe_update.managers_id))
-                )
-                cafe.managers = managers_result.scalars().all()
-            else:
-                cafe.managers = []
 
         update_data = cafe_update.model_dump(
             exclude={'managers_id'},
@@ -190,18 +177,15 @@ class CafeService(EntityValidationMixin[Cafe]):
             bool: True, если удаление выполнено успешно.
 
         Raises:
-            HTTPException: Если кафе не найдено (статус 404).
-            HTTPException: Если кафе удалено (статус 410).
-            HTTPException: Если не удалось удалить кафе (статус 500).
+            AppException: Если кафе не найдено (статус 404).
+            AppException: Если кафе удалено (статус 410).
+            AppException: Если не удалось удалить кафе (статус 500).
 
         """
         await self.get_cafe_by_id(cafe_id)
         result = await self.cafe_repository.delete(cafe_id)
         if not result:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=Messages.errors[ErrorCode.CAFE_DELETE_FAILED],
-            )
+            raise InternalServerException(ErrorCode.CAFE_DELETE_FAILED)
         return True
 
     async def set_cafe_photo(self, cafe_id: int, photo_id: UUID) -> bool:
@@ -215,19 +199,52 @@ class CafeService(EntityValidationMixin[Cafe]):
             bool: True, если операция выполнена успешно.
 
         Raises:
-            HTTPException: Если кафе не найдено (статус 404).
-            HTTPException: Если кафе удалено (статус 410).
-            HTTPException: Если не удалось установить фото (статус 500).
+            AppException: Если кафе не найдено (статус 404).
+            AppException: Если кафе удалено (статус 410).
+            AppException: Если не удалось установить фото (статус 500).
 
         """
         await self.get_cafe_by_id(cafe_id)
+        await self._validate_photo_exists(photo_id)
         result = await self.cafe_repository.set_photo(cafe_id, photo_id)
         if not result:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=Messages.errors[ErrorCode.CAFE_PHOTO_UPDATE_FAILED],
-            )
+            raise InternalServerException(ErrorCode.CAFE_PHOTO_UPDATE_FAILED)
         return True
+
+    async def _validate_photo_exists(self, photo_id: UUID) -> None:
+        """Проверить, что фото существует в таблице media."""
+        result = await self.session.execute(
+            select(Media).where(Media.id == photo_id, Media.active)
+        )
+        media = result.scalar_one_or_none()
+        if not media:
+            raise NotFoundException(ErrorCode.MEDIA_NOT_FOUND)
+
+    async def _get_managers_by_ids(
+        self,
+        manager_ids: list[int],
+        allow_empty: bool,
+    ) -> list[User]:
+        """Получить список менеджеров по ID с валидацией."""
+        if not manager_ids:
+            if allow_empty:
+                return []
+            raise AppException(
+                error_code=ErrorCode.MANAGERS_REQUIRED,
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        result = await self.session.execute(
+            select(User).where(User.id.in_(manager_ids))
+        )
+        managers = list(result.scalars().all())
+        missing_ids = sorted(set(manager_ids) - {user.id for user in managers})
+        if missing_ids:
+            raise NotFoundException(
+                ErrorCode.USER_NOT_FOUND,
+                extra={'user_ids': missing_ids},
+            )
+        return managers
 
     async def get_cafe_stats(self, cafe_id: int) -> dict:
         """Получить статистику по кафе.
@@ -239,8 +256,8 @@ class CafeService(EntityValidationMixin[Cafe]):
             dict: Статистика по кафе.
 
         Raises:
-            HTTPException: Если кафе не найдено (статус 404).
-            HTTPException: Если кафе удалено (статус 410).
+            AppException: Если кафе не найдено (статус 404).
+            AppException: Если кафе удалено (статус 410).
 
         """
         cafe = await self.get_cafe_by_id(cafe_id)
@@ -266,8 +283,8 @@ class CafeService(EntityValidationMixin[Cafe]):
             user_id: ID пользователя.
 
         Raises:
-            HTTPException: Если кафе или пользователь не найдены.
-            HTTPException: Если пользователь уже менеджер кафе.
+            AppException: Если кафе или пользователь не найдены.
+            AppException: Если пользователь уже менеджер кафе.
 
         """
         await self.get_cafe_by_id(cafe_id)
@@ -277,9 +294,9 @@ class CafeService(EntityValidationMixin[Cafe]):
         )
         user = user_result.scalar_one_or_none()
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f'User with id {user_id} not found',
+            raise NotFoundException(
+                ErrorCode.USER_NOT_FOUND,
+                extra={'user_id': user_id},
             )
 
         existing = await self.session.execute(
@@ -289,9 +306,9 @@ class CafeService(EntityValidationMixin[Cafe]):
             )
         )
         if existing.scalar() is not None:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f'User {user_id} is already manager of cafe {cafe_id}',
+            raise ConflictException(
+                ErrorCode.MANAGER_ALREADY_ASSIGNED,
+                extra={'user_id': user_id, 'cafe_id': cafe_id},
             )
 
         await self.session.execute(
@@ -314,10 +331,12 @@ class CafeService(EntityValidationMixin[Cafe]):
             user_id: ID пользователя.
 
         Raises:
-            HTTPException: Если связь не найдена.
+            AppException: Если связь не найдена.
 
         """
         from sqlalchemy import delete
+
+        await self.get_cafe_by_id(cafe_id)
 
         result = await self.session.execute(
             select(cafe_managers).where(
@@ -326,9 +345,9 @@ class CafeService(EntityValidationMixin[Cafe]):
             )
         )
         if result.scalar() is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f'User {user_id} is not manager of cafe {cafe_id}',
+            raise NotFoundException(
+                ErrorCode.MANAGER_NOT_ASSIGNED,
+                extra={'user_id': user_id, 'cafe_id': cafe_id},
             )
 
         await self.session.execute(

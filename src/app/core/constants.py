@@ -289,6 +289,15 @@ class ErrorCode(StrEnum):
     CAFE_UPDATE_FAILED = 'cafe_update_failed'
     CAFE_DELETE_FAILED = 'cafe_delete_failed'
     CAFE_PHOTO_UPDATE_FAILED = 'cafe_photo_update_failed'
+    MANAGERS_REQUIRED = 'managers_required'
+    MANAGER_ALREADY_ASSIGNED = 'manager_already_assigned'
+    MANAGER_NOT_ASSIGNED = 'manager_not_assigned'
+
+    # Actions
+    ACTION_NOT_FOUND = 'action_not_found'
+
+    # Dishes
+    DISH_NOT_FOUND = 'dish_not_found'
 
     # Table
     TABLE_NOT_FOUND = 'table_not_found'
@@ -388,6 +397,17 @@ class Messages:
         ErrorCode.CAFE_NOT_FOUND: 'Кафе не найдено',
         ErrorCode.CAFE_INACTIVE: 'Кафе неактивно',
         ErrorCode.NOT_CAFE_MANAGER: 'Вы не являетесь менеджером этого кафе',
+        ErrorCode.MANAGERS_REQUIRED: (
+            'Нужно указать хотя бы одного менеджера'
+        ),
+        ErrorCode.MANAGER_ALREADY_ASSIGNED: (
+            'Пользователь уже является менеджером этого кафе'
+        ),
+        ErrorCode.MANAGER_NOT_ASSIGNED: (
+            'Пользователь не является менеджером этого кафе'
+        ),
+        ErrorCode.ACTION_NOT_FOUND: 'Акция не найдена',
+        ErrorCode.DISH_NOT_FOUND: 'Блюдо не найдено',
         ErrorCode.TABLE_NOT_FOUND: 'Столик не найден',
         ErrorCode.TABLE_INACTIVE: 'Столик неактивен',
         ErrorCode.INVALID_SEATS_COUNT: 'Некорректное количество мест',

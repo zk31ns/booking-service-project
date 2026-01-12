@@ -60,11 +60,11 @@ class Settings(BaseSettings):
     )
 
     # ========== Redis ==========
-    redis_url: str = Field(..., env='REDIS_URL', description='URL Redis')
+    redis_url: str = Field(..., env='REDIS_URL', description='Адрес Redis')
 
     # ========== RabbitMQ / Celery ==========
     rabbitmq_url: str = Field(
-        ..., env='RABBITMQ_URL', description='URL RabbitMQ'
+        ..., env='RABBITMQ_URL', description='Адрес RabbitMQ'
     )
     celery_broker_url: str = Field(
         default='',
@@ -131,7 +131,7 @@ class Settings(BaseSettings):
     telegram_api_url: str = Field(
         default='https://api.telegram.org',
         env='TELEGRAM_API_URL',
-        description='URL Telegram API',
+        description='Адрес Telegram API',
     )
 
     class Config:

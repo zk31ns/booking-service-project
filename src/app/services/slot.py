@@ -4,8 +4,12 @@ from zoneinfo import ZoneInfo
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.constants import ErrorCode
-from app.core.exceptions import ConflictException, ValidationException
+from app.core.constants import ErrorCode, Messages
+from app.core.exceptions import (
+    ConflictException,
+    NotFoundException,
+    ValidationException,
+)
 from app.models.slots import Slot
 from app.repositories.cafes import CafeRepository
 from app.repositories.slot import SlotRepository
@@ -29,22 +33,22 @@ class SlotService:
         return t.replace(tzinfo=ZoneInfo('UTC')) if t.tzinfo is None else t
 
     async def _validate_cafe_exists(self, cafe_id: int) -> None:
-        """Проверка существования кафе.
+        """Проверяет существование кафе.
 
         Args:
             cafe_id: Идентификатор кафе.
 
         Raises:
-            ValidationException: Если кафе не найдено.
+            NotFoundException: Если кафе не найдено.
 
         """
         cafe_repo = CafeRepository(self.session)
         cafe = await cafe_repo.get(cafe_id)
 
         if not cafe:
-            raise ValidationException(
-                error_code=ErrorCode.CAFE_NOT_FOUND,
-                detail=f'Кафе с ID {cafe_id} не найдено',
+            raise NotFoundException(
+                ErrorCode.CAFE_NOT_FOUND,
+                extra={'cafe_id': cafe_id},
             )
 
     async def create_slot(
@@ -53,7 +57,7 @@ class SlotService:
         start_time: time,
         end_time: time,
     ) -> Slot:
-        """Создание слота с проверками.
+        """Создает слот с проверками.
 
         Args:
             cafe_id: Идентификатор кафе.
@@ -64,8 +68,9 @@ class SlotService:
             Slot: Созданный слот.
 
         Raises:
-            ValidationException: Если кафе не найдено,
-            время некорректно или есть пересечение.
+            NotFoundException: Если кафе не найдено.
+            ValidationException: Если время некорректно.
+            ConflictException: Если найдено пересечение со слотом.
 
         """
         await self._validate_cafe_exists(cafe_id)
@@ -74,7 +79,7 @@ class SlotService:
         if start_time >= end_time:
             raise ValidationException(
                 error_code=ErrorCode.INVALID_TIME_RANGE,
-                detail='Время начала должно быть раньше времени окончания',
+                detail=Messages.errors[ErrorCode.INVALID_TIME_RANGE],
             )
 
         await self._validate_slot_overlap(cafe_id, start_time, end_time)
@@ -88,7 +93,7 @@ class SlotService:
     def _slots_overlap(
         self, s1_start: time, s1_end: time, s2_start: time, s2_end: time
     ) -> bool:
-        """Проверка пересечения двух временных интервалов.
+        """Проверяет пересечение двух временных интервалов.
 
         Args:
             s1_start: Время начала первого интервала.
@@ -106,22 +111,32 @@ class SlotService:
         s2_end = self._normalize_time(s2_end)
         return s1_start < s2_end and s2_start < s1_end
 
-    async def get_slot(self, slot_id: int) -> Slot | None:
-        """Получение слота.
+    async def get_slot(self, cafe_id: int, slot_id: int) -> Slot:
+        """Получает слот.
 
         Args:
+            cafe_id: Идентификатор кафе.
             slot_id: Идентификатор слота.
 
         Returns:
-            Slot | None: Слот или None если не найден.
+            Slot: Найденный слот.
+
+        Raises:
+            NotFoundException: Если слот не найден или не принадлежит кафе.
 
         """
-        return await self.repo.get(slot_id)
+        slot = await self.repo.get(slot_id)
+        if not slot or slot.cafe_id != cafe_id:
+            raise NotFoundException(
+                ErrorCode.SLOT_NOT_FOUND,
+                extra={'slot_id': slot_id},
+            )
+        return slot
 
     async def get_cafe_slots(
         self, cafe_id: int, show_inactive: bool = False
     ) -> list[Slot]:
-        """Получение слотов кафе.
+        """Получает слоты кафе.
 
         Args:
             cafe_id: Идентификатор кафе.
@@ -130,7 +145,11 @@ class SlotService:
         Returns:
             list[Slot]: Список слотов, отсортированный по времени начала.
 
+        Raises:
+            NotFoundException: Если кафе не найдено.
+
         """
+        await self._validate_cafe_exists(cafe_id)
         return await self.repo.get_all_by_cafe(cafe_id, show_inactive)
 
     async def update_slot(
@@ -140,8 +159,8 @@ class SlotService:
         start_time: time | None = None,
         end_time: time | None = None,
         active: bool | None = None,
-    ) -> Slot | None:
-        """Обновление слота.
+    ) -> Slot:
+        """Обновляет слот.
 
         Args:
             slot_id: Идентификатор слота.
@@ -151,15 +170,20 @@ class SlotService:
             active: Новый статус активности или None если не изменяется.
 
         Returns:
-            Slot | None: Обновленный слот или None если слот не найден.
+            Slot: Обновленный слот.
 
         Raises:
-            ValidationException: Если время некорректно или есть пересечение.
+            NotFoundException: Если слот не найден или не принадлежит кафе.
+            ValidationException: Если время некорректно.
+            ConflictException: Если найдено пересечение со слотом.
 
         """
         slot = await self.repo.get(slot_id)
         if not slot or slot.cafe_id != cafe_id:
-            return None
+            raise NotFoundException(
+                ErrorCode.SLOT_NOT_FOUND,
+                extra={'slot_id': slot_id},
+            )
 
         final_start = self._normalize_time(
             start_time if start_time is not None else slot.start_time
@@ -170,8 +194,8 @@ class SlotService:
 
         if final_start >= final_end:
             raise ValidationException(
-                error_code=ErrorCode.VALIDATION_ERROR,
-                detail='Время начала должно быть раньше времени окончания',
+                error_code=ErrorCode.INVALID_TIME_RANGE,
+                detail=Messages.errors[ErrorCode.INVALID_TIME_RANGE],
             )
 
         if start_time is not None or end_time is not None:
@@ -192,19 +216,25 @@ class SlotService:
         return slot
 
     async def delete_slot(self, slot_id: int, cafe_id: int) -> bool:
-        """Удаление слота (логическое удаление).
+        """Удаляет слот (логическое удаление).
 
         Args:
             slot_id: Идентификатор слота.
             cafe_id: Идентификатор кафе (для проверки принадлежности).
 
         Returns:
-            bool: True если слот успешно удален, False если не найден.
+            bool: True если слот успешно деактивирован.
+
+        Raises:
+            NotFoundException: Если слот не найден или не принадлежит кафе.
 
         """
         slot = await self.repo.get(slot_id)
         if not slot or slot.cafe_id != cafe_id:
-            return False
+            raise NotFoundException(
+                ErrorCode.SLOT_NOT_FOUND,
+                extra={'slot_id': slot_id},
+            )
 
         slot.active = False
         await self.session.flush()
@@ -218,7 +248,7 @@ class SlotService:
         end_time: time,
         exclude_slot_id: int | None = None,
     ) -> None:
-        """Проверка пересечения с существующими слотами.
+        """Проверяет пересечение с существующими слотами.
 
         Args:
             cafe_id: Идентификатор кафе.
@@ -244,7 +274,7 @@ class SlotService:
                 raise ConflictException(
                     error_code=ErrorCode.SLOT_OVERLAP,
                     detail=(
-                        f'Интервал времени пересекается с существующим слотом '
+                        'Интервал времени пересекается с существующим слотом '
                         f'(id={slot.id}, {slot.start_time}-{slot.end_time})'
                     ),
                 )

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -6,7 +6,7 @@ from app.api.dependencies import (
     get_current_manager_or_superuser,
     get_current_user,
 )
-from app.core.constants import API, ErrorCode, RedisKey, Times
+from app.core.constants import API, RedisKey, Times
 from app.core.database import get_session
 from app.core.exceptions import AuthorizationException
 from app.core.redis_cache import RedisCache
@@ -80,17 +80,9 @@ async def get_slot(
     Returns:
         SlotInfo: Слот времени.
 
-    Raises:
-        HTTPException: Слот не найден.
-
     """
     service = SlotService(session)
-    slot = await service.get_slot(slot_id)
-    if not slot or slot.cafe_id != cafe_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=ErrorCode.SLOT_NOT_FOUND,
-        )
+    slot = await service.get_slot(cafe_id, slot_id)
     return SlotInfo.model_validate(slot)
 
 
@@ -150,9 +142,6 @@ async def update_slot(
     Returns:
         SlotInfo: Обновленный слот.
 
-    Raises:
-        HTTPException: Слот не найден.
-
     """
     service = SlotService(session)
     slot = await service.update_slot(
@@ -162,11 +151,6 @@ async def update_slot(
         data.end_time,
         data.active,
     )
-    if not slot:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=ErrorCode.SLOT_NOT_FOUND,
-        )
     await session.commit()
     cache_pattern = f'{RedisKey.CACHE_KEY_ALL_SLOTS}:{cafe_id}:*'
     await RedisCache.delete_pattern(cache_pattern)

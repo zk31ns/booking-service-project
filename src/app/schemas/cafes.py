@@ -82,10 +82,10 @@ class CafeCreate(CafeBase):
     model_config = ConfigDict(
         json_schema_extra={
             'example': {
-                'name': 'Cafe Cozy',
-                'address': '1 Lenin St',
+                'name': 'Кафе Уют',
+                'address': 'ул. Ленина, 1',
                 'phone': '+79990001122',
-                'description': 'Cozy cafe with home cooking',
+                'description': 'Небольшое уютное кафе',
                 'photo_id': '3fa85f64-5717-4562-b3fc-2c963f66afa6',
                 'managers_id': [1, 2],
             }
@@ -143,8 +143,8 @@ class CafeUpdate(BaseModel):
         populate_by_name=True,
         json_schema_extra={
             'example': {
-                'name': 'Cafe Sweet',
-                'description': 'Updated description',
+                'name': 'Кафе Сладкоежка',
+                'description': 'Обновленное описание',
                 'is_active': True,
                 'managers_id': [2],
             }

@@ -63,16 +63,22 @@ def send_booking_reminder(
     """
     booking_date_obj = date.fromisoformat(booking_date)
     if telegram_id:
-        asyncio.run(
-            _send_reminder_async(
-                booking_id,
-                telegram_id,
-                cafe_name,
-                cafe_address,
-                booking_date_obj,
-                start_time,
+        try:
+            asyncio.run(
+                _send_reminder_async(
+                    booking_id,
+                    telegram_id,
+                    cafe_name,
+                    cafe_address,
+                    booking_date_obj,
+                    start_time,
+                )
             )
-        )
+        except TelegramApiException:
+            logger.exception(
+                'SYSTEM: Telegram reminder failed for booking %s',
+                booking_id,
+            )
     _send_email_reminder(
         booking_id=booking_id,
         email=email,
@@ -161,19 +167,25 @@ def notify_manager(
 
     """
     if telegram_id:
-        asyncio.run(
-            _notify_manager_async(
-                booking_id,
-                telegram_id,
-                cafe_name,
-                user_name,
-                table_seats,
-                table_description,
-                start_time,
-                end_time,
-                cancellation,
+        try:
+            asyncio.run(
+                _notify_manager_async(
+                    booking_id,
+                    telegram_id,
+                    cafe_name,
+                    user_name,
+                    table_seats,
+                    table_description,
+                    start_time,
+                    end_time,
+                    cancellation,
+                )
             )
-        )
+        except TelegramApiException:
+            logger.exception(
+                'SYSTEM: Telegram manager notify failed for booking %s',
+                booking_id,
+            )
     _send_email_manager_notification(
         booking_id=booking_id,
         email=email,

@@ -31,18 +31,18 @@ class API:
     V1_PREFIX = '/api/v1'
 
     # Таги для OpenAPI документации
-    ROOT = ['Приветствие']
-    HEALTH = ['Системное здоровье']
-    AUTH = ['Аутентификация']
-    USERS = ['Пользователи']
-    CAFES = ['Кафе']
-    TABLES = ['Столы']
-    SLOTS = ['Слоты']
-    DISHES = ['Блюда']
-    ACTIONS = ['Акции']
-    BOOKING = ['Бронирование']
-    PENDING = ['Ожидающие']
-    MEDIA = ['Медиа файлы']
+    ROOT = ['Greeting']
+    HEALTH = ['System_Health']
+    AUTH = ['Authentication']
+    USERS = ['Users']
+    CAFES = ['Cafes']
+    TABLES = ['Tables']
+    SLOTS = ['Slots']
+    DISHES = ['Dishes']
+    ACTIONS = ['Actions']
+    BOOKING = ['Booking']
+    PENDING = ['Pending_Bookings']
+    MEDIA = ['Media_Files']
 
 
 # ========== Размеры и Лимиты ==========
@@ -126,7 +126,7 @@ class Limits:
 
 
 class Times:
-    """Временные константы для токенов, бронирования и задач."""
+    """Временные параметры приложения, включая форматы даты и времени."""
 
     # Временная зона
     TIME_ZONE = 'Europe/Moscow'
@@ -146,6 +146,11 @@ class Times:
     CELERY_TASK_RETRY_DELAY = 60  # 1 vbyenf
     CELERY_TASK_TIMEOUT = 300  # 5 минут
     CELERY_BEAT_EXPIRED = 3600  # 1 час
+
+    # Форматы даты/времени для уведомлений и UI
+    DATE_FORMAT = '%d.%m.%Y'
+    TIME_FORMAT = '%H:%M'
+    DATETIME_FORMAT = '%Y-%m-%dT%H:%M'
 
     # Время хранения кэща Redis
     REDIS_CACHE_EXPIRE_TIME = 300

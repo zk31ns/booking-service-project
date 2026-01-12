@@ -1,46 +1,76 @@
+from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.core.constants import Limits
+from app.schemas.base import TimestampedSchema
+from app.schemas.cafes import CafeShortInfo
 
 
-class ActionBase(BaseModel):
-    """Базовая схема акции."""
+class ActionCreate(BaseModel):
+    """Схема создания акции.
 
-    name: str = Field(
-        ...,
-        min_length=Limits.ACTION_NAME_MIN_LENGTH,
-        max_length=Limits.ACTION_NAME_MAX_LENGTH,
-    )
-    description: str | None = Field(
-        None, max_length=Limits.ACTION_DESCRIPTION_MAX_LENGTH
-    )
-    photo_id: str | None = Field(None)
+    Attributes:
+        cafes_id: Список идентификаторов кафе.
+        description: Описание акции.
+        photo_id: Идентификатор фото.
 
+    """
 
-class ActionCreate(ActionBase):
-    """Схема для создания акции."""
-
-    pass
+    cafes_id: list[int] = Field(..., description='Список ID кафе.')
+    description: str = Field(..., description='Описание акции.')
+    photo_id: UUID = Field(..., description='ID фото.')
 
 
 class ActionUpdate(BaseModel):
-    """Схема для обновления акции."""
+    """Схема обновления акции.
 
-    name: str | None = Field(
+    Attributes:
+        cafes_id: Список идентификаторов кафе.
+        description: Описание акции.
+        photo_id: Идентификатор фото.
+        active: Признак активности.
+
+    """
+
+    cafes_id: list[int] | None = Field(None, description='Список ID кафе.')
+    description: str | None = Field(None, description='Описание акции.')
+    photo_id: UUID | None = Field(None, description='ID фото.')
+    active: bool | None = Field(
         None,
-        min_length=Limits.ACTION_NAME_MIN_LENGTH,
-        max_length=Limits.ACTION_NAME_MAX_LENGTH,
+        validation_alias='is_active',
+        serialization_alias='is_active',
+        description='Признак активности акции.',
     )
-    description: str | None = Field(
-        None, max_length=Limits.ACTION_DESCRIPTION_MAX_LENGTH
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class ActionInfo(TimestampedSchema):
+    """Схема ответа по акции.
+
+    Attributes:
+        cafes: Список кафе, связанных с акцией.
+        description: Описание акции.
+        photo_id: Идентификатор фото.
+        active: Признак активности.
+
+    """
+
+    cafes: list[CafeShortInfo] = Field(
+        default_factory=list,
+        description='Список кафе для этой акции.',
     )
-    photo_id: str | None = Field(None)
+    description: str = Field(..., description='Описание акции.')
+    photo_id: UUID = Field(..., description='ID фото.')
+    active: bool = Field(
+        ...,
+        validation_alias='active',
+        serialization_alias='is_active',
+        description='Признак активности акции.',
+    )
 
-
-class ActionInfo(ActionBase):
-    """Схема акции для получения информации."""
-
-    id: int
-    active: bool
-
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        populate_by_name=True,
+        extra='ignore',
+    )

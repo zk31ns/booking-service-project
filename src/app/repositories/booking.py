@@ -12,17 +12,13 @@ from .base import BaseCRUD
 
 
 class BookingRepository(BaseCRUD[Booking]):
-    """Репозиторий для работы с бронированиями столиков в кафе.
-
-    Предоставляет методы для CRUD операций с бронированиями,
-    проверки доступности столов и занятости пользователей.
-    """
+    """Репозиторий для работы с бронированиями."""
 
     def __init__(self, session: AsyncSession) -> None:
-        """Инициализирует репозиторий.
+        """Инициализировать репозиторий.
 
         Args:
-            session: Асинхронная сессия SQLAlchemy для работы с БД
+            session: Асинхронная сессия SQLAlchemy.
 
         """
         super().__init__(session, Booking)
@@ -34,16 +30,16 @@ class BookingRepository(BaseCRUD[Booking]):
         date: date,
         exclude_booking_id: int | None = None,
     ) -> bool:
-        """Проверить занят ли стол в указанный слот на дату.
+        """Проверить, занят ли столик в указанную дату и слот.
 
         Args:
-            table_id: ID стола
-            slot_id: ID временного слота
-            date: Дата бронирования
-            exclude_booking_id: ID бронирования для исключения из проверки
+            table_id: ID столика.
+            slot_id: ID временного слота.
+            date: Дата бронирования.
+            exclude_booking_id: ID бронирования для исключения из проверки.
 
         Returns:
-            True если стол занят, False если свободен
+            bool: True, если столик занят; иначе False.
 
         """
         stmt = (
@@ -75,17 +71,17 @@ class BookingRepository(BaseCRUD[Booking]):
         booking_date: date,
         exclude_booking_id: int | None = None,
     ) -> bool:
-        """Проверить занят ли пользователь в указанный временной интервал.
+        """Проверить, занят ли пользователь в заданном временном интервале.
 
         Args:
-            user_id: ID пользователя
-            start_time: Время начала проверяемого интервала
-            end_time: Время окончания проверяемого интервала
-            booking_date: Дата бронирования
-            exclude_booking_id: ID бронирования для исключения из проверки
+            user_id: ID пользователя.
+            start_time: Время начала.
+            end_time: Время окончания.
+            booking_date: Дата бронирования.
+            exclude_booking_id: ID бронирования для исключения из проверки.
 
         Returns:
-            True если пользователь занят, False если свободен
+            bool: True, если пользователь занят; иначе False.
 
         """
         stmt = (
@@ -116,14 +112,14 @@ class BookingRepository(BaseCRUD[Booking]):
         user_id: int | None = None,
         cafe_id: int | None = None,
     ) -> list[Booking]:
-        """Получить список бронирований с фильтрацией.
+        """Получить список бронирований с фильтрами.
 
         Args:
-            user_id: ID пользователя для фильтрации
-            cafe_id: ID кафе для фильтрации
+            user_id: ID пользователя для фильтра.
+            cafe_id: ID кафе для фильтра.
 
         Returns:
-            Список бронирований
+            list[Booking]: Список бронирований.
 
         """
         query = select(Booking).options(
@@ -142,19 +138,16 @@ class BookingRepository(BaseCRUD[Booking]):
         return list(result.scalars().all())
 
     async def create(
-        self, obj_in: 'BookingCreate', user: User | None = None
+        self, obj_in: BookingCreate, user: User | None = None
     ) -> Booking:
-        """Создать новое бронирование.
+        """Создать бронирование и связки столов со слотами.
 
         Args:
-            obj_in: Данные для создания бронирования
-            user: Пользователь, создающий бронирование
+            obj_in: Данные для создания бронирования.
+            user: Пользователь, который создает бронирование.
 
         Returns:
-            Созданное бронирование
-
-        Raises:
-            IntegrityError: При нарушении ограничений базы данных
+            Booking: Созданное бронирование.
 
         """
         data = obj_in.dict(exclude={'table_slots'})
@@ -181,25 +174,18 @@ class BookingRepository(BaseCRUD[Booking]):
     async def update(
         self,
         booking: Booking,
-        update_booking: 'BookingUpdate',
+        update_booking: BookingUpdate,
         data: dict[str, int | str | date | bool],
     ) -> Booking:
-        """Обновить существующее бронирование.
-
-        Обрабатывает обновление простых полей через UPDATE запрос
-        и связей table_slots через ORM отношения.
+        """Обновить бронирование и связи table_slots.
 
         Args:
-            booking: Обновляемое бронирование
-            update_booking: Схема с данными от пользователя (все поля)
-            data: Валидированные данные для простого UPDATE
-                  (исключает table_slots и поля со значением None)
+            booking: Модель бронирования.
+            update_booking: Данные для обновления (связи и поля).
+            data: Поля для SQL UPDATE (table_slots обрабатываются отдельно).
 
         Returns:
-            Обновленное бронирование
-
-        Raises:
-            IntegrityError: При нарушении ограничений базы данных
+            Booking: Обновленное бронирование.
 
         """
         if data:
@@ -226,13 +212,13 @@ class BookingRepository(BaseCRUD[Booking]):
         self,
         now: date,
     ) -> int:
-        """Поиск истёкших бронирований.
+        """Получить количество просроченных бронирований.
 
         Args:
-            now: дата сравнения с датой бронирования
+            now: Текущая дата.
 
         Returns:
-            Количество найденных записей
+            int: Количество просроченных бронирований.
 
         """
         query = select(func.count(Booking.id)).where(
@@ -249,10 +235,10 @@ class BookingRepository(BaseCRUD[Booking]):
         self,
         now: date,
     ) -> None:
-        """Очистка истёкших бронирований.
+        """Перевести просроченные бронирования в COMPLETED и деактивировать.
 
         Args:
-            now: дата сравнения с датой бронирования
+            now: Текущая дата.
 
         Returns:
             None

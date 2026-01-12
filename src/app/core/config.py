@@ -1,6 +1,6 @@
-"""Application configuration using Pydantic Settings v2.
+"""Настройки приложения через Pydantic Settings v2.
 
-Читает переменные из .env файла и окружения.
+Значения читаются из переменных окружения и файла .env.
 """
 
 from pathlib import Path
@@ -16,14 +16,16 @@ from app.core.constants import (
 
 
 class Settings(BaseSettings):
-    """Основные настройки приложения."""
+    """Настройки приложения."""
 
     # ========== App Settings ==========
     app_title: str = 'Booking Seats API'
     app_version: str = '1.0.0'
     debug: bool = False
     environment: str = Field(
-        default='development', description='dev или prod', env='ENVIRONMENT'
+        default='development',
+        description='Окружение: dev/prod',
+        env='ENVIRONMENT',
     )
 
     # ========== Server ==========
@@ -34,44 +36,49 @@ class Settings(BaseSettings):
     database_url: str = Field(
         ...,
         env='DATABASE_URL',
-        description='Async PostgreSQL URL (пример: postgresql+asyncpg://user:password@host:port/db)',
+        description=(
+            'Async PostgreSQL URL '
+            '(postgresql+asyncpg://user:password@host:port/db)'
+        ),
     )
-    db_echo: bool = Field(default=False, env='DB_ECHO')  # SQL logs в консоль
+    db_echo: bool = Field(default=False, env='DB_ECHO')
 
     # ========== JWT & Auth ==========
     jwt_secret_key: str = Field(
-        ..., env='JWT_SECRET_KEY', description='Секретный ключ для JWT'
+        ...,
+        env='JWT_SECRET_KEY',
+        description='Секретный ключ для JWT',
     )
     jwt_algorithm: str = Field(default='HS256', env='JWT_ALGORITHM')
     access_token_expire_minutes: int = Field(
-        default=ACCESS_TOKEN_EXPIRE_MINUTES, env='ACCESS_TOKEN_EXPIRE_MINUTES'
+        default=ACCESS_TOKEN_EXPIRE_MINUTES,
+        env='ACCESS_TOKEN_EXPIRE_MINUTES',
     )
     refresh_token_expire_days: int = Field(
-        default=REFRESH_TOKEN_EXPIRE_DAYS, env='REFRESH_TOKEN_EXPIRE_DAYS'
+        default=REFRESH_TOKEN_EXPIRE_DAYS,
+        env='REFRESH_TOKEN_EXPIRE_DAYS',
     )
 
     # ========== Redis ==========
-    redis_url: str = Field(
-        ..., env='REDIS_URL', description='Redis connection URL'
-    )
+    redis_url: str = Field(..., env='REDIS_URL', description='URL Redis')
 
     # ========== RabbitMQ / Celery ==========
     rabbitmq_url: str = Field(
-        ..., env='RABBITMQ_URL', description='RabbitMQ broker URL'
+        ..., env='RABBITMQ_URL', description='URL RabbitMQ'
     )
     celery_broker_url: str = Field(
         default='',
         env='CELERY_BROKER_URL',
-        description='Celery broker (по умолчанию RABBITMQ_URL)',
+        description='Celery broker (если пусто, используется RABBITMQ_URL)',
     )
     celery_result_backend: str = Field(
         default='',
         env='CELERY_RESULT_BACKEND',
-        description='Celery result backend (по умолчанию REDIS_URL)',
+        description='Celery backend (если пусто, используется REDIS_URL)',
     )
 
     # ========== Files / Media ==========
-    max_upload_size: int = MAX_UPLOAD_SIZE_BYTES  # 5MB in bytes
+    max_upload_size: int = MAX_UPLOAD_SIZE_BYTES
     allowed_image_types: str = Field(
         default='image/jpeg,image/png', env='ALLOWED_IMAGE_TYPES'
     )
@@ -90,20 +97,20 @@ class Settings(BaseSettings):
     allowed_origins_str: str = Field(
         default='http://localhost:3000,http://localhost:8000',
         env='ALLOWED_ORIGINS',
-        description='Allowed CORS origins (comma-separated string)',
+        description='CORS origins через запятую',
         exclude=True,
     )
 
     @property
     def allowed_origins(self) -> list[str]:
-        """Parse allowed_origins from comma-separated string."""
+        """Получить список разрешенных CORS origins."""
         return [
             origin.strip()
             for origin in self.allowed_origins_str.split(',')
             if origin.strip()
         ]
 
-    # ========== Email (опционально) ==========
+    # ========== Email (SMTP) ==========
     smtp_server: str = Field(
         default='', env='SMTP_SERVER', description='SMTP сервер'
     )
@@ -115,27 +122,26 @@ class Settings(BaseSettings):
         default='', env='SMTP_PASSWORD', description='SMTP пароль'
     )
 
-    # ========== Telegram bot ID ==========
-    # (опционально для будущих уведомлений)
+    # ========== Telegram ==========
     telegram_bot_token: str = Field(
-        default='', env='TELEGRAM_BOT_TOKEN', description='Telegram bot token'
+        default='',
+        env='TELEGRAM_BOT_TOKEN',
+        description='Токен Telegram бота',
     )
     telegram_api_url: str = Field(
         default='https://api.telegram.org',
         env='TELEGRAM_API_URL',
-        description='Telegram API URL',
+        description='URL Telegram API',
     )
 
     class Config:
-        """Pydantic конфигурация."""
+        """Настройки Pydantic Settings."""
 
-        # Ищет .env в корне проекта
-        # (src/app/core/config.py -> ../../../../.env)
-        env_path = Path(__file__).resolve().parent.parent.parent.parent
+        # Путь до env файла: src/.env
+        env_path = Path(__file__).resolve().parent.parent.parent
         env_file = str(env_path / '.env')
         env_file_encoding = 'utf-8'
         case_sensitive = False
-        # Allow extra env vars for Celery and external services.
         extra = 'allow'
 
     @property
@@ -145,12 +151,10 @@ class Settings(BaseSettings):
 
     @property
     def celery_backend(self) -> str:
-        """Вернуть URL бэкенда для Celery."""
+        """Вернуть URL backend для Celery."""
         return self.celery_result_backend or self.redis_url
 
 
-# Глобальный объект настроек
 settings = Settings()
 
-# Экспорт для импорта в других модулях
 __all__ = ['Settings', 'settings']

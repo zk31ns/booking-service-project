@@ -6,8 +6,10 @@ from collections.abc import AsyncGenerator, Callable, Generator
 from datetime import time
 from unittest.mock import MagicMock
 
+import asyncpg
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -93,9 +95,39 @@ TEST_DATABASE_URL = os.getenv(
 )
 
 
+async def _ensure_test_database_exists() -> None:
+    """Ensure PostgreSQL test database exists before creating the engine."""
+    url = make_url(TEST_DATABASE_URL)
+    if url.get_backend_name() not in {'postgresql', 'postgresql+asyncpg'}:
+        return
+
+    database = url.database
+    if not database:
+        return
+
+    admin_url = url.set(database='postgres')
+    conn = await asyncpg.connect(
+        user=admin_url.username,
+        password=admin_url.password,
+        host=admin_url.host,
+        port=admin_url.port,
+        database=admin_url.database,
+    )
+    try:
+        exists = await conn.fetchval(
+            'SELECT 1 FROM pg_database WHERE datname=$1', database
+        )
+        if not exists:
+            safe_name = database.replace('"', '""')
+            await conn.execute(f'CREATE DATABASE "{safe_name}"')
+    finally:
+        await conn.close()
+
+
 @pytest.fixture(scope='session')
 async def test_engine() -> AsyncGenerator[AsyncEngine, None]:
     """Create test PostgreSQL database engine for integration tests."""
+    await _ensure_test_database_exists()
     engine = create_async_engine(TEST_DATABASE_URL, echo=False)
 
     async with engine.begin() as conn:

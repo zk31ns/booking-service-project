@@ -44,7 +44,7 @@ class CafeService(EntityValidationMixin[Cafe]):
             active_only: Флаг фильтрации только активных кафе.
 
         Returns:
-            List[Cafe]: Список объектов кафе.
+            list[Cafe]: Список объектов кафе.
 
         """
         return await self.cafe_repository.get_all(
@@ -84,8 +84,9 @@ class CafeService(EntityValidationMixin[Cafe]):
 
         Raises:
             HTTPException: Если кафе с таким названием уже существует
-            (статус 409).
-            HTTPException: Если хотя бы один менеджер не найден (статус 404).
+                (статус 409).
+            HTTPException: Если менеджеры не указаны или не найдены
+                (статус 400/404).
 
         """
         existing_cafe = await self.cafe_repository.get_by_name(
@@ -94,31 +95,28 @@ class CafeService(EntityValidationMixin[Cafe]):
         if existing_cafe:
             await self._raise_conflict(ErrorCode.CAFE_ALREADY_EXISTS)
 
-        # Проверить что все менеджеры существуют
-        if cafe_create.managers_id:
-            managers_result = await self.session.execute(
-                select(User).where(User.id.in_(cafe_create.managers_id))
+        if not cafe_create.managers_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=Messages.errors[ErrorCode.VALIDATION_ERROR],
             )
-            managers = managers_result.scalars().all()
-            if len(managers) != len(cafe_create.managers_id):
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=Messages.errors[ErrorCode.USER_NOT_FOUND],
-                )
 
-        # Создать кафе без менеджеров
+        managers_result = await self.session.execute(
+            select(User).where(User.id.in_(cafe_create.managers_id))
+        )
+        managers = managers_result.scalars().all()
+        if len(managers) != len(cafe_create.managers_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=Messages.errors[ErrorCode.USER_NOT_FOUND],
+            )
+
         cafe_data = cafe_create.model_dump(exclude={'managers_id'})
         cafe = await self.cafe_repository.create(cafe_data)
 
-        # Добавить менеджеров
-        if cafe_create.managers_id:
-            managers_result = await self.session.execute(
-                select(User).where(User.id.in_(cafe_create.managers_id))
-            )
-            managers = managers_result.scalars().all()
-            cafe.managers = managers
-            await self.session.commit()
-            await self.session.refresh(cafe)
+        cafe.managers = managers
+        await self.session.commit()
+        await self.session.refresh(cafe)
 
         return cafe
 
@@ -136,7 +134,7 @@ class CafeService(EntityValidationMixin[Cafe]):
             HTTPException: Если кафе не найдено (статус 404).
             HTTPException: Если кафе удалено (статус 410).
             HTTPException: Если кафе с таким названием уже существует
-            (статус 400).
+                (статус 400).
             HTTPException: Если не удалось обновить кафе (статус 500).
             HTTPException: Если хотя бы один менеджер не найден (статус 404).
 
@@ -152,9 +150,8 @@ class CafeService(EntityValidationMixin[Cafe]):
                     detail=Messages.errors[ErrorCode.CAFE_ALREADY_EXISTS],
                 )
 
-        # Проверить менеджеров если они указаны
         if cafe_update.managers_id is not None:
-            if cafe_update.managers_id:  # Если не пустой список
+            if cafe_update.managers_id:
                 managers_result = await self.session.execute(
                     select(User).where(User.id.in_(cafe_update.managers_id))
                 )
@@ -164,7 +161,6 @@ class CafeService(EntityValidationMixin[Cafe]):
                         status_code=status.HTTP_404_NOT_FOUND,
                         detail=Messages.errors[ErrorCode.USER_NOT_FOUND],
                     )
-            # Обновить менеджеров в объекте кафе
             if cafe_update.managers_id:
                 managers_result = await self.session.execute(
                     select(User).where(User.id.in_(cafe_update.managers_id))
@@ -173,7 +169,6 @@ class CafeService(EntityValidationMixin[Cafe]):
             else:
                 cafe.managers = []
 
-        # Обновить остальные поля
         update_data = cafe_update.model_dump(
             exclude={'managers_id'},
             exclude_none=True,
@@ -275,10 +270,8 @@ class CafeService(EntityValidationMixin[Cafe]):
             HTTPException: Если пользователь уже менеджер кафе.
 
         """
-        # Проверяем наличие кафе
         await self.get_cafe_by_id(cafe_id)
 
-        # Проверяем наличие пользователя
         user_result = await self.session.execute(
             select(User).where(User.id == user_id)
         )
@@ -289,7 +282,6 @@ class CafeService(EntityValidationMixin[Cafe]):
                 detail=f'User with id {user_id} not found',
             )
 
-        # Проверяем не менеджер ли уже
         existing = await self.session.execute(
             select(cafe_managers).where(
                 (cafe_managers.c.cafe_id == cafe_id)
@@ -302,7 +294,6 @@ class CafeService(EntityValidationMixin[Cafe]):
                 detail=f'User {user_id} is already manager of cafe {cafe_id}',
             )
 
-        # Добавляем менеджера
         await self.session.execute(
             insert(cafe_managers).values(
                 cafe_id=cafe_id,

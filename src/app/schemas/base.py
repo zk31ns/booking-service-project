@@ -1,103 +1,46 @@
-"""Базовые schema классы для всех моделей ответов.
-
-Содержит базовые классы для стандартизации response структур
-и уменьшения дублирования кода в schema файлах.
-"""
+"""Базовые схемы ответов API."""
 
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
+
+from app.core.constants import Times
 
 
 class BaseResponse(BaseModel):
-    """Базовый класс для всех ответов API.
-
-    Содержит стандартную конфигурацию для работы с ORM моделями.
-    """
+    """Базовая схема ответа API."""
 
     model_config = ConfigDict(from_attributes=True, extra='ignore')
 
+    @field_serializer('*', when_used='json', check_fields=False)
+    def _format_datetime(self, value: object) -> object:
+        if isinstance(value, datetime):
+            return value.strftime(Times.DATETIME_FORMAT)
+        return value
+
 
 class TimestampedSchema(BaseResponse):
-    """Базовый класс для объектов с временными метками.
+    """Схема с id и временем создания."""
 
-    Содержит поля created_at для отслеживания времени создания записи.
-    Используется для объектов, которые отслеживают только время создания.
-
-    Attributes:
-        id: Уникальный идентификатор записи.
-        created_at: Дата и время создания записи.
-
-    Examples:
-        class MediaInfo(TimestampedSchema):
-            id: UUID
-            file_size: int
-            created_at: datetime
-
-    """
-
-    id: int | UUID = Field(..., description='Уникальный идентификатор')
-    created_at: datetime = Field(
-        ..., description='Дата и время создания записи'
-    )
+    id: int | UUID = Field(..., description='Идентификатор записи')
+    created_at: datetime = Field(..., description='Время создания')
 
 
 class ActiveSchema(BaseResponse):
-    """Базовый класс для объектов с флагом активности.
+    """Схема с id и флагом активности."""
 
-    Содержит поле active для отслеживания активности записи (soft delete).
-    Используется для объектов, которые поддерживают мягкое удаление.
-
-    Attributes:
-        id: Уникальный идентификатор записи.
-        active: Флаг активности записи (True = активна, False = удалена).
-
-    Examples:
-        class TableInfo(ActiveSchema):
-            id: int
-            cafe_id: int
-            seats: int
-            active: bool
-
-    """
-
-    id: int = Field(..., description='Уникальный идентификатор')
-    active: bool = Field(default=True, description='Флаг активности записи')
+    id: int = Field(..., description='Идентификатор записи')
+    active: bool = Field(default=True, description='Флаг активности')
 
 
 class AuditedSchema(BaseResponse):
-    """Базовый класс для объектов с полными audit полями.
+    """Схема с id, аудитом и флагом активности."""
 
-    Содержит все audit поля: created_at, updated_at, active.
-    Это наиболее полная и часто используемая схема для ответов.
-
-    Attributes:
-        id: Уникальный идентификатор записи.
-        created_at: Дата и время создания записи.
-        updated_at: Дата и время последнего обновления.
-        active: Флаг активности записи.
-
-    Examples:
-        class SlotInfo(AuditedSchema):
-            id: int
-            cafe_id: int
-            start_time: time
-            end_time: time
-            active: bool
-            created_at: datetime
-            updated_at: datetime
-
-    """
-
-    id: int = Field(..., description='Уникальный идентификатор')
-    active: bool = Field(default=True, description='Флаг активности записи')
-    created_at: datetime = Field(
-        ..., description='Дата и время создания записи'
-    )
-    updated_at: datetime = Field(
-        ..., description='Дата и время последнего обновления'
-    )
+    id: int = Field(..., description='Идентификатор записи')
+    active: bool = Field(default=True, description='Флаг активности')
+    created_at: datetime = Field(..., description='Время создания')
+    updated_at: datetime = Field(..., description='Время обновления')
 
 
 __all__ = [

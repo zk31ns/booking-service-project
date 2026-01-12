@@ -27,7 +27,7 @@ def get_cafe_service(db: AsyncSession = Depends(get_db)) -> CafeService:
 
 
 @router.get(
-    '/',
+    '',
     response_model=list[Cafe],
     summary='Получить список всех кафе',
     description='Возвращает список всех кафе',
@@ -82,7 +82,7 @@ async def get_cafe(
 
 
 @router.post(
-    '/',
+    '',
     response_model=CafeWithRelations,
     status_code=status.HTTP_201_CREATED,
     summary='Создать новое кафе',

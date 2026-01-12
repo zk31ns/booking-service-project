@@ -1,9 +1,9 @@
 """Модели базы данных."""
 
-from app.models.actions import Action
+from app.models.actions import Action, action_cafes
 from app.models.booking import Booking, TableSlot
 from app.models.cafes import Cafe
-from app.models.dishes import Dish
+from app.models.dishes import Dish, dish_cafes
 from app.models.media import Media
 from app.models.slots import Slot
 from app.models.tables import Table
@@ -14,6 +14,8 @@ __all__ = [
     'cafe_managers',
     'Dish',
     'Action',
+    'dish_cafes',
+    'action_cafes',
     'Cafe',
     'Table',
     'Media',
@@ -28,6 +30,8 @@ __models__ = [
     Table,
     Dish,
     Action,
+    dish_cafes,
+    action_cafes,
     Media,
     Booking,
     TableSlot,

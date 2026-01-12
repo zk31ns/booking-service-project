@@ -1,31 +1,59 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.dependencies import (
+    get_current_manager_or_superuser,
+    get_current_user,
+)
 from app.core.constants import API, ErrorCode, RedisKey, Times
 from app.core.database import get_session
+from app.core.exceptions import AuthorizationException
 from app.core.redis_cache import RedisCache
+from app.models import User
 from app.schemas.slot import SlotCreate, SlotInfo, SlotUpdate
 from app.services.slot import SlotService
 
-router = APIRouter(prefix='/cafes/{cafe_id}/slots', tags=API.SLOTS)
+router = APIRouter(prefix='/cafe/{cafe_id}/time_slots', tags=API.SLOTS)
 
 
 @router.get('', response_model=list[SlotInfo], status_code=status.HTTP_200_OK)
 async def get_all_slots(
     cafe_id: int,
-    show_inactive: bool = False,
+    show_all: bool = Query(
+        False,
+        description='Включать неактивные временные слоты.',
+    ),
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ) -> list[SlotInfo]:
-    """Получение всех слотов кафе."""
-    cache_key = f'{RedisKey.CACHE_KEY_ALL_SLOTS}:{cafe_id}:{show_inactive}'
+    """Возвращает список слотов времени для кафе.
+
+    Args:
+        cafe_id: Идентификатор кафе.
+        show_all: Возвращать ли неактивные слоты.
+        session: Сессия БД.
+        current_user: Текущий пользователь.
+
+    Returns:
+        list[SlotInfo]: Список слотов.
+
+    """
+    if show_all:
+        try:
+            await get_current_manager_or_superuser(current_user, session)
+        except AuthorizationException:
+            show_all = False
+
+    cache_key = f'{RedisKey.CACHE_KEY_ALL_SLOTS}:{cafe_id}:{show_all}'
     cached_data = await RedisCache.get(cache_key)
     if cached_data is not None:
         return [SlotInfo(**item) for item in cached_data]
+
     service = SlotService(session)
-    slots = await service.get_cafe_slots(cafe_id, show_inactive)
+    slots = await service.get_cafe_slots(cafe_id, show_all)
     slots_response = [SlotInfo.model_validate(slot) for slot in slots]
-    logger.info(f'Получены слоты для кафе cafe_id={cafe_id}')
+    logger.info(f'Loaded time slots for cafe_id={cafe_id}')
     await RedisCache.set(
         cache_key,
         [s.model_dump(mode='json') for s in slots_response],
@@ -34,21 +62,57 @@ async def get_all_slots(
     return slots_response
 
 
+@router.get('/{slot_id}', response_model=SlotInfo)
+async def get_slot(
+    cafe_id: int,
+    slot_id: int,
+    session: AsyncSession = Depends(get_session),
+    _current_user: User = Depends(get_current_user),
+) -> SlotInfo:
+    """Возвращает слот времени по идентификатору.
+
+    Args:
+        cafe_id: Идентификатор кафе.
+        slot_id: Идентификатор слота.
+        session: Сессия БД.
+        _current_user: Текущий пользователь.
+
+    Returns:
+        SlotInfo: Слот времени.
+
+    Raises:
+        HTTPException: Слот не найден.
+
+    """
+    service = SlotService(session)
+    slot = await service.get_slot(slot_id)
+    if not slot or slot.cafe_id != cafe_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=ErrorCode.SLOT_NOT_FOUND,
+        )
+    return SlotInfo.model_validate(slot)
+
+
 @router.post('', response_model=SlotInfo, status_code=status.HTTP_201_CREATED)
 async def create_slot(
     cafe_id: int,
     data: SlotCreate,
     session: AsyncSession = Depends(get_session),
+    _current_user: User = Depends(get_current_manager_or_superuser),
 ) -> SlotInfo:
-    """Создание нового слота для кафе.
+    """Создает слот времени.
+
+    Доступно менеджерам и администраторам.
 
     Args:
         cafe_id: Идентификатор кафе.
-        data: Данные для создания слота (время начала и окончания).
-        session: Сессия БД (внедряется автоматически).
+        data: Данные для создания слота.
+        session: Сессия БД.
+        _current_user: Текущий пользователь.
 
     Returns:
-        SlotInfo: Информация о созданном слоте.
+        SlotInfo: Созданный слот.
 
     """
     service = SlotService(session)
@@ -56,8 +120,8 @@ async def create_slot(
     await session.commit()
     cache_pattern = f'{RedisKey.CACHE_KEY_ALL_SLOTS}:{cafe_id}:*'
     await RedisCache.delete_pattern(cache_pattern)
-    logger.info(f'Создан слот для кафе cafe_id={cafe_id}')
-    return slot
+    logger.info(f'Created time slot for cafe_id={cafe_id}')
+    return SlotInfo.model_validate(slot)
 
 
 @router.patch(
@@ -70,20 +134,24 @@ async def update_slot(
     slot_id: int,
     data: SlotUpdate,
     session: AsyncSession = Depends(get_session),
+    _current_user: User = Depends(get_current_manager_or_superuser),
 ) -> SlotInfo:
-    """Обновление слота.
+    """Обновляет слот времени.
+
+    Доступно менеджерам и администраторам.
 
     Args:
         cafe_id: Идентификатор кафе.
         slot_id: Идентификатор слота.
-        data: Данные для обновления слота (может содержать время и статус).
-        session: Сессия БД (внедряется автоматически).
+        data: Данные для обновления слота.
+        session: Сессия БД.
+        _current_user: Текущий пользователь.
 
     Returns:
-        SlotInfo: Информация об обновленном слоте.
+        SlotInfo: Обновленный слот.
 
     Raises:
-        HTTPException: Если слот не найден (статус 404).
+        HTTPException: Слот не найден.
 
     """
     service = SlotService(session)
@@ -99,42 +167,8 @@ async def update_slot(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=ErrorCode.SLOT_NOT_FOUND,
         )
-    slot_response = SlotInfo.model_validate(slot)
     await session.commit()
     cache_pattern = f'{RedisKey.CACHE_KEY_ALL_SLOTS}:{cafe_id}:*'
     await RedisCache.delete_pattern(cache_pattern)
-    logger.info(f'Обновлен слот slot_id={slot_id}')
-    return slot_response
-
-
-@router.delete('/{slot_id}', status_code=status.HTTP_204_NO_CONTENT)
-async def delete_slot(
-    cafe_id: int,
-    slot_id: int,
-    session: AsyncSession = Depends(get_session),
-) -> None:
-    """Удаление слота.
-
-    Args:
-        cafe_id: Идентификатор кафе.
-        slot_id: Идентификатор слота.
-        session: Сессия БД (внедряется автоматически).
-
-    Returns:
-        None: Не возвращает данные (статус 204 No Content).
-
-    Raises:
-        HTTPException: Если слот не найден (статус 404).
-
-    """
-    service = SlotService(session)
-    result = await service.delete_slot(slot_id, cafe_id)
-    if not result:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=ErrorCode.SLOT_NOT_FOUND,
-        )
-    await session.commit()
-    cache_pattern = f'{RedisKey.CACHE_KEY_ALL_SLOTS}:{cafe_id}:*'
-    await RedisCache.delete_pattern(cache_pattern)
-    logger.info(f'Удален слот slot_id={slot_id}')
+    logger.info(f'Updated time slot id={slot_id}')
+    return SlotInfo.model_validate(slot)

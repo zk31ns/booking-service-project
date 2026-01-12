@@ -103,16 +103,18 @@ class TestGetSlot:
         self, mock_slot_factory: Callable[..., MagicMock]
     ) -> None:
         """Успешное получение слота по ID."""
-        service = SlotService(session=None)
+        session = AsyncMock()
+        service = SlotService(session)
+        service.repo = AsyncMock()
         mock_slot = mock_slot_factory(id_=1, cafe_id=1)
 
-        service.repo.get_by_id = AsyncMock(return_value=mock_slot)
+        service.repo.get = AsyncMock(return_value=mock_slot)
 
         result = await service.get_slot(1)
 
         assert result.id == 1
         assert result.cafe_id == 1
-        service.repo.get_by_id.assert_called_once_with(1)
+        service.repo.get.assert_called_once_with(1)
 
     @pytest.mark.unit
     @pytest.mark.asyncio
@@ -120,9 +122,8 @@ class TestGetSlot:
         """Слот не найден - возвращает None."""
         session = AsyncMock()
         service = SlotService(session)
-
         service.repo = AsyncMock()
-        service.repo.get_by_id = AsyncMock(return_value=None)
+        service.repo.get = AsyncMock(return_value=None)
 
         result = await service.get_slot(999)
         assert result is None
@@ -142,13 +143,13 @@ class TestDeleteSlot:
         service.repo = AsyncMock()
 
         mock_slot = mock_slot_factory(id_=1, cafe_id=1, active=True)
-        service.repo.get_by_id = AsyncMock(return_value=mock_slot)
+        service.repo.get = AsyncMock(return_value=mock_slot)
 
         result = await service.delete_slot(slot_id=1, cafe_id=1)
 
         assert result is True
         assert mock_slot.active is False
-        service.repo.get_by_id.assert_called_once_with(1)
+        service.repo.get.assert_called_once_with(1)
 
     @pytest.mark.unit
     @pytest.mark.asyncio
@@ -156,9 +157,8 @@ class TestDeleteSlot:
         """Слот не найден - возвращает False."""
         session = AsyncMock()
         service = SlotService(session)
-
         service.repo = AsyncMock()
-        service.repo.get_by_id = AsyncMock(return_value=None)
+        service.repo.get = AsyncMock(return_value=None)
 
         result = await service.delete_slot(slot_id=999, cafe_id=1)
         assert result is False
@@ -169,10 +169,12 @@ class TestDeleteSlot:
         self, mock_slot_factory: Callable[..., MagicMock]
     ) -> None:
         """Слот принадлежит другому кафе - возвращает False."""
-        service = SlotService(session=None)
+        session = AsyncMock()
+        service = SlotService(session)
+        service.repo = AsyncMock()
         mock_slot = mock_slot_factory(id_=1, cafe_id=999)
 
-        service.repo.get_by_id = AsyncMock(return_value=mock_slot)
+        service.repo.get = AsyncMock(return_value=mock_slot)
 
         result = await service.delete_slot(slot_id=1, cafe_id=1)
         assert result is False
@@ -185,7 +187,9 @@ class TestValidateSlotOverlap:
     @pytest.mark.asyncio
     async def test_validate_no_overlap(self) -> None:
         """Нет пересечений - валидация проходит."""
-        service = SlotService(session=None)
+        session = AsyncMock()
+        service = SlotService(session)
+        service.repo = AsyncMock()
 
         existing_slot = MagicMock()
         existing_slot.id = 1
@@ -204,6 +208,7 @@ class TestValidateSlotOverlap:
         """Есть пересечение - выбрасывается ConflictException."""
         session = AsyncMock()
         service = SlotService(session)
+        service.repo = AsyncMock()
 
         existing_slot = MagicMock()
         existing_slot.id = 1
@@ -223,7 +228,9 @@ class TestValidateSlotOverlap:
     @pytest.mark.asyncio
     async def test_validate_overlap_exclude_slot(self) -> None:
         """Исключение слота из проверки работает корректно."""
-        service = SlotService(session=None)
+        session = AsyncMock()
+        service = SlotService(session)
+        service.repo = AsyncMock()
 
         existing_slot = MagicMock()
         existing_slot.id = 5
@@ -256,7 +263,7 @@ class TestUpdateSlot:
         mock_slot = mock_slot_factory(
             id_=1, cafe_id=1, start=time(9, 0), end=time(10, 0), active=True
         )
-        service.repo.get_by_id = AsyncMock(return_value=mock_slot)
+        service.repo.get = AsyncMock(return_value=mock_slot)
         service._validate_slot_overlap = AsyncMock()
 
         result = await service.update_slot(
@@ -274,12 +281,14 @@ class TestUpdateSlot:
         self, mock_slot_factory: Callable[..., MagicMock]
     ) -> None:
         """Ошибка при обновлении с неправильным временем."""
-        service = SlotService(session=None)
+        session = AsyncMock()
+        service = SlotService(session)
+        service.repo = AsyncMock()
         mock_slot = mock_slot_factory(
             id_=1, cafe_id=1, start=time(9, 0), end=time(10, 0)
         )
 
-        service.repo.get_by_id = AsyncMock(return_value=mock_slot)
+        service.repo.get = AsyncMock(return_value=mock_slot)
 
         with pytest.raises(ValidationException):
             await service.update_slot(
@@ -295,12 +304,13 @@ class TestUpdateSlot:
         """Ошибка при обновлении слота другого кафе."""
         session = AsyncMock()
         service = SlotService(session)
+        service.repo = AsyncMock()
 
         mock_slot = MagicMock()
         mock_slot.id = 1
         mock_slot.cafe_id = 999
 
-        service.repo.get_by_id = AsyncMock(return_value=mock_slot)
+        service.repo.get = AsyncMock(return_value=mock_slot)
 
         result = await service.update_slot(
             slot_id=1, cafe_id=1, start_time=time(10, 0), end_time=time(11, 0)
@@ -314,8 +324,8 @@ class TestUpdateSlot:
         """Ошибка при обновлении несуществующего слота."""
         session = AsyncMock()
         service = SlotService(session)
-
-        service.repo.get_by_id = AsyncMock(return_value=None)
+        service.repo = AsyncMock()
+        service.repo.get = AsyncMock(return_value=None)
 
         result = await service.update_slot(
             slot_id=999,
@@ -337,7 +347,7 @@ class TestUpdateSlot:
         service.repo = AsyncMock()
 
         mock_slot = mock_slot_factory(id_=1, cafe_id=1, active=True)
-        service.repo.get_by_id = AsyncMock(return_value=mock_slot)
+        service.repo.get = AsyncMock(return_value=mock_slot)
 
         result = await service.update_slot(slot_id=1, cafe_id=1, active=False)
 
@@ -354,6 +364,7 @@ class TestGetCafeSlots:
         """Получение только активных слотов."""
         session = AsyncMock()
         service = SlotService(session)
+        service.repo = AsyncMock()
 
         mock_slots = [MagicMock(id=1), MagicMock(id=2)]
         service.repo.get_all_by_cafe = AsyncMock(return_value=mock_slots)
@@ -369,6 +380,7 @@ class TestGetCafeSlots:
         """Получение всех слотов включая неактивные."""
         session = AsyncMock()
         service = SlotService(session)
+        service.repo = AsyncMock()
 
         mock_slots = [MagicMock(id=1), MagicMock(id=2), MagicMock(id=3)]
         service.repo.get_all_by_cafe = AsyncMock(return_value=mock_slots)

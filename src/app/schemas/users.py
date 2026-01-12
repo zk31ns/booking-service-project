@@ -9,7 +9,7 @@ from pydantic import (
     model_validator,
 )
 
-from app.core.constants import Limits
+from app.core.constants import Examples, Limits
 from app.models.users import User
 from app.utils.validators import validate_phone_format
 
@@ -197,6 +197,24 @@ class UserInfo(UserBase):
         ...,
         description='Дата и время обновления записи',
     )
+    managed_cafes: list[int] = Field(
+        default_factory=list,
+        description='ID кафе, которыми управляет пользователь',
+    )
+
+    @field_validator('managed_cafes', mode='before')
+    def parse_managed_cafes(
+        cls,  # noqa: N805
+        value: object,
+    ) -> list[int]:
+        """Преобразует managed_cafes в список ID кафе."""
+        if value is None:
+            return []
+        if isinstance(value, list):
+            if value and hasattr(value[0], 'id'):
+                return [cafe.id for cafe in value]
+            return value
+        return []
 
     @classmethod
     def from_orm(cls, obj: User) -> 'UserInfo':
@@ -225,8 +243,9 @@ class UserInfo(UserBase):
                 'is_superuser': False,
                 'is_blocked': False,
                 'active': True,
-                'created_at': '2024-01-15T10:30:00',
-                'updated_at': '2024-01-15T10:30:00',
+                'managed_cafes': [1, 2],
+                'created_at': Examples.DATETIME,
+                'updated_at': Examples.DATETIME,
             },
         }
 

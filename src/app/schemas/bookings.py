@@ -2,7 +2,7 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.core.constants import BookingStatus, Limits
+from app.core.constants import BookingStatus, Examples, Limits
 from app.schemas.users import UserShortInfo
 
 
@@ -81,7 +81,7 @@ class BookingCreate(BookingBase):
                 {
                     'guest_number': 2,
                     'cafe_id': 1,
-                    'booking_date': '2026-01-15',
+                    'booking_date': Examples.DATE_TOMORROW,
                     'note': 'Столик у окна',
                     'table_slots': [
                         {'table_id': 3, 'slot_id': 5},
@@ -109,7 +109,7 @@ class BookingUpdate(BookingBase):
         json_schema_extra={
             'examples': [
                 {
-                    'booking_date': '2026-01-20',
+                    'booking_date': Examples.DATE_DAY_AFTER,
                     'note': 'Перенести на вечер',
                     'status': 'confirmed',
                     'active': True,

@@ -5,9 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.dishes.schemas import DishCreate, DishUpdate
 from app.models import Cafe, Dish
+from app.repositories.base import BaseCRUD
 
 
-class DishRepository:
+class DishRepository(BaseCRUD[Dish]):
     """Репозиторий для работы с блюдами."""
 
     def __init__(self, session: AsyncSession) -> None:
@@ -17,7 +18,7 @@ class DishRepository:
             session: Асинхронная сессия SQLAlchemy.
 
         """
-        self.session = session
+        super().__init__(session, Dish)
 
     async def get_all(
         self, show_all: bool = False, cafe_id: int | None = None
@@ -50,9 +51,7 @@ class DishRepository:
             Dish | None: Блюдо или None.
 
         """
-        stmt = select(Dish).where(Dish.id == dish_id)
-        result = await self.session.execute(stmt)
-        return result.scalar_one_or_none()
+        return await self.get(dish_id)
 
     async def create(self, dish_data: DishCreate, cafes: list['Cafe']) -> Dish:
         """Создать блюдо и привязать к кафе.
@@ -73,6 +72,7 @@ class DishRepository:
         dish.cafes = cafes
         self.session.add(dish)
         await self.session.flush()
+        await self.session.refresh(dish)
         return dish
 
     async def update(
@@ -92,7 +92,7 @@ class DishRepository:
             Dish | None: Обновленное блюдо или None.
 
         """
-        dish = await self.get_by_id(dish_id)
+        dish = await self.get(dish_id)
         if not dish:
             return None
 
@@ -100,13 +100,10 @@ class DishRepository:
         update_data.pop('cafes_id', None)
         if update_data.get('photo_id') is not None:
             update_data['photo_id'] = str(update_data['photo_id'])
-        for field, value in update_data.items():
-            setattr(dish, field, value)
         if cafes is not None:
             dish.cafes = cafes
 
-        await self.session.flush()
-        return dish
+        return await super().update(dish, update_data)
 
     async def delete(self, dish_id: int) -> bool:
         """Деактивировать блюдо.

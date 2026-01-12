@@ -1,7 +1,8 @@
 from datetime import time
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.constants import Examples
 from app.schemas.base import AuditedSchema
 
 
@@ -17,6 +18,15 @@ class SlotCreate(BaseModel):
     start_time: time = Field(..., description='Время начала слота')
     end_time: time = Field(..., description='Время окончания слота')
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            'example': {
+                'start_time': Examples.TIME_START,
+                'end_time': Examples.TIME_END,
+            }
+        }
+    )
+
 
 class SlotUpdate(BaseModel):
     """Входные данные для обновления слота.
@@ -31,6 +41,16 @@ class SlotUpdate(BaseModel):
     start_time: time | None = Field(None, description='Время начала слота')
     end_time: time | None = Field(None, description='Время окончания слота')
     active: bool | None = Field(None, description='Активен ли слот')
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            'example': {
+                'start_time': Examples.TIME_UPDATE_START,
+                'end_time': Examples.TIME_UPDATE_END,
+                'active': True,
+            }
+        }
+    )
 
 
 class SlotInfo(AuditedSchema):

@@ -1,8 +1,13 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_db
+from app.api.dependencies import (
+    get_current_superuser,
+    get_db,
+    require_cafe_manager,
+)
 from app.core.constants import API, ErrorCode, Messages
+from app.models import User
 from app.repositories.cafes import CafeRepository
 from app.repositories.tables import TableRepository
 from app.schemas.cafes import Cafe, CafeCreate, CafeUpdate, CafeWithRelations
@@ -94,6 +99,7 @@ async def get_cafe(
 async def create_cafe(
     cafe_create: CafeCreate,
     cafe_service: CafeService = Depends(get_cafe_service),
+    _current_user: User = Depends(get_current_superuser),
 ) -> Cafe:
     """Создать новое кафе.
 
@@ -126,6 +132,7 @@ async def update_cafe(
     cafe_id: int,
     cafe_update: CafeUpdate,
     cafe_service: CafeService = Depends(get_cafe_service),
+    _current_user: User = Depends(require_cafe_manager),
 ) -> Cafe:
     """Обновить данные кафе.
 

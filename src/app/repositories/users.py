@@ -9,6 +9,7 @@ from uuid import UUID
 
 from sqlalchemy import and_, exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from app.core.constants import Limits
@@ -53,7 +54,11 @@ class UserRepository(BaseCRUD[User]):
             Найденный пользователь или None
 
         """
-        query = select(self.model).where(self.model.id == user_id)
+        query = (
+            select(self.model)
+            .options(selectinload(User.managed_cafes))
+            .where(self.model.id == user_id)
+        )
         if active_only:
             query = query.where(self.model.active.is_(True))
         result = await self.session.execute(query)
@@ -79,7 +84,7 @@ class UserRepository(BaseCRUD[User]):
             Список пользователей
 
         """
-        query = select(self.model)
+        query = select(self.model).options(selectinload(User.managed_cafes))
         if active_only:
             query = query.where(self.model.active.is_(True))
         if filters:
@@ -116,7 +121,11 @@ class UserRepository(BaseCRUD[User]):
             Найденный пользователь или None
 
         """
-        query = select(self.model).where(self.model.username == username)
+        query = (
+            select(self.model)
+            .options(selectinload(User.managed_cafes))
+            .where(self.model.username == username)
+        )
         if active_only:
             query = query.where(self.model.active.is_(True))
         result = await self.session.execute(query)
@@ -137,7 +146,11 @@ class UserRepository(BaseCRUD[User]):
             Найденный пользователь или None
 
         """
-        query = select(self.model).where(self.model.email == email)
+        query = (
+            select(self.model)
+            .options(selectinload(User.managed_cafes))
+            .where(self.model.email == email)
+        )
         if active_only:
             query = query.where(self.model.active.is_(True))
         result = await self.session.execute(query)
@@ -158,7 +171,11 @@ class UserRepository(BaseCRUD[User]):
             Найденный пользователь или None
 
         """
-        query = select(self.model).where(self.model.phone == phone)
+        query = (
+            select(self.model)
+            .options(selectinload(User.managed_cafes))
+            .where(self.model.phone == phone)
+        )
         if active_only:
             query = query.where(self.model.active.is_(True))
         result = await self.session.execute(query)

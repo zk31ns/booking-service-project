@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.core.constants import Limits
+from app.core.constants import Examples, Limits
 from app.schemas.base import AuditedSchema
 from app.schemas.cafes import CafeShortInfo
 
@@ -25,7 +25,16 @@ class TableBase(BaseModel):
 class TableCreate(TableBase):
     """Схема создания столика (без cafe_id)."""
 
-    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        populate_by_name=True,
+        json_schema_extra={
+            'example': {
+                'seat_number': 2,
+                'description': 'У окна',
+            }
+        },
+    )
 
 
 class TableCreateDB(TableBase):
@@ -33,7 +42,16 @@ class TableCreateDB(TableBase):
 
     cafe_id: int = Field(description='ID кафе')
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(
+        populate_by_name=True,
+        json_schema_extra={
+            'example': {
+                'cafe_id': 1,
+                'seat_number': 4,
+                'description': 'У барной стойки',
+            }
+        },
+    )
 
 
 class TableUpdate(BaseModel):
@@ -55,8 +73,16 @@ class TableUpdate(BaseModel):
         validation_alias='is_active',
         serialization_alias='is_active',
     )
-
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(
+        populate_by_name=True,
+        json_schema_extra={
+            'example': {
+                'seat_number': 4,
+                'description': 'У барной стойки',
+                'is_active': True,
+            }
+        },
+    )
 
 
 class TableInDBBase(AuditedSchema):
@@ -85,7 +111,19 @@ class TableInDBBase(AuditedSchema):
         description='Информация о кафе',
     )
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(
+        populate_by_name=True,
+        json_schema_extra={
+            'example': {
+                'id': 1,
+                'seat_number': 4,
+                'description': 'У окна',
+                'is_active': True,
+                'created_at': Examples.DATETIME,
+                'updated_at': Examples.DATETIME,
+            }
+        },
+    )
 
 
 class Table(TableInDBBase):

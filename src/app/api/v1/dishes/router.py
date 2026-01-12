@@ -3,7 +3,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_current_user
+from app.api.dependencies import (
+    get_current_manager_or_superuser,
+    get_current_user,
+)
 from app.api.v1.dishes.schemas import DishCreate, DishInfo, DishUpdate
 from app.api.v1.dishes.service import DishService
 from app.core.constants import API
@@ -84,7 +87,7 @@ async def get_dish(
 async def create_dish(
     dish_data: DishCreate,
     service: Annotated[DishService, Depends(get_dish_service)] = None,
-    _current_user: User = Depends(get_current_user),
+    _current_user: User = Depends(get_current_manager_or_superuser),
 ) -> DishInfo:
     """Создать блюдо.
 
@@ -105,7 +108,7 @@ async def update_dish(
     dish_id: int,
     dish_data: DishUpdate,
     service: Annotated[DishService, Depends(get_dish_service)] = None,
-    _current_user: User = Depends(get_current_user),
+    _current_user: User = Depends(get_current_manager_or_superuser),
 ) -> DishInfo:
     """Обновить блюдо по ID.
 

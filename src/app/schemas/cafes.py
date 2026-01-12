@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.core.constants import Limits
+from app.core.constants import Examples, Limits
 from app.schemas.base import AuditedSchema
 from app.schemas.users import UserShortInfo
 
@@ -79,6 +79,18 @@ class CafeCreate(CafeBase):
     managers_id: list[int] = Field(
         description='ID менеджеров кафе',
     )
+    model_config = ConfigDict(
+        json_schema_extra={
+            'example': {
+                'name': 'Cafe Cozy',
+                'address': '1 Lenin St',
+                'phone': '+79990001122',
+                'description': 'Cozy cafe with home cooking',
+                'photo_id': '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+                'managers_id': [1, 2],
+            }
+        }
+    )
 
 
 class CafeUpdate(BaseModel):
@@ -127,8 +139,17 @@ class CafeUpdate(BaseModel):
         default=None,
         description='ID фотографии кафе',
     )
-
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(
+        populate_by_name=True,
+        json_schema_extra={
+            'example': {
+                'name': 'Cafe Sweet',
+                'description': 'Updated description',
+                'is_active': True,
+                'managers_id': [2],
+            }
+        },
+    )
 
 
 class CafeInDBBase(AuditedSchema):
@@ -194,8 +215,8 @@ class Cafe(CafeInDBBase):
                         }
                     ],
                     'active': True,
-                    'created_at': '2026-01-12T02:00',
-                    'updated_at': '2026-01-12T02:00',
+                    'created_at': Examples.DATETIME,
+                    'updated_at': Examples.DATETIME,
                 }
             ]
         },

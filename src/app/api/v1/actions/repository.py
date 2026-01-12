@@ -6,9 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.actions.schemas import ActionCreate, ActionUpdate
 from app.core.constants import Limits
 from app.models import Action, Cafe
+from app.repositories.base import BaseCRUD
 
 
-class ActionRepository:
+class ActionRepository(BaseCRUD[Action]):
     """Репозиторий для работы с акциями."""
 
     def __init__(self, session: AsyncSession) -> None:
@@ -18,7 +19,7 @@ class ActionRepository:
             session: Асинхронная сессия SQLAlchemy.
 
         """
-        self.session = session
+        super().__init__(session, Action)
 
     async def get_all(
         self, show_all: bool = False, cafe_id: int | None = None
@@ -51,9 +52,7 @@ class ActionRepository:
             Action | None: Акция или None.
 
         """
-        stmt = select(Action).where(Action.id == action_id)
-        result = await self.session.execute(stmt)
-        return result.scalar_one_or_none()
+        return await self.get(action_id)
 
     async def create(
         self, action_data: ActionCreate, cafes: list['Cafe']
@@ -80,6 +79,7 @@ class ActionRepository:
         action.cafes = cafes
         self.session.add(action)
         await self.session.flush()
+        await self.session.refresh(action)
         return action
 
     async def update(
@@ -99,7 +99,7 @@ class ActionRepository:
             Action | None: Обновленная акция или None.
 
         """
-        action = await self.get_by_id(action_id)
+        action = await self.get(action_id)
         if not action:
             return None
 
@@ -107,13 +107,10 @@ class ActionRepository:
         update_data.pop('cafes_id', None)
         if update_data.get('photo_id') is not None:
             update_data['photo_id'] = str(update_data['photo_id'])
-        for field, value in update_data.items():
-            setattr(action, field, value)
         if cafes is not None:
             action.cafes = cafes
 
-        await self.session.flush()
-        return action
+        return await super().update(action, update_data)
 
     async def delete(self, action_id: int) -> bool:
         """Деактивировать акцию.

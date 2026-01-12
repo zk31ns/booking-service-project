@@ -20,6 +20,7 @@
 """
 
 import re
+from datetime import date, datetime, timedelta
 from enum import StrEnum
 
 # ========== API и Таги ==========
@@ -161,6 +162,21 @@ class Times:
     # Telegram request and connection (in seconds)
     TELEGRAM_REQUEST_TIMEOUT = 30
     TELEGRAM_CONNECT_TIMEOUT = 10
+
+
+# ========== Примеры для схем ==========
+
+
+class Examples:
+    """Примеры значений для схем и документации."""
+
+    DATETIME = datetime.now().strftime(Times.DATETIME_FORMAT)
+    DATE_TOMORROW = (date.today() + timedelta(days=1)).isoformat()
+    DATE_DAY_AFTER = (date.today() + timedelta(days=2)).isoformat()
+    TIME_START = '10:00'
+    TIME_END = '12:00'
+    TIME_UPDATE_START = '12:00'
+    TIME_UPDATE_END = '13:00'
 
 
 # ========== Enum классы ==========
@@ -557,6 +573,7 @@ __all__ = [
     'API',
     'Limits',
     'Times',
+    'Examples',
     'Messages',
     'CeleryTasks',
     'Patterns',

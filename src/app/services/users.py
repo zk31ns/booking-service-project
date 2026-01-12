@@ -56,12 +56,23 @@ class UserService:
             UserInfo: Информация о пользователе
 
         """
+        if current_user is None:
+            raise AuthenticationException(
+                ErrorCode.AUTHENTICATION_REQUIRED,
+                extra={'action': 'просмотр'},
+            )
+
+        if not current_user.is_superuser and current_user.id != user_id:
+            raise AuthorizationException(
+                ErrorCode.INSUFFICIENT_PERMISSIONS,
+                extra={'action': 'просмотр', 'target_user_id': user_id},
+            )
+
         user = await self.user_repo.get(user_id, active_only=True)
         if not user:
             raise NotFoundException(
                 ErrorCode.USER_NOT_FOUND, extra={'user_id': user_id}
             )
-        await self._check_user_access(user, current_user, 'просмотр')
         return UserInfo.from_orm(user)
 
     async def get_users_list(
@@ -146,7 +157,7 @@ class UserService:
                 extra={'original_error': str(e)},
             )
 
-    async def update_user(
+    async def update_user(  # noqa: C901
         self,
         user_id: int,
         user_update: UserUpdate,
@@ -201,10 +212,20 @@ class UserService:
                             },
                         )
 
+                await self.session.refresh(
+                    user, attribute_names=['managed_cafes']
+                )
                 user.managed_cafes = cafes
 
             updated_user = await self.user_repo.update_user(user, update_data)
             return UserInfo.from_orm(updated_user)
+        except (
+            AuthorizationException,
+            ValidationException,
+            NotFoundException,
+            ConflictException,
+        ) as e:
+            raise e
         except IntegrityError as e:
             raise ConflictException(
                 ErrorCode.USER_ALREADY_EXISTS,

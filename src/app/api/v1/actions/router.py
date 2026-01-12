@@ -3,7 +3,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_current_user
+from app.api.dependencies import (
+    get_current_manager_or_superuser,
+    get_current_user,
+)
 from app.api.v1.actions.schemas import (
     ActionCreate,
     ActionInfo,
@@ -91,7 +94,7 @@ async def get_action(
 async def create_action(
     action_data: ActionCreate,
     service: Annotated[ActionService, Depends(get_action_service)] = None,
-    _current_user: User = Depends(get_current_user),
+    _current_user: User = Depends(get_current_manager_or_superuser),
 ) -> ActionInfo:
     """Создать акцию.
 
@@ -112,7 +115,7 @@ async def update_action(
     action_id: int,
     action_data: ActionUpdate,
     service: Annotated[ActionService, Depends(get_action_service)] = None,
-    _current_user: User = Depends(get_current_user),
+    _current_user: User = Depends(get_current_manager_or_superuser),
 ) -> ActionInfo:
     """Обновить акцию по ID.
 

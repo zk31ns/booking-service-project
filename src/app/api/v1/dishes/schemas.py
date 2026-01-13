@@ -96,7 +96,7 @@ class DishInfo(AuditedSchema):
     )
     active: bool = Field(
         ...,
-        validation_alias='active',
+        validation_alias='is_active',
         serialization_alias='is_active',
         description='Признак активности блюда.',
     )

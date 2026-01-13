@@ -50,8 +50,8 @@ class BookingRepository(BaseCRUD[Booking]):
                 TableSlot.slot_id == slot_id,
                 self.model.booking_date == date,
                 self.model.status.in_([
-                    BookingStatus.PENDING,
-                    BookingStatus.CONFIRMED,
+                    BookingStatus.BOOKING,
+                    BookingStatus.ACTIVE,
                 ]),
                 self.model.active.is_(True),
             )
@@ -92,8 +92,8 @@ class BookingRepository(BaseCRUD[Booking]):
                 Booking.user_id == user_id,
                 Booking.booking_date == booking_date,
                 Booking.status.in_([
-                    BookingStatus.PENDING,
-                    BookingStatus.CONFIRMED,
+                    BookingStatus.BOOKING,
+                    BookingStatus.ACTIVE,
                 ]),
                 Booking.active.is_(True),
                 (start_time < Slot.end_time) & (end_time > Slot.start_time),
@@ -111,19 +111,22 @@ class BookingRepository(BaseCRUD[Booking]):
         self,
         user_id: int | None = None,
         cafe_id: int | None = None,
+        show_all: bool = False,
     ) -> list[Booking]:
         """Получить список бронирований с фильтрами.
 
         Args:
             user_id: ID пользователя для фильтра.
             cafe_id: ID кафе для фильтра.
+            show_all: Показывать все бронирования, включая неактивные.
 
         Returns:
             list[Booking]: Список бронирований.
 
         """
         query = select(Booking).options(
-            selectinload(Booking.table_slots),
+            selectinload(Booking.table_slots).selectinload(TableSlot.table),
+            selectinload(Booking.table_slots).selectinload(TableSlot.slot),
             selectinload(Booking.cafe),
             selectinload(Booking.user),
         )
@@ -134,8 +137,28 @@ class BookingRepository(BaseCRUD[Booking]):
         if cafe_id is not None:
             query = query.where(Booking.cafe_id == cafe_id)
 
+        if not show_all:
+            query = query.where(Booking.active.is_(True))
+
         result = await self.session.execute(query)
         return list(result.scalars().all())
+
+    async def get(self, obj_id: int | str) -> Booking | None:
+        """Получить бронирование по ID с зависимыми сущностями."""
+        query = (
+            select(Booking)
+            .options(
+                selectinload(Booking.table_slots).selectinload(
+                    TableSlot.table
+                ),
+                selectinload(Booking.table_slots).selectinload(TableSlot.slot),
+                selectinload(Booking.cafe),
+                selectinload(Booking.user),
+            )
+            .where(Booking.id == obj_id)
+        )
+        result = await self.session.execute(query)
+        return result.scalar_one_or_none()
 
     async def create(
         self, obj_in: BookingCreate, user: User | None = None
@@ -224,8 +247,7 @@ class BookingRepository(BaseCRUD[Booking]):
         query = select(func.count(Booking.id)).where(
             Booking.booking_date < now,
             Booking.status.in_([
-                BookingStatus.PENDING,
-                BookingStatus.CONFIRMED,
+                BookingStatus.BOOKING,
             ]),
         )
         result = await self.session.execute(query)
@@ -249,10 +271,9 @@ class BookingRepository(BaseCRUD[Booking]):
             .where(
                 Booking.booking_date < now,
                 Booking.status.in_([
-                    BookingStatus.PENDING,
-                    BookingStatus.CONFIRMED,
+                    BookingStatus.BOOKING,
                 ]),
             )
-            .values(status=BookingStatus.COMPLETED, active=False)
+            .values(status=BookingStatus.CANCELED, active=False)
         )
         await self.session.execute(query)

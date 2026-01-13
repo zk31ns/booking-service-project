@@ -59,6 +59,18 @@ class Settings(BaseSettings):
         env='REFRESH_TOKEN_EXPIRE_DAYS',
     )
 
+    # ========== Superadmin ==========
+    superadmin_username: str = Field(
+        ...,
+        env='SUPERADMIN_USERNAME',
+        description='Логин администратора по умолчанию',
+    )
+    superadmin_password: str = Field(
+        ...,
+        env='SUPERADMIN_PASSWORD',
+        description='Пароль администратора по умолчанию',
+    )
+
     # ========== Redis ==========
     redis_url: str = Field(..., env='REDIS_URL', description='Адрес Redis')
 

@@ -23,6 +23,11 @@ router = APIRouter(prefix='/media', tags=API.MEDIA)
     '',
     status_code=status.HTTP_200_OK,
     response_model=MediaInfo,
+    summary='Загрузка изображения',
+    description=(
+        'Загрузка изображения на сервер. Поддерживаются форматы jpg, png. '
+        'Размер файла не более 5Мб. Только для администраторов и менеджеров'
+    ),
 )
 async def upload_media(
     file: UploadFile = File(...),
@@ -61,6 +66,7 @@ async def upload_media(
 @router.get(
     '/{media_id}',
     response_class=FileResponse,
+    summary='Возвращает изображение в бинарном формате',
     responses={
         200: {
             'content': {
@@ -71,7 +77,9 @@ async def upload_media(
                     'schema': {'type': 'string', 'format': 'binary'}
                 },
             },
-            'description': 'Media file',
+            'description': (
+                'Успешно. Возвращает изображение в бинарном формате'
+            ),
         }
     },
 )

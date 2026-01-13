@@ -191,8 +191,8 @@ class BookingRepository(BaseCRUD[Booking]):
         self.session.add(booking)
         await self.session.flush()
         await self.session.refresh(booking)
-
-        return booking
+        refreshed = await self.get(booking.id)
+        return refreshed or booking
 
     async def update(
         self,
@@ -229,7 +229,8 @@ class BookingRepository(BaseCRUD[Booking]):
                 booking.table_slots.append(table_slot)
 
         await self.session.refresh(booking)
-        return booking
+        refreshed = await self.get(booking.id)
+        return refreshed or booking
 
     async def get_expired_bookings(
         self,

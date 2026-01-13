@@ -11,4 +11,5 @@ class AuthData(BaseModel):
     password: str = Field(
         ...,
         description='Пароль пользователя',
+        json_schema_extra={'format': 'password', 'writeOnly': True},
     )

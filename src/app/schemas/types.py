@@ -28,22 +28,18 @@ class TokenDict(TypedDict):
 
 
 class AuthResponseDict(TypedDict):
-    """Полный ответ аутентификации с информацией о пользователе.
+    """Ответ аутентификации.
 
     Возвращается при успешной аутентификации через POST /auth/login.
 
     Attributes:
         access_token: JWT токен доступа.
-        refresh_token: JWT токен обновления.
         token_type: Тип токена (обычно 'bearer').
-        user: Информация о пользователе (из схемы UserInfo).
 
     """
 
     access_token: str
-    refresh_token: str
     token_type: str
-    user: dict[str, Any]
 
 
 class RefreshTokenResponseDict(TypedDict):

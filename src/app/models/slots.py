@@ -1,10 +1,11 @@
 from datetime import time
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Time
+from sqlalchemy import ForeignKey, String, Time
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base import TimestampedModel
+from app.core.constants import Limits
 
 if TYPE_CHECKING:
     from app.models.cafes import Cafe
@@ -32,6 +33,10 @@ class Slot(TimestampedModel):
     )
     start_time: Mapped[time] = mapped_column(Time, nullable=False)
     end_time: Mapped[time] = mapped_column(Time, nullable=False)
+    description: Mapped[str | None] = mapped_column(
+        String(Limits.MAX_DESCRIPTION_LENGTH),
+        nullable=True,
+    )
     cafe: Mapped['Cafe'] = relationship(
         'Cafe',
         foreign_keys=[cafe_id],

@@ -31,14 +31,24 @@ class ActiveSchema(BaseResponse):
     """Схема с id и флагом активности."""
 
     id: int = Field(..., description='Идентификатор записи')
-    active: bool = Field(default=True, description='Флаг активности')
+    active: bool = Field(
+        default=True,
+        description='Флаг активности',
+        validation_alias='is_active',
+        serialization_alias='is_active',
+    )
 
 
 class AuditedSchema(BaseResponse):
     """Схема с id, аудитом и флагом активности."""
 
     id: int = Field(..., description='Идентификатор записи')
-    active: bool = Field(default=True, description='Флаг активности')
+    active: bool = Field(
+        default=True,
+        description='Флаг активности',
+        validation_alias='is_active',
+        serialization_alias='is_active',
+    )
     created_at: datetime = Field(..., description='Время создания')
     updated_at: datetime = Field(..., description='Время обновления')
 

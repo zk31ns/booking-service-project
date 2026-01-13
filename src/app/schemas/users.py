@@ -9,7 +9,7 @@ from pydantic import (
     model_validator,
 )
 
-from app.core.constants import Examples, Limits
+from app.core.constants import Examples, Limits, UserRole
 from app.models.users import User
 from app.utils.validators import validate_phone_format
 
@@ -113,9 +113,10 @@ class UserUpdate(BaseModel):
         phone (Optional[str]): Номер телефона пользователя в формате E.164.
         tg_id (Optional[str]): Идентификатор Telegram для уведомлений.
         password (Optional[str]): Новый пароль пользователя.
-        is_blocked (Optional[bool]): Флаг блокировки пользователя.
-        is_superuser (Optional[bool]): Флаг администратора системы.
+        role (Optional[UserRole]): Роль пользователя.
         active (Optional[bool]): Флаг активности пользователя.
+        managed_cafes (Optional[List[int]]): ID кафе, которыми управляет
+            пользователь.
 
     """
 
@@ -144,17 +145,14 @@ class UserUpdate(BaseModel):
         max_length=Limits.MAX_PASSWORD_LENGTH,
         description='Новый пароль пользователя',
     )
-    is_blocked: bool | None = Field(
+    role: UserRole | None = Field(
         None,
-        description='Флаг блокировки пользователя',
-    )
-    is_superuser: bool | None = Field(
-        None,
-        description='Флаг администратора системы',
+        description='Роль пользователя',
     )
     active: bool | None = Field(
         None,
         description='Флаг активности пользователя',
+        alias='is_active',
     )
     managed_cafes: list[int] | None = Field(
         None,
@@ -166,7 +164,7 @@ class UserUpdate(BaseModel):
         """Валидирует формат телефонного номера."""
         return validate_phone_format(phone)
 
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(extra='forbid', populate_by_name=True)
 
 
 class UserInfo(UserBase):
@@ -177,18 +175,24 @@ class UserInfo(UserBase):
 
     Attributes:
         id (int): Уникальный идентификатор пользователя.
-        is_superuser (bool): Флаг администратора системы.
-        is_blocked (bool): Флаг блокировки пользователя.
+        role (UserRole): Роль пользователя.
         active (bool): Флаг активности пользователя.
         created_at (datetime): Дата и время создания записи.
         updated_at (datetime): Дата и время последнего обновления записи.
+        managed_cafes (List[int]): ID кафе, которыми управляет пользователь.
 
     """
 
     id: int = Field(..., description='Уникальный идентификатор пользователя')
-    is_superuser: bool = Field(..., description='Флаг администратора системы')
-    is_blocked: bool = Field(..., description='Флаг блокировки пользователя')
-    active: bool = Field(..., description='Флаг активности пользователя')
+    role: UserRole = Field(
+        default=UserRole.USER,
+        description='Роль пользователя',
+    )
+    active: bool = Field(
+        ...,
+        description='Флаг активности пользователя',
+        alias='is_active',
+    )
     created_at: datetime = Field(
         ...,
         description='Дата и время создания записи',
@@ -203,7 +207,7 @@ class UserInfo(UserBase):
     )
 
     @field_validator('managed_cafes', mode='before')
-    def parse_managed_cafes(
+    def parse_managed_cafes(  # noqa: N805
         cls,  # noqa: N805
         value: object,
     ) -> list[int]:
@@ -227,12 +231,25 @@ class UserInfo(UserBase):
             UserInfo: Экземпляр UserInfo.
 
         """
-        return cls.model_validate(obj, from_attributes=True)
+        user_info = cls.model_validate(obj, from_attributes=True)
+        user_info.role = cls._resolve_role(obj)
+        return user_info
+
+    @staticmethod
+    def _resolve_role(user: User) -> UserRole:
+        """Определяет роль пользователя по данным модели."""
+        if user.is_superuser:
+            return UserRole.ADMIN
+        if getattr(user, 'managed_cafes', None):
+            if user.managed_cafes:
+                return UserRole.MANAGER
+        return UserRole.USER
 
     class Config:
         """Конфигурация Pydantic схемы."""
 
         from_attributes = True
+        populate_by_name = True
         json_schema_extra = {
             'example': {
                 'id': 1,
@@ -240,9 +257,8 @@ class UserInfo(UserBase):
                 'email': 'ivanov@example.com',
                 'phone': '+79161234567',
                 'tg_id': '123456789',
-                'is_superuser': False,
-                'is_blocked': False,
-                'active': True,
+                'role': UserRole.USER,
+                'is_active': True,
                 'managed_cafes': [1, 2],
                 'created_at': Examples.DATETIME,
                 'updated_at': Examples.DATETIME,

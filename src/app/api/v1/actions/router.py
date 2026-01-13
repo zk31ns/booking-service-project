@@ -37,10 +37,16 @@ async def get_action_service(
 
 @router.get('', response_model=list[ActionInfo])
 async def get_actions(
-    show_all: bool = Query(False, description='Включать неактивные акции.'),
+    show_all: bool = Query(
+        True,
+        description=(
+            'Показывать все акции или нет. По умолчанию показывает все акции'
+        ),
+    ),
     cafe_id: int | None = Query(
         None, description='Фильтр по ID кафе, если нужен.'
     ),
+    session: AsyncSession = Depends(get_session),
     service: Annotated[ActionService, Depends(get_action_service)] = None,
     _current_user: User = Depends(get_current_user),
 ) -> list[ActionInfo]:
@@ -49,8 +55,9 @@ async def get_actions(
     Args:
         show_all: Возвращать неактивные акции.
         cafe_id: Фильтр по ID кафе.
+        session: Асинхронная сессия БД.
         service: Сервис для работы с акциями.
-        _current_user: Текущий пользователь.
+        current_user: Текущий пользователь.
 
     Returns:
         list[ActionInfo]: Список акций.

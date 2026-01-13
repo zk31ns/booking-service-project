@@ -33,10 +33,16 @@ async def get_dish_service(
 
 @router.get('', response_model=list[DishInfo])
 async def get_dishes(
-    show_all: bool = Query(False, description='Включать неактивные блюда.'),
+    show_all: bool = Query(
+        True,
+        description=(
+            'Показывать все блюда или нет. По умолчанию показывает все блюда'
+        ),
+    ),
     cafe_id: int | None = Query(
         None, description='Фильтр по ID кафе, если нужен.'
     ),
+    session: AsyncSession = Depends(get_session),
     service: Annotated[DishService, Depends(get_dish_service)] = None,
     _current_user: User = Depends(get_current_user),
 ) -> list[DishInfo]:
@@ -45,8 +51,9 @@ async def get_dishes(
     Args:
         show_all: Возвращать неактивные блюда.
         cafe_id: Фильтр по ID кафе.
+        session: Асинхронная сессия БД.
         service: Сервис для работы с блюдами.
-        _current_user: Текущий пользователь.
+        current_user: Текущий пользователь.
 
     Returns:
         list[DishInfo]: Список блюд.

@@ -22,6 +22,25 @@ class TableBase(BaseModel):
     )
 
 
+class TableShortInfo(BaseModel):
+    """Краткая информация о столике."""
+
+    id: int = Field(description='ID столика')
+    description: str | None = Field(
+        default=None,
+        description='Описание столика',
+    )
+    seats: int = Field(
+        ge=Limits.MIN_SEATS,
+        le=Limits.MAX_SEATS,
+        validation_alias='seat_number',
+        serialization_alias='seat_number',
+        description='Количество мест за столом',
+    )
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
 class TableCreate(TableBase):
     """Схема создания столика (без cafe_id)."""
 

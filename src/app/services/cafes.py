@@ -43,42 +43,46 @@ class CafeService(EntityValidationMixin[Cafe]):
 
     async def get_all_cafes(
         self,
-        active_only: bool = True,
+        show_all: bool = True,
     ) -> list[Cafe]:
         """Получить список всех кафе.
 
         Args:
-            active_only: Флаг фильтрации только активных кафе.
+            show_all: Показывать все кафе, включая неактивные.
 
         Returns:
             list[Cafe]: Список объектов кафе.
 
         """
+        active_only = not show_all
         return await self.cafe_repository.get_all(
             active_only=active_only,
         )
 
-    async def get_cafe_by_id(self, cafe_id: int) -> Cafe:
+    async def get_cafe_by_id(
+        self,
+        cafe_id: int,
+        allow_inactive: bool = False,
+    ) -> Cafe:
         """Получить кафе по идентификатору.
 
         Args:
             cafe_id: Идентификатор кафе.
+            allow_inactive: Разрешить получение неактивных кафе.
 
         Returns:
             Cafe: Объект кафе.
 
         Raises:
             AppException: Если кафе не найдено (статус 404).
-            AppException: Если кафе удалено (статус 410).
 
         """
         cafe = await self.cafe_repository.get_by_id(cafe_id)
-        return await self._validate_exists_and_active(
-            cafe,
-            'Cafe',
-            ErrorCode.CAFE_NOT_FOUND,
-            ErrorCode.CAFE_INACTIVE,
-        )
+        if not cafe:
+            raise NotFoundException(ErrorCode.CAFE_NOT_FOUND)
+        if not allow_inactive and not cafe.active:
+            raise NotFoundException(ErrorCode.CAFE_NOT_FOUND)
+        return cafe
 
     async def create_cafe(self, cafe_create: CafeCreate) -> Cafe:
         """Создать новое кафе.
@@ -245,6 +249,13 @@ class CafeService(EntityValidationMixin[Cafe]):
                 extra={'user_ids': missing_ids},
             )
         return managers
+
+    async def is_user_manager(self, user_id: int) -> bool:
+        """Проверить, что пользователь менеджер хотя бы одного кафе."""
+        result = await self.session.execute(
+            select(cafe_managers).where(cafe_managers.c.user_id == user_id)
+        )
+        return result.scalar() is not None
 
     async def get_cafe_stats(self, cafe_id: int) -> dict:
         """Получить статистику по кафе.

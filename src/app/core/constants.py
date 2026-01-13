@@ -21,7 +21,7 @@
 
 import re
 from datetime import date, datetime, timedelta
-from enum import StrEnum
+from enum import IntEnum, StrEnum
 
 # ========== API и Таги ==========
 
@@ -32,18 +32,18 @@ class API:
     V1_PREFIX = '/api/v1'
 
     # Таги для OpenAPI документации
-    ROOT = ['Greeting']
-    HEALTH = ['System_Health']
-    AUTH = ['Authentication']
-    USERS = ['Users']
-    CAFES = ['Cafes']
-    TABLES = ['Tables']
-    SLOTS = ['Slots']
-    DISHES = ['Dishes']
-    ACTIONS = ['Actions']
-    BOOKING = ['Booking']
-    PENDING = ['Pending_Bookings']
-    MEDIA = ['Media_Files']
+    ROOT = ['Приветствие']
+    HEALTH = ['Системное здоровье']
+    AUTH = ['Аутентификация']
+    USERS = ['Пользователи']
+    CAFES = ['Кафе']
+    TABLES = ['Столы']
+    SLOTS = ['Временные слоты']
+    DISHES = ['Блюда']
+    ACTIONS = ['Акции']
+    BOOKING = ['Бронирования']
+    PENDING = ['Ожидающие бронирования']
+    MEDIA = ['Медиа']
 
 
 # ========== Размеры и Лимиты ==========
@@ -151,7 +151,7 @@ class Times:
     # Форматы даты/времени для уведомлений и UI
     DATE_FORMAT = '%d.%m.%Y'
     TIME_FORMAT = '%H:%M'
-    DATETIME_FORMAT = '%Y-%m-%dT%H:%M'
+    DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
     # Время хранения кэща Redis
     REDIS_CACHE_EXPIRE_TIME = 300
@@ -171,12 +171,16 @@ class Examples:
     """Примеры значений для схем и документации."""
 
     DATETIME = datetime.now().strftime(Times.DATETIME_FORMAT)
+    CAFE_DATETIME_EXAMPLE = datetime.now().strftime(Times.DATETIME_FORMAT)
     DATE_TOMORROW = (date.today() + timedelta(days=1)).isoformat()
     DATE_DAY_AFTER = (date.today() + timedelta(days=2)).isoformat()
     TIME_START = '10:00'
     TIME_END = '12:00'
     TIME_UPDATE_START = '12:00'
     TIME_UPDATE_END = '13:00'
+
+
+# ========== Значения по умолчанию ==========
 
 
 # ========== Enum классы ==========
@@ -189,21 +193,20 @@ class RedisKey(StrEnum):
     CACHE_KEY_ALL_SLOTS = 'slots:all'  # ключ для кэша слотов
 
 
-class BookingStatus(StrEnum):
+class BookingStatus(IntEnum):
     """Статусы бронирований."""
 
-    PENDING = 'pending'
-    CONFIRMED = 'confirmed'
-    CANCELLED = 'cancelled'
-    COMPLETED = 'completed'
+    BOOKING = 0
+    CANCELED = 1
+    ACTIVE = 2
 
 
-class UserRole(StrEnum):
+class UserRole(IntEnum):
     """Роли пользователей."""
 
-    CUSTOMER = 'customer'  # Клиент
-    MANAGER = 'manager'  # Менеджер кафе
-    ADMIN = 'admin'  # Администратор
+    USER = 0
+    MANAGER = 1
+    ADMIN = 2
 
 
 # ========== Бизнес-правила для бронирования ==========
@@ -213,46 +216,37 @@ class BookingRules:
     """Бизнес-правила для работы с бронированиями."""
 
     # Статусы, активной брони (видимой для редактирования)
-    ACTIVE_STATUSES = {BookingStatus.PENDING, BookingStatus.CONFIRMED}
+    ACTIVE_STATUSES = {BookingStatus.BOOKING, BookingStatus.ACTIVE}
 
     # Статусы, при которых бронь считается завершенной/неактивной
-    INACTIVE_STATUSES = {BookingStatus.CANCELLED, BookingStatus.COMPLETED}
+    INACTIVE_STATUSES = {BookingStatus.CANCELED}
 
     # Разрешенные переходы статусов для каждой роли
     # Формат: {роль: {текущий_статус: {разрешенные_новые_статусы}}}
     STATUS_TRANSITIONS = {
-        UserRole.CUSTOMER: {
-            BookingStatus.PENDING: {BookingStatus.CANCELLED},
-            BookingStatus.CONFIRMED: {BookingStatus.CANCELLED},
-            BookingStatus.CANCELLED: set(),
-            BookingStatus.COMPLETED: set(),
+        UserRole.USER: {
+            BookingStatus.BOOKING: {BookingStatus.CANCELED},
+            BookingStatus.ACTIVE: {BookingStatus.CANCELED},
+            BookingStatus.CANCELED: set(),
         },
         UserRole.MANAGER: {
-            BookingStatus.PENDING: {
-                BookingStatus.CONFIRMED,
-                BookingStatus.CANCELLED,
+            BookingStatus.BOOKING: {
+                BookingStatus.ACTIVE,
+                BookingStatus.CANCELED,
             },
-            BookingStatus.CONFIRMED: {
-                BookingStatus.CANCELLED,
-                BookingStatus.COMPLETED,
-            },
-            BookingStatus.CANCELLED: set(),
-            BookingStatus.COMPLETED: set(),
+            BookingStatus.ACTIVE: {BookingStatus.CANCELED},
+            BookingStatus.CANCELED: set(),
         },
         UserRole.ADMIN: {
-            BookingStatus.PENDING: {
-                BookingStatus.CONFIRMED,
-                BookingStatus.CANCELLED,
+            BookingStatus.BOOKING: {
+                BookingStatus.ACTIVE,
+                BookingStatus.CANCELED,
             },
-            BookingStatus.CONFIRMED: {
-                BookingStatus.CANCELLED,
-                BookingStatus.COMPLETED,
+            BookingStatus.ACTIVE: {BookingStatus.CANCELED},
+            BookingStatus.CANCELED: {
+                BookingStatus.BOOKING,
+                BookingStatus.ACTIVE,
             },
-            BookingStatus.CANCELLED: {
-                BookingStatus.PENDING,
-                BookingStatus.CONFIRMED,
-            },
-            BookingStatus.COMPLETED: {BookingStatus.CONFIRMED},
         },
     }
 
@@ -428,7 +422,8 @@ class Messages:
         ErrorCode.INSUFFICIENT_PERMISSIONS: 'Недостаточно прав доступа',
         ErrorCode.INVALID_STATUS_TRANSITION: 'Неверный переход статуса',
         ErrorCode.CANNOT_ACTIVATE_INACTIVE_STATUS: (
-            'Нельзя активировать бронь с неактивным статусом'
+            'Нельзя активировать бронь с отмененным (CANCELED) статусом. '
+            'Исключение для администратора'
         ),
         ErrorCode.CANNOT_DEACTIVATE_ACTIVE_STATUS: (
             'Нельзя деактивировать бронь с активным статусом'

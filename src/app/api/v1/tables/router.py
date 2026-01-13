@@ -1,8 +1,13 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_db, require_cafe_manager
+from app.api.dependencies import (
+    get_current_user,
+    get_db,
+    require_cafe_manager,
+)
 from app.core.constants import API, ErrorCode, Messages
+from app.core.exceptions import AuthorizationException
 from app.models import User
 from app.repositories.cafes import CafeRepository
 from app.repositories.tables import TableRepository
@@ -42,13 +47,14 @@ def get_table_service(
 async def get_tables_for_cafe(
     cafe_id: int,
     show_all: bool = Query(
-        False,
+        True,
         description=(
-            'Показывать все столики, включая неактивные. '
-            'По умолчанию возвращаются только активные.'
+            'Показывать все столы в кафе или нет. '
+            'По умолчанию показывает все столы.'
         ),
     ),
     table_service: TableService = Depends(get_table_service),
+    _current_user: User = Depends(get_current_user),
 ) -> list[Table]:
     """Получить список столиков для кафе.
 
@@ -56,6 +62,7 @@ async def get_tables_for_cafe(
         cafe_id: ID кафе.
         show_all: Флаг показа всех столиков.
         table_service: Сервис для работы со столиками.
+        current_user: Текущий пользователь.
 
     Returns:
         list[Table]: Список столиков.
@@ -64,6 +71,7 @@ async def get_tables_for_cafe(
     return await table_service.get_all_tables_for_cafe(
         cafe_id=cafe_id,
         active_only=not show_all,
+        allow_inactive_cafe=show_all,
     )
 
 
@@ -73,13 +81,13 @@ async def get_tables_for_cafe(
     summary='Получение информации о столике в кафе по его ID',
     responses={
         404: {'description': Messages.errors[ErrorCode.TABLE_NOT_FOUND]},
-        410: {'description': Messages.errors[ErrorCode.TABLE_INACTIVE]},
     },
 )
 async def get_table(
     cafe_id: int,
     table_id: int,
     table_service: TableService = Depends(get_table_service),
+    current_user: User = Depends(get_current_user),
 ) -> Table:
     """Получить информацию о столике по ID и ID кафе.
 
@@ -87,12 +95,28 @@ async def get_table(
         cafe_id: ID кафе.
         table_id: ID столика.
         table_service: Сервис для работы со столиками.
+        current_user: Текущий пользователь.
 
     Returns:
         Table: Данные столика.
 
     """
-    return await table_service.get_table_by_cafe_and_id(cafe_id, table_id)
+    allow_inactive = False
+    try:
+        await require_cafe_manager(
+            cafe_id=cafe_id,
+            current_user=current_user,
+            session=table_service.cafe_repository.session,
+        )
+        allow_inactive = True
+    except AuthorizationException:
+        allow_inactive = False
+
+    return await table_service.get_table_by_cafe_and_id(
+        cafe_id,
+        table_id,
+        allow_inactive=allow_inactive,
+    )
 
 
 @router.post(

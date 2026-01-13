@@ -214,7 +214,7 @@ class Cafe(CafeInDBBase):
                             'tg_id': '123456789',
                         }
                     ],
-                    'active': True,
+                    'is_active': True,
                     'created_at': Examples.DATETIME,
                     'updated_at': Examples.DATETIME,
                 }

@@ -111,7 +111,7 @@ class BookingService:
     async def get_all_bookings(
         self,
         current_user: User,
-        show_all: bool = True,
+        show_all: bool = False,
         cafe_id: int | None = None,
         user_id: int | None = None,
     ) -> list[Booking]:
@@ -123,8 +123,8 @@ class BookingService:
 
         Args:
             current_user: Текущий пользователь
-            show_all: Показывать все бронирования (True) или
-            только свои (False)
+            show_all: Показывать все бронирования, включая неактивные (True),
+            или только активные (False).
             cafe_id: ID кафе для фильтрации
             user_id: ID пользователя для фильтрации
 
@@ -136,12 +136,14 @@ class BookingService:
 
         """
         is_manager = await self.user_repo.is_manager(user_id=current_user.id)
-        if (not current_user.is_superuser and not is_manager) or not show_all:
+        if not current_user.is_superuser and not is_manager:
             user_id = current_user.id
+            show_all = False
 
         return await self.booking_repo.get_multi(
             user_id=user_id,
             cafe_id=cafe_id,
+            show_all=show_all,
         )
 
     async def get_booking(
@@ -479,12 +481,12 @@ class BookingService:
             return UserRole.ADMIN
         if await self.user_repo.is_manager(user.id):
             return UserRole.MANAGER
-        return UserRole.CUSTOMER
+        return UserRole.USER
 
     async def _process_status_update(
         self,
         booking: Booking,
-        new_status_value: str,
+        new_status_value: BookingStatus,
         user_role: UserRole,
         update_data: dict,
         current_user: User,
@@ -515,7 +517,7 @@ class BookingService:
         if new_status not in allowed_transitions:
             raise AppException(ErrorCode.INVALID_STATUS_TRANSITION)
 
-        update_data['status'] = new_status_value
+        update_data['status'] = int(new_status)
 
         if 'active' not in update_data:
             update_data['active'] = new_status in BookingRules.ACTIVE_STATUSES
@@ -526,14 +528,14 @@ class BookingService:
         requested_active: bool,
         user_role: UserRole,
         update_data: dict,
-        new_status: str | None,
+        new_status: BookingStatus | None,
     ) -> None:
         """Обработать изменение активности бронирования.
 
         Правила:
-        - Нельзя деактивировать активные статусы (PENDING, CONFIRMED)
-        - Нельзя активировать неактивные статусы (CANCELLED, COMPLETED)
-          кроме администратора
+        - Нельзя деактивировать активные статусы (BOOKING, ACTIVE)
+        - Нельзя активировать бронь с отмененным (CANCELED) статусом.
+          Исключение для администратора.
 
         Args:
             booking: Обновляемое бронирование
@@ -594,15 +596,13 @@ class BookingService:
         table_seats = table.seats
         table_description = table.description or 'Без описания'
         user_task_id = f'{CeleryTasks.BOOKING_REMINDER_TASK_NAME}_{booking.id}'
-        cancellation = (
-            True if booking.status == BookingStatus.CANCELLED else False
-        )
+        cancellation = booking.status == BookingStatus.CANCELED
 
         if not create:
             celery_app.control.revoke(user_task_id, terminate=True)
 
         if (
-            booking.status != BookingStatus.CANCELLED
+            booking.status != BookingStatus.CANCELED
             and remind_at > datetime.now()
         ):
             if user.tg_id or user.email:

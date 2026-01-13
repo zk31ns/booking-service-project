@@ -2,7 +2,9 @@ from .bookings import (
     BookingBase,
     BookingCreate,
     BookingDB,
+    BookingInfo,
     BookingUpdate,
+    TableSlotInfo,
     TableSlotSchema,
 )
 from .cafes import Cafe, CafeCreate, CafeUpdate, CafeWithRelations
@@ -27,6 +29,8 @@ __all__ = [
     'BookingBase',
     'BookingCreate',
     'BookingDB',
+    'BookingInfo',
     'BookingUpdate',
+    'TableSlotInfo',
     'TableSlotSchema',
 ]

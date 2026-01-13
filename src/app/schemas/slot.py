@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.constants import Examples
 from app.schemas.base import AuditedSchema
+from app.schemas.cafes import CafeShortInfo
 
 
 class SlotCreate(BaseModel):
@@ -17,12 +18,17 @@ class SlotCreate(BaseModel):
 
     start_time: time = Field(..., description='Время начала слота')
     end_time: time = Field(..., description='Время окончания слота')
+    description: str | None = Field(
+        default=None,
+        description='Описание слота',
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
             'example': {
                 'start_time': Examples.TIME_START,
                 'end_time': Examples.TIME_END,
+                'description': 'Утренние часы',
             }
         }
     )
@@ -40,14 +46,24 @@ class SlotUpdate(BaseModel):
 
     start_time: time | None = Field(None, description='Время начала слота')
     end_time: time | None = Field(None, description='Время окончания слота')
-    active: bool | None = Field(None, description='Активен ли слот')
+    description: str | None = Field(
+        None,
+        description='Описание слота',
+    )
+    active: bool | None = Field(
+        None,
+        description='Активен ли слот',
+        validation_alias='is_active',
+        serialization_alias='is_active',
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
             'example': {
                 'start_time': Examples.TIME_UPDATE_START,
                 'end_time': Examples.TIME_UPDATE_END,
-                'active': True,
+                'description': 'Обновленное описание',
+                'is_active': True,
             }
         }
     )
@@ -67,6 +83,21 @@ class SlotInfo(AuditedSchema):
 
     """
 
-    cafe_id: int
+    cafe: CafeShortInfo = Field(description='Кафе')
     start_time: time
     end_time: time
+    description: str | None = None
+
+
+class TimeSlotShortInfo(BaseModel):
+    """Краткая информация о временном слоте."""
+
+    id: int = Field(description='ID слота')
+    start_time: time = Field(description='Время начала слота')
+    end_time: time = Field(description='Время окончания слота')
+    description: str | None = Field(
+        default=None,
+        description='Описание слота',
+    )
+
+    model_config = ConfigDict(from_attributes=True)

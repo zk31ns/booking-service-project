@@ -1,5 +1,9 @@
 from app.core.constants import ErrorCode, Limits
-from app.core.exceptions import InternalServerException, ValidationException
+from app.core.exceptions import (
+    InternalServerException,
+    NotFoundException,
+    ValidationException,
+)
 from app.models.tables import Table
 from app.repositories.cafes import CafeRepository
 from app.repositories.tables import TableRepository
@@ -29,12 +33,14 @@ class TableService(EntityValidationMixin[Table]):
         self,
         cafe_id: int,
         active_only: bool = True,
+        allow_inactive_cafe: bool = False,
     ) -> list[Table]:
         """Получить список столиков для кафе.
 
         Args:
             cafe_id: Идентификатор кафе.
             active_only: Возвращать только активные столики.
+            allow_inactive_cafe: Разрешить неактивные кафе.
 
         Returns:
             list[Table]: Список столиков.
@@ -44,12 +50,10 @@ class TableService(EntityValidationMixin[Table]):
 
         """
         cafe = await self.cafe_repository.get_by_id(cafe_id)
-        await self._validate_exists_and_active(
-            cafe,
-            'Cafe',
-            ErrorCode.CAFE_NOT_FOUND,
-            ErrorCode.CAFE_INACTIVE,
-        )
+        if not cafe:
+            raise NotFoundException(ErrorCode.CAFE_NOT_FOUND)
+        if not allow_inactive_cafe and not cafe.active:
+            raise NotFoundException(ErrorCode.CAFE_NOT_FOUND)
         return await self.table_repository.get_all_for_cafe(
             cafe_id=cafe_id,
             active_only=active_only,
@@ -89,12 +93,14 @@ class TableService(EntityValidationMixin[Table]):
         self,
         cafe_id: int,
         table_id: int,
+        allow_inactive: bool = False,
     ) -> Table:
         """Получить столик по ID кафе и ID столика.
 
         Args:
             cafe_id: Идентификатор кафе.
             table_id: Идентификатор столика.
+            allow_inactive: Разрешить неактивные столики.
 
         Returns:
             Table: Столик.
@@ -107,12 +113,13 @@ class TableService(EntityValidationMixin[Table]):
             cafe_id,
             table_id,
         )
-        return await self._validate_exists_and_active(
-            table,
-            'Table',
-            ErrorCode.TABLE_NOT_FOUND,
-            ErrorCode.TABLE_INACTIVE,
-        )
+        if not table:
+            raise NotFoundException(ErrorCode.TABLE_NOT_FOUND)
+        if not allow_inactive and not table.active:
+            raise NotFoundException(ErrorCode.TABLE_NOT_FOUND)
+        if not allow_inactive and table.cafe and not table.cafe.active:
+            raise NotFoundException(ErrorCode.CAFE_NOT_FOUND)
+        return table
 
     async def create_table(self, table_create: TableCreateDB) -> Table:
         """Создать столик.

@@ -72,10 +72,10 @@ class Booking(TimestampedModel):
         Date,
         nullable=False,
     )
-    status: Mapped[str] = mapped_column(
-        String,
+    status: Mapped[int] = mapped_column(
+        Integer,
         nullable=False,
-        default=BookingStatus.PENDING,
+        default=BookingStatus.BOOKING,
     )
     note: Mapped[str | None] = mapped_column(
         String(Limits.MAX_BOOKING_NOTE_LENGTH)

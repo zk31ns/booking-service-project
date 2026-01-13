@@ -21,11 +21,14 @@ router = APIRouter(prefix='/cafe/{cafe_id}/time_slots', tags=API.SLOTS)
 async def get_all_slots(
     cafe_id: int,
     show_all: bool = Query(
-        False,
-        description='Включать неактивные временные слоты.',
+        True,
+        description=(
+            'Показывать все временные слоты в кафе или нет. '
+            'По умолчанию показывает все слоты.'
+        ),
     ),
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),
+    _current_user: User = Depends(get_current_user),
 ) -> list[SlotInfo]:
     """Возвращает список слотов времени для кафе.
 
@@ -39,19 +42,17 @@ async def get_all_slots(
         list[SlotInfo]: Список слотов.
 
     """
-    if show_all:
-        try:
-            await get_current_manager_or_superuser(current_user, session)
-        except AuthorizationException:
-            show_all = False
-
     cache_key = f'{RedisKey.CACHE_KEY_ALL_SLOTS}:{cafe_id}:{show_all}'
     cached_data = await RedisCache.get(cache_key)
     if cached_data is not None:
         return [SlotInfo(**item) for item in cached_data]
 
     service = SlotService(session)
-    slots = await service.get_cafe_slots(cafe_id, show_all)
+    slots = await service.get_cafe_slots(
+        cafe_id,
+        show_inactive=show_all,
+        allow_inactive_cafe=show_all,
+    )
     slots_response = [SlotInfo.model_validate(slot) for slot in slots]
     logger.info(f'Loaded time slots for cafe_id={cafe_id}')
     await RedisCache.set(
@@ -67,7 +68,7 @@ async def get_slot(
     cafe_id: int,
     slot_id: int,
     session: AsyncSession = Depends(get_session),
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> SlotInfo:
     """Возвращает слот времени по идентификатору.
 
@@ -75,14 +76,25 @@ async def get_slot(
         cafe_id: Идентификатор кафе.
         slot_id: Идентификатор слота.
         session: Сессия БД.
-        _current_user: Текущий пользователь.
+        current_user: Текущий пользователь.
 
     Returns:
         SlotInfo: Слот времени.
 
     """
     service = SlotService(session)
-    slot = await service.get_slot(cafe_id, slot_id)
+    allow_inactive = False
+    try:
+        await get_current_manager_or_superuser(current_user, session)
+        allow_inactive = True
+    except AuthorizationException:
+        allow_inactive = False
+
+    slot = await service.get_slot(
+        cafe_id,
+        slot_id,
+        allow_inactive=allow_inactive,
+    )
     return SlotInfo.model_validate(slot)
 
 
@@ -108,7 +120,12 @@ async def create_slot(
 
     """
     service = SlotService(session)
-    slot = await service.create_slot(cafe_id, data.start_time, data.end_time)
+    slot = await service.create_slot(
+        cafe_id,
+        data.start_time,
+        data.end_time,
+        description=data.description,
+    )
     await session.commit()
     cache_pattern = f'{RedisKey.CACHE_KEY_ALL_SLOTS}:{cafe_id}:*'
     await RedisCache.delete_pattern(cache_pattern)
@@ -149,6 +166,7 @@ async def update_slot(
         cafe_id,
         data.start_time,
         data.end_time,
+        data.description,
         data.active,
     )
     await session.commit()

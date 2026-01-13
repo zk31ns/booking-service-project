@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
-    get_current_superuser,
+    get_current_manager_or_superuser,
+    get_current_user,
     get_db,
     require_cafe_manager,
 )
@@ -34,25 +35,36 @@ def get_cafe_service(db: AsyncSession = Depends(get_db)) -> CafeService:
 @router.get(
     '',
     response_model=list[Cafe],
-    summary='Получить список всех кафе',
-    description='Возвращает список всех кафе',
+    summary='Получение списка кафе',
+    description=(
+        'Получение списка кафе. Для администраторов и менеджеров - '
+        'все кафе (с возможностью выбора), для пользователей - '
+        'только активные.'
+    ),
 )
 async def get_cafes(
-    active_only: bool = Query(True, description='Только активные кафе'),
+    show_all: bool = Query(
+        True,
+        description=(
+            'Показывать все кафе или нет. По умолчанию показывает все кафе'
+        ),
+    ),
     cafe_service: CafeService = Depends(get_cafe_service),
+    _current_user: User = Depends(get_current_user),
 ) -> list[Cafe]:
     """Получить список всех кафе.
 
     Args:
-        active_only: Флаг фильтрации только активных кафе.
+        show_all: Показывать все кафе, включая неактивные.
         cafe_service: Сервис для работы с кафе (внедряется автоматически).
+        current_user: Текущий пользователь.
 
     Returns:
         List[Cafe]: Список кафе.
 
     """
     return await cafe_service.get_all_cafes(
-        active_only=active_only,
+        show_all=show_all,
     )
 
 
@@ -62,28 +74,34 @@ async def get_cafes(
     summary='Получить кафе по ID',
     responses={
         404: {'description': Messages.errors[ErrorCode.CAFE_NOT_FOUND]},
-        410: {'description': Messages.errors[ErrorCode.CAFE_INACTIVE]},
     },
 )
 async def get_cafe(
     cafe_id: int,
     cafe_service: CafeService = Depends(get_cafe_service),
+    current_user: User = Depends(get_current_user),
 ) -> Cafe:
     """Получить кафе по идентификатору.
 
     Args:
         cafe_id: Идентификатор кафе.
         cafe_service: Сервис для работы с кафе (внедряется автоматически).
+        current_user: Текущий пользователь.
 
     Returns:
         Cafe: Объект кафе.
 
     Raises:
         HTTPException: Если кафе не найдено (статус 404).
-        HTTPException: Если кафе удалено (статус 410).
 
     """
-    return await cafe_service.get_cafe_by_id(cafe_id)
+    allow_inactive = current_user.is_superuser
+    if not allow_inactive:
+        allow_inactive = await cafe_service.is_user_manager(current_user.id)
+    return await cafe_service.get_cafe_by_id(
+        cafe_id,
+        allow_inactive=allow_inactive,
+    )
 
 
 @router.post(
@@ -91,6 +109,7 @@ async def get_cafe(
     response_model=CafeWithRelations,
     status_code=status.HTTP_201_CREATED,
     summary='Создать новое кафе',
+    description='Создает новое кафе. Только для администраторов и менеджеров',
     responses={
         400: {'description': Messages.errors[ErrorCode.VALIDATION_ERROR]},
         409: {'description': Messages.errors[ErrorCode.CAFE_ALREADY_EXISTS]},
@@ -99,7 +118,7 @@ async def get_cafe(
 async def create_cafe(
     cafe_create: CafeCreate,
     cafe_service: CafeService = Depends(get_cafe_service),
-    _current_user: User = Depends(get_current_superuser),
+    _current_user: User = Depends(get_current_manager_or_superuser),
 ) -> Cafe:
     """Создать новое кафе.
 

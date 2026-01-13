@@ -10,7 +10,7 @@ from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.constants import ErrorCode, Limits
+from app.core.constants import ErrorCode, Limits, UserRole
 from app.core.database import get_session
 from app.core.exceptions import (
     AuthenticationException,
@@ -167,17 +167,22 @@ class UserService:
         from sqlalchemy.exc import IntegrityError
 
         try:
+            self._check_user_access_by_id(
+                user_id=user_id,
+                current_user=current_user,
+                action='обновление',
+            )
             user = await self.user_repo.get(user_id, active_only=False)
             if not user:
                 raise NotFoundException(
                     ErrorCode.USER_NOT_FOUND, extra={'user_id': user_id}
                 )
 
-            await self._check_user_access(user, current_user, 'обновление')
             await self._validate_update_uniqueness(
                 self.user_repo, user, user_update
             )
             update_data = user_update.model_dump(exclude_unset=True)
+            role = update_data.pop('role', None)
             managed_cafe_ids = update_data.pop('managed_cafes', None)
 
             if 'password' in update_data:
@@ -185,6 +190,16 @@ class UserService:
                     update_data['password'], user.password_hash
                 ):
                     raise ValidationException(ErrorCode.PASSWORD_SAME_AS_OLD)
+
+            if role is not None:
+                if current_user is None or not current_user.is_superuser:
+                    raise AuthorizationException(
+                        ErrorCode.INSUFFICIENT_PERMISSIONS,
+                        extra={'field': 'role'},
+                    )
+                update_data['is_superuser'] = role == UserRole.ADMIN
+                if role == UserRole.USER and managed_cafe_ids is None:
+                    managed_cafe_ids = []
 
             if managed_cafe_ids is not None:
                 if current_user is None or not current_user.is_superuser:
@@ -255,12 +270,16 @@ class UserService:
         from sqlalchemy.exc import IntegrityError
 
         try:
+            self._check_user_access_by_id(
+                user_id=user_id,
+                current_user=current_user,
+                action='удаление',
+            )
             user = await self.user_repo.get(user_id, active_only=False)
             if not user:
                 raise NotFoundException(
                     ErrorCode.USER_NOT_FOUND, extra={'user_id': user_id}
                 )
-            await self._check_user_access(user, current_user, 'удаление')
             if current_user and user.id == current_user.id:
                 raise ValidationException(ErrorCode.CANNOT_DELETE_OWN_ACCOUNT)
             deleted_user = await self.user_repo.delete_user(user_id)
@@ -437,6 +456,27 @@ class UserService:
         if user is None:
             return False
         return user.is_superuser
+
+    @staticmethod
+    def _check_user_access_by_id(
+        user_id: int,
+        current_user: User | None,
+        action: str,
+    ) -> None:
+        """Проверяет доступ по ID пользователя без обращения к БД."""
+        if current_user is None:
+            raise AuthenticationException(
+                ErrorCode.AUTHENTICATION_REQUIRED, extra={'action': action}
+            )
+
+        if current_user.is_superuser:
+            return
+
+        if current_user.id != user_id:
+            raise AuthorizationException(
+                ErrorCode.INSUFFICIENT_PERMISSIONS,
+                extra={'action': action, 'target_user_id': user_id},
+            )
 
     async def _check_user_access(
         self,

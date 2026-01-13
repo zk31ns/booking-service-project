@@ -3,16 +3,10 @@ from datetime import date, datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.constants import BookingStatus, Examples, Limits
+from app.schemas.cafes import CafeShortInfo
+from app.schemas.slot import TimeSlotShortInfo
+from app.schemas.tables import TableShortInfo
 from app.schemas.users import UserShortInfo
-
-
-class CafeShort(BaseModel):
-    """Краткая информация о кафе.
-
-    Используется в ответах, чтобы не передавать все поля кафе.
-    """
-
-    id: int = Field(description='ID кафе')
 
 
 class TableSlotSchema(BaseModel):
@@ -51,10 +45,23 @@ class BookingBase(BaseModel):
         None, description='Статус бронирования'
     )
     table_slots: list[TableSlotSchema] | None = Field(
-        None, description='Список связок столов и временных слотов'
+        None,
+        validation_alias='tables_slots',
+        serialization_alias='tables_slots',
+        description='Список связок столов и временных слотов',
     )
 
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(extra='forbid', populate_by_name=True)
+
+
+class TableSlotInfo(BaseModel):
+    """Схема связки столика и временного слота для ответов."""
+
+    id: int = Field(description='ID записи')
+    table: TableShortInfo = Field(description='Столик')
+    slot: TimeSlotShortInfo = Field(description='Временной слот')
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BookingCreate(BookingBase):
@@ -70,12 +77,19 @@ class BookingCreate(BookingBase):
         ...,
         description='Дата бронирования (YYYY-MM-DD).',
     )
+    status: BookingStatus = Field(
+        ...,
+        description='Статус бронирования',
+    )
     table_slots: list[TableSlotSchema] = Field(
         ...,
+        validation_alias='tables_slots',
+        serialization_alias='tables_slots',
         description='Список связок столов и временных слотов',
     )
 
     model_config = ConfigDict(
+        populate_by_name=True,
         json_schema_extra={
             'examples': [
                 {
@@ -83,12 +97,13 @@ class BookingCreate(BookingBase):
                     'cafe_id': 1,
                     'booking_date': Examples.DATE_TOMORROW,
                     'note': 'Столик у окна',
-                    'table_slots': [
+                    'status': BookingStatus.BOOKING,
+                    'tables_slots': [
                         {'table_id': 3, 'slot_id': 5},
                     ],
                 }
             ]
-        }
+        },
     )
 
 
@@ -100,19 +115,23 @@ class BookingUpdate(BookingBase):
     """
 
     active: bool | None = Field(
-        default=None, description='Признак активности бронирования'
+        default=None,
+        description='Признак активности бронирования',
+        validation_alias='is_active',
+        serialization_alias='is_active',
     )
 
     model_config = ConfigDict(
         extra='forbid',
         validate_default=True,
+        populate_by_name=True,
         json_schema_extra={
             'examples': [
                 {
                     'booking_date': Examples.DATE_DAY_AFTER,
                     'note': 'Перенести на вечер',
-                    'status': 'confirmed',
-                    'active': True,
+                    'status': BookingStatus.ACTIVE,
+                    'is_active': True,
                 }
             ]
         },
@@ -128,9 +147,11 @@ class BookingDB(BookingBase):
 
     id: int = Field(description='ID бронирования')
     user: UserShortInfo = Field(description='Пользователь')
-    cafe: CafeShort = Field(description='Кафе')
-    table_slots: list[TableSlotSchema] = Field(
-        description='Список связок столов и временных слотов'
+    cafe: CafeShortInfo = Field(description='Кафе')
+    table_slots: list[TableSlotInfo] = Field(
+        validation_alias='tables_slots',
+        serialization_alias='tables_slots',
+        description='Список связок столов и временных слотов',
     )
     created_at: datetime = Field(
         description='Дата и время создания (date-time)'
@@ -138,6 +159,14 @@ class BookingDB(BookingBase):
     updated_at: datetime = Field(
         description='Дата и время обновления (date-time)'
     )
-    active: bool = Field(description='Признак активности бронирования')
+    active: bool = Field(
+        description='Признак активности бронирования',
+        validation_alias='is_active',
+        serialization_alias='is_active',
+    )
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
+class BookingInfo(BookingDB):
+    """Схема ответа о бронировании."""

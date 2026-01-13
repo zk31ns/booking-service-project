@@ -64,7 +64,7 @@ class ActionInfo(TimestampedSchema):
     photo_id: UUID = Field(..., description='ID фото.')
     active: bool = Field(
         ...,
-        validation_alias='active',
+        validation_alias='is_active',
         serialization_alias='is_active',
         description='Признак активности акции.',
     )

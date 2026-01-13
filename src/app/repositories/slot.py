@@ -3,6 +3,7 @@ from datetime import time
 from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.slots import Slot
 
@@ -26,6 +27,7 @@ class SlotRepository(BaseCRUD[Slot]):
         cafe_id: int,
         start_time: time,
         end_time: time,
+        description: str | None = None,
     ) -> Slot:
         """Создание нового слота.
 
@@ -33,6 +35,7 @@ class SlotRepository(BaseCRUD[Slot]):
             cafe_id: Идентификатор кафе.
             start_time: Время начала слота.
             end_time: Время окончания слота.
+            description: Описание слота или None.
 
         Returns:
             Slot: Созданный слот.
@@ -42,6 +45,7 @@ class SlotRepository(BaseCRUD[Slot]):
             cafe_id=cafe_id,
             start_time=start_time,
             end_time=end_time,
+            description=description,
         )
         self.session.add(slot)
         await self.session.flush()
@@ -67,7 +71,11 @@ class SlotRepository(BaseCRUD[Slot]):
             list[Slot]: Список слотов, отсортированный по времени начала.
 
         """
-        query = select(Slot).where(Slot.cafe_id == cafe_id)
+        query = (
+            select(Slot)
+            .options(selectinload(Slot.cafe))
+            .where(Slot.cafe_id == cafe_id)
+        )
 
         if not show_inactive:
             query = query.where(Slot.active.is_(True))
@@ -82,12 +90,23 @@ class SlotRepository(BaseCRUD[Slot]):
         )
         return slots
 
+    async def get(self, obj_id: int | str) -> Slot | None:
+        """Получить слот по ID с данными кафе."""
+        query = (
+            select(Slot)
+            .options(selectinload(Slot.cafe))
+            .where(Slot.id == obj_id)
+        )
+        result = await self.session.execute(query)
+        return result.scalar_one_or_none()
+
     async def update(
         self,
         slot_id: int,
         cafe_id: int,
         start_time: time | None = None,
         end_time: time | None = None,
+        description: str | None = None,
         active: bool | None = None,
     ) -> Slot | None:
         """Обновление слота.
@@ -97,6 +116,7 @@ class SlotRepository(BaseCRUD[Slot]):
             cafe_id: Идентификатор кафе (для проверки принадлежности).
             start_time: Новое время начала или None если не изменяется.
             end_time: Новое время окончания или None если не изменяется.
+            description: Новое описание или None если не изменяется.
             active: Новый статус активности или None если не изменяется.
 
         Returns:
@@ -111,6 +131,8 @@ class SlotRepository(BaseCRUD[Slot]):
             slot.start_time = start_time
         if end_time is not None:
             slot.end_time = end_time
+        if description is not None:
+            slot.description = description
         if active is not None:
             slot.active = active
 

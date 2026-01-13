@@ -1,22 +1,49 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from app.api.dependencies import get_booking_service, get_current_user
 from app.core.constants import API
 from app.models import Booking, User
-from app.schemas import BookingCreate, BookingDB, BookingUpdate
+from app.schemas import BookingCreate, BookingInfo, BookingUpdate
 from app.services.booking import BookingService
 
 router = APIRouter(prefix='/booking', tags=API.BOOKING)
 
 
-@router.get('', response_model=list[BookingDB])
+@router.get(
+    '',
+    response_model=list[BookingInfo],
+    summary='Получение списка бронирований',
+    description=(
+        'Получение списка бронирований. Для администраторов и менеджеров - '
+        'все бронирования (с возможностью выбора), для пользователей - только '
+        'свои (параметры игнорируются, кроме ID кафе).'
+    ),
+)
 async def get_all_bookings(
     current_user: Annotated[User, Depends(get_current_user)],
-    show_all: bool = True,
-    cafe_id: int | None = None,
-    user_id: int | None = None,
+    show_all: bool = Query(
+        False,
+        description=(
+            'Показывать все бронирования или нет. '
+            'По умолчанию показывает все бронирования'
+        ),
+    ),
+    cafe_id: int | None = Query(
+        None,
+        description=(
+            'ID кафе, в котором показывать бронирования. '
+            'Если не задано - показывает все бронирования во всех кафе'
+        ),
+    ),
+    user_id: int | None = Query(
+        None,
+        description=(
+            'ID пользователя, бронирования которого показывать. '
+            'Если не задано - показывает бронирования всех пользователей'
+        ),
+    ),
     service: BookingService = Depends(get_booking_service),
 ) -> list[Booking]:
     """Получить список доступных бронирований.
@@ -44,7 +71,15 @@ async def get_all_bookings(
     )
 
 
-@router.post('', response_model=BookingDB)
+@router.post(
+    '',
+    response_model=BookingInfo,
+    summary='Создание нового бронирования',
+    description=(
+        'Создает новое бронирование. Только для авторизированных '
+        'пользователей.'
+    ),
+)
 async def create_booking(
     booking_in: BookingCreate,
     user: User = Depends(get_current_user),
@@ -72,7 +107,8 @@ async def create_booking(
 
 @router.get(
     '/{booking_id}',
-    response_model=BookingDB,
+    response_model=BookingInfo,
+    summary='Получение бронирования по ID',
 )
 async def get_booking(
     current_user: Annotated[User, Depends(get_current_user)],
@@ -100,7 +136,8 @@ async def get_booking(
 
 @router.patch(
     '/{booking_id}',
-    response_model=BookingDB,
+    response_model=BookingInfo,
+    summary='Обновление бронирования по ID',
 )
 async def update_booking(
     booking_in: BookingUpdate,

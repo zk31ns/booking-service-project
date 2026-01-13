@@ -62,26 +62,6 @@ async def get_dishes(
     return await service.get_all_dishes(show_all=show_all, cafe_id=cafe_id)
 
 
-@router.get('/{dish_id}', response_model=DishInfo)
-async def get_dish(
-    dish_id: int,
-    service: Annotated[DishService, Depends(get_dish_service)] = None,
-    _current_user: User = Depends(get_current_user),
-) -> DishInfo:
-    """Получить блюдо по ID.
-
-    Args:
-        dish_id: Идентификатор блюда.
-        service: Сервис для работы с блюдами.
-        _current_user: Текущий пользователь.
-
-    Returns:
-        DishInfo: Блюдо.
-
-    """
-    return await service.get_dish(dish_id)
-
-
 @router.post('', response_model=DishInfo, status_code=status.HTTP_201_CREATED)
 async def create_dish(
     dish_data: DishCreate,
@@ -100,6 +80,26 @@ async def create_dish(
 
     """
     return await service.create_dish(dish_data)
+
+
+@router.get('/{dish_id}', response_model=DishInfo)
+async def get_dish(
+    dish_id: int,
+    service: Annotated[DishService, Depends(get_dish_service)] = None,
+    _current_user: User = Depends(get_current_user),
+) -> DishInfo:
+    """Получить блюдо по ID.
+
+    Args:
+        dish_id: Идентификатор блюда.
+        service: Сервис для работы с блюдами.
+        _current_user: Текущий пользователь.
+
+    Returns:
+        DishInfo: Блюдо.
+
+    """
+    return await service.get_dish(dish_id)
 
 
 @router.patch('/{dish_id}', response_model=DishInfo)

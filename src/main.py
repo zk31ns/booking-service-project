@@ -22,7 +22,7 @@ from app.api.v1.slots import router as slots_router
 from app.api.v1.tables import router as tables_router
 from app.api.v1.users import router as users_router
 from app.core.config import settings
-from app.core.constants import API
+from app.core.constants import API, OPENAPI_TAGS
 from app.core.lifespan import lifespan
 from app.core.logging import setup_logging
 
@@ -37,6 +37,7 @@ app = FastAPI(
     docs_url='/docs',
     redoc_url='/redoc',
     openapi_url='/openapi.json',
+    openapi_tags=OPENAPI_TAGS,
     lifespan=lifespan,
 )
 

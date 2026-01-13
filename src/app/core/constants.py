@@ -46,6 +46,53 @@ class API:
     MEDIA = ['Медиа']
 
 
+# ========== OpenAPI теги ==========
+
+
+OPENAPI_TAGS = [
+    {
+        'name': API.ROOT[0],
+        'description': 'Приветственное сообщение сервиса',
+    },
+    {
+        'name': API.AUTH[0],
+        'description': 'Получение данных для последующей авторизации',
+    },
+    {
+        'name': API.USERS[0],
+        'description': 'Управление пользователями',
+    },
+    {
+        'name': API.CAFES[0],
+        'description': 'Управление кафе',
+    },
+    {
+        'name': API.TABLES[0],
+        'description': 'Управление столами в кафе',
+    },
+    {
+        'name': API.SLOTS[0],
+        'description': 'Управление временными слотами',
+    },
+    {
+        'name': API.DISHES[0],
+        'description': 'Управление блюдами',
+    },
+    {
+        'name': API.ACTIONS[0],
+        'description': 'Управление акциями',
+    },
+    {
+        'name': API.BOOKING[0],
+        'description': 'Управление бронированиями',
+    },
+    {
+        'name': API.MEDIA[0],
+        'description': 'Управление изображениями',
+    },
+]
+
+
 # ========== Размеры и Лимиты ==========
 
 

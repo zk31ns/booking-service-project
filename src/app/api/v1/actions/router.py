@@ -66,26 +66,6 @@ async def get_actions(
     return await service.get_all_actions(show_all=show_all, cafe_id=cafe_id)
 
 
-@router.get('/{action_id}', response_model=ActionInfo)
-async def get_action(
-    action_id: int,
-    service: Annotated[ActionService, Depends(get_action_service)] = None,
-    _current_user: User = Depends(get_current_user),
-) -> ActionInfo:
-    """Получить акцию по ID.
-
-    Args:
-        action_id: Идентификатор акции.
-        service: Сервис для работы с акциями.
-        _current_user: Текущий пользователь.
-
-    Returns:
-        ActionInfo: Акция.
-
-    """
-    return await service.get_action(action_id)
-
-
 @router.post(
     '', response_model=ActionInfo, status_code=status.HTTP_201_CREATED
 )
@@ -106,6 +86,26 @@ async def create_action(
 
     """
     return await service.create_action(action_data)
+
+
+@router.get('/{action_id}', response_model=ActionInfo)
+async def get_action(
+    action_id: int,
+    service: Annotated[ActionService, Depends(get_action_service)] = None,
+    _current_user: User = Depends(get_current_user),
+) -> ActionInfo:
+    """Получить акцию по ID.
+
+    Args:
+        action_id: Идентификатор акции.
+        service: Сервис для работы с акциями.
+        _current_user: Текущий пользователь.
+
+    Returns:
+        ActionInfo: Акция.
+
+    """
+    return await service.get_action(action_id)
 
 
 @router.patch('/{action_id}', response_model=ActionInfo)

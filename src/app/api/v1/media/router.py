@@ -36,24 +36,32 @@ router = APIRouter(prefix='/media', tags=API.MEDIA)
             'description': (
                 'Успешно. Возвращает изображение в бинарном формате'
             ),
-        }
+        },
+        404: {
+            'description': Messages.errors[ErrorCode.MEDIA_NOT_FOUND],
+        },
+        422: {
+            'description': Messages.errors[ErrorCode.VALIDATION_ERROR],
+        },
     },
 )
 async def get_media_file(
     media_id: UUID,
     session: AsyncSession = Depends(get_session),
 ) -> FileResponse:
-    """Скачать медиафайл по идентификатору.
+    """Получить бинарный медиафайл по идентификатору.
+
+    Возвращает файл только если файл существует на сервере.
 
     Args:
         media_id: Идентификатор медиафайла.
         session: Асинхронная сессия БД.
 
     Returns:
-        FileResponse: Файл медиа.
+        FileResponse: Бинарный файл медиа.
 
     Raises:
-        NotFoundException: Если запись или файл не найдены.
+        NotFoundException: Если запись не найдена или файл отсутствует.
 
     """
     logger.info(f'Request media file: id={media_id}')
@@ -97,7 +105,7 @@ async def upload_media(
 ) -> MediaInfo:
     """Загрузить медиафайл.
 
-    Файл сохраняется на диск и фиксируется в базе.
+    Файл сохраняется на сервере и фиксируется в базе.
 
     Args:
         file: Загружаемый файл.

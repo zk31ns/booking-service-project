@@ -19,50 +19,6 @@ from app.services.media import MediaService
 router = APIRouter(prefix='/media', tags=API.MEDIA)
 
 
-@router.post(
-    '',
-    status_code=status.HTTP_200_OK,
-    response_model=MediaInfo,
-    summary='Загрузка изображения',
-    description=(
-        'Загрузка изображения на сервер. Поддерживаются форматы jpg, png. '
-        'Размер файла не более 5Мб. Только для администраторов и менеджеров'
-    ),
-)
-async def upload_media(
-    file: UploadFile = File(...),
-    session: AsyncSession = Depends(get_session),
-    _current_user: User = Depends(get_current_manager_or_superuser),
-) -> MediaInfo:
-    """Загрузить медиафайл.
-
-    Файл сохраняется на диск и фиксируется в базе.
-
-    Args:
-        file: Загружаемый файл.
-        session: Асинхронная сессия БД.
-        _current_user: Текущий пользователь с правами менеджера/админа.
-
-    Returns:
-        MediaInfo: Информация о загруженном медиафайле.
-
-    """
-    logger.info(
-        f'Upload media: name={file.filename}, content_type={file.content_type}'
-    )
-
-    file_bytes = await file.read()
-    media = await MediaService.upload(
-        session=session,
-        file_bytes=file_bytes,
-        content_type=file.content_type or 'application/octet-stream',
-    )
-
-    await session.commit()
-    logger.info(f'Media uploaded: id={media.id}')
-    return MediaInfo.model_validate(media)
-
-
 @router.get(
     '/{media_id}',
     response_class=FileResponse,
@@ -122,3 +78,47 @@ async def get_media_file(
         )
 
     return FileResponse(str(file_path), media_type=media.mime_type)
+
+
+@router.post(
+    '',
+    status_code=status.HTTP_200_OK,
+    response_model=MediaInfo,
+    summary='Загрузка изображения',
+    description=(
+        'Загрузка изображения на сервер. Поддерживаются форматы jpg, png. '
+        'Размер файла не более 5Мб. Только для администраторов и менеджеров'
+    ),
+)
+async def upload_media(
+    file: UploadFile = File(...),
+    session: AsyncSession = Depends(get_session),
+    _current_user: User = Depends(get_current_manager_or_superuser),
+) -> MediaInfo:
+    """Загрузить медиафайл.
+
+    Файл сохраняется на диск и фиксируется в базе.
+
+    Args:
+        file: Загружаемый файл.
+        session: Асинхронная сессия БД.
+        _current_user: Текущий пользователь с правами менеджера/админа.
+
+    Returns:
+        MediaInfo: Информация о загруженном медиафайле.
+
+    """
+    logger.info(
+        f'Upload media: name={file.filename}, content_type={file.content_type}'
+    )
+
+    file_bytes = await file.read()
+    media = await MediaService.upload(
+        session=session,
+        file_bytes=file_bytes,
+        content_type=file.content_type or 'application/octet-stream',
+    )
+
+    await session.commit()
+    logger.info(f'Media uploaded: id={media.id}')
+    return MediaInfo.model_validate(media)

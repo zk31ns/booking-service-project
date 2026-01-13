@@ -63,41 +63,6 @@ async def get_all_slots(
     return slots_response
 
 
-@router.get('/{slot_id}', response_model=SlotInfo)
-async def get_slot(
-    cafe_id: int,
-    slot_id: int,
-    session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),
-) -> SlotInfo:
-    """Возвращает слот времени по идентификатору.
-
-    Args:
-        cafe_id: Идентификатор кафе.
-        slot_id: Идентификатор слота.
-        session: Сессия БД.
-        current_user: Текущий пользователь.
-
-    Returns:
-        SlotInfo: Слот времени.
-
-    """
-    service = SlotService(session)
-    allow_inactive = False
-    try:
-        await get_current_manager_or_superuser(current_user, session)
-        allow_inactive = True
-    except AuthorizationException:
-        allow_inactive = False
-
-    slot = await service.get_slot(
-        cafe_id,
-        slot_id,
-        allow_inactive=allow_inactive,
-    )
-    return SlotInfo.model_validate(slot)
-
-
 @router.post('', response_model=SlotInfo, status_code=status.HTTP_201_CREATED)
 async def create_slot(
     cafe_id: int,
@@ -130,6 +95,41 @@ async def create_slot(
     cache_pattern = f'{RedisKey.CACHE_KEY_ALL_SLOTS}:{cafe_id}:*'
     await RedisCache.delete_pattern(cache_pattern)
     logger.info(f'Created time slot for cafe_id={cafe_id}')
+    return SlotInfo.model_validate(slot)
+
+
+@router.get('/{slot_id}', response_model=SlotInfo)
+async def get_slot(
+    cafe_id: int,
+    slot_id: int,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> SlotInfo:
+    """Возвращает слот времени по идентификатору.
+
+    Args:
+        cafe_id: Идентификатор кафе.
+        slot_id: Идентификатор слота.
+        session: Сессия БД.
+        current_user: Текущий пользователь.
+
+    Returns:
+        SlotInfo: Слот времени.
+
+    """
+    service = SlotService(session)
+    allow_inactive = False
+    try:
+        await get_current_manager_or_superuser(current_user, session)
+        allow_inactive = True
+    except AuthorizationException:
+        allow_inactive = False
+
+    slot = await service.get_slot(
+        cafe_id,
+        slot_id,
+        allow_inactive=allow_inactive,
+    )
     return SlotInfo.model_validate(slot)
 
 

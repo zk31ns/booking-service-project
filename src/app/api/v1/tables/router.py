@@ -75,6 +75,40 @@ async def get_tables_for_cafe(
     )
 
 
+@router.post(
+    '',
+    response_model=Table,
+    status_code=status.HTTP_201_CREATED,
+    summary='Создать новый столик в кафе',
+    responses={
+        404: {'description': Messages.errors[ErrorCode.CAFE_NOT_FOUND]},
+        400: {'description': Messages.errors[ErrorCode.CAFE_INACTIVE]},
+    },
+)
+async def create_table(
+    cafe_id: int,
+    table_create: TableCreate,
+    table_service: TableService = Depends(get_table_service),
+    _current_user: User = Depends(require_cafe_manager),
+) -> Table:
+    """Создать новый столик в кафе.
+
+    Args:
+        cafe_id: ID кафе.
+        table_create: Данные для создания столика.
+        table_service: Сервис для работы со столиками.
+
+    Returns:
+        Table: Созданный столик.
+
+    """
+    table_create_db = TableCreateDB.model_validate({
+        **table_create.model_dump(),
+        'cafe_id': cafe_id,
+    })
+    return await table_service.create_table(table_create_db)
+
+
 @router.get(
     '/{table_id}',
     response_model=Table,
@@ -117,40 +151,6 @@ async def get_table(
         table_id,
         allow_inactive=allow_inactive,
     )
-
-
-@router.post(
-    '',
-    response_model=Table,
-    status_code=status.HTTP_201_CREATED,
-    summary='Создать новый столик в кафе',
-    responses={
-        404: {'description': Messages.errors[ErrorCode.CAFE_NOT_FOUND]},
-        400: {'description': Messages.errors[ErrorCode.CAFE_INACTIVE]},
-    },
-)
-async def create_table(
-    cafe_id: int,
-    table_create: TableCreate,
-    table_service: TableService = Depends(get_table_service),
-    _current_user: User = Depends(require_cafe_manager),
-) -> Table:
-    """Создать новый столик в кафе.
-
-    Args:
-        cafe_id: ID кафе.
-        table_create: Данные для создания столика.
-        table_service: Сервис для работы со столиками.
-
-    Returns:
-        Table: Созданный столик.
-
-    """
-    table_create_db = TableCreateDB.model_validate({
-        **table_create.model_dump(),
-        'cafe_id': cafe_id,
-    })
-    return await table_service.create_table(table_create_db)
 
 
 @router.patch(

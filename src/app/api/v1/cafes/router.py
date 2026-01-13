@@ -68,6 +68,39 @@ async def get_cafes(
     )
 
 
+@router.post(
+    '',
+    response_model=CafeWithRelations,
+    status_code=status.HTTP_201_CREATED,
+    summary='Создать новое кафе',
+    description='Создает новое кафе. Только для администраторов и менеджеров',
+    responses={
+        400: {'description': Messages.errors[ErrorCode.VALIDATION_ERROR]},
+        409: {'description': Messages.errors[ErrorCode.CAFE_ALREADY_EXISTS]},
+    },
+)
+async def create_cafe(
+    cafe_create: CafeCreate,
+    cafe_service: CafeService = Depends(get_cafe_service),
+    _current_user: User = Depends(get_current_manager_or_superuser),
+) -> Cafe:
+    """Создать новое кафе.
+
+    Args:
+        cafe_create: Данные для создания кафе.
+        cafe_service: Сервис для работы с кафе (внедряется автоматически).
+
+    Returns:
+        Cafe: Созданное кафе.
+
+    Raises:
+        HTTPException: 400 - Ошибка валидации.
+        HTTPException: 409 - Кафе с таким названием уже существует.
+
+    """
+    return await cafe_service.create_cafe(cafe_create)
+
+
 @router.get(
     '/{cafe_id}',
     response_model=Cafe,
@@ -102,39 +135,6 @@ async def get_cafe(
         cafe_id,
         allow_inactive=allow_inactive,
     )
-
-
-@router.post(
-    '',
-    response_model=CafeWithRelations,
-    status_code=status.HTTP_201_CREATED,
-    summary='Создать новое кафе',
-    description='Создает новое кафе. Только для администраторов и менеджеров',
-    responses={
-        400: {'description': Messages.errors[ErrorCode.VALIDATION_ERROR]},
-        409: {'description': Messages.errors[ErrorCode.CAFE_ALREADY_EXISTS]},
-    },
-)
-async def create_cafe(
-    cafe_create: CafeCreate,
-    cafe_service: CafeService = Depends(get_cafe_service),
-    _current_user: User = Depends(get_current_manager_or_superuser),
-) -> Cafe:
-    """Создать новое кафе.
-
-    Args:
-        cafe_create: Данные для создания кафе.
-        cafe_service: Сервис для работы с кафе (внедряется автоматически).
-
-    Returns:
-        Cafe: Созданное кафе.
-
-    Raises:
-        HTTPException: 400 - Ошибка валидации.
-        HTTPException: 409 - Кафе с таким названием уже существует.
-
-    """
-    return await cafe_service.create_cafe(cafe_create)
 
 
 @router.patch(

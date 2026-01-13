@@ -30,13 +30,13 @@ from app.schemas.users import (
 )
 from app.services.users import UserService, get_user_service
 
+auth_router = APIRouter(tags=API.AUTH)
 router = APIRouter(tags=API.USERS)
 
 
-@router.post(
+@auth_router.post(
     '/auth/login',
     response_model=AuthResponseDict,
-    tags=API.AUTH,
     summary='Получение токена авторизации',
     description='Возвращает токен для последующей авторизации пользователя.',
 )

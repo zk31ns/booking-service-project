@@ -20,6 +20,7 @@ from app.api.v1.dishes import router as dishes_router
 from app.api.v1.media import router as media_router
 from app.api.v1.slots import router as slots_router
 from app.api.v1.tables import router as tables_router
+from app.api.v1.users import auth_router
 from app.api.v1.users import router as users_router
 from app.core.config import settings
 from app.core.constants import API, OPENAPI_TAGS
@@ -56,6 +57,7 @@ app.add_middleware(
 app.include_router(root.router, prefix=API.V1_PREFIX)
 
 # Users and Authentication
+app.include_router(auth_router, prefix=API.V1_PREFIX)
 app.include_router(users_router, prefix=API.V1_PREFIX)
 
 # Cafes

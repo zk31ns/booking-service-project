@@ -210,6 +210,9 @@ class UserRepository(BaseCRUD[User]):
         if commit:
             await self.session.commit()
             await self.session.refresh(db_user)
+            await self.session.refresh(
+                db_user, attribute_names=['managed_cafes']
+            )
 
         return db_user
 
@@ -244,6 +247,9 @@ class UserRepository(BaseCRUD[User]):
         if commit:
             await self.session.commit()
             await self.session.refresh(updated_user)
+            await self.session.refresh(
+                updated_user, attribute_names=['managed_cafes']
+            )
 
         return updated_user
 

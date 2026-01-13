@@ -232,12 +232,15 @@ class UserInfo(UserBase):
 
         """
         user_info = cls.model_validate(obj, from_attributes=True)
-        user_info.role = cls._resolve_role(obj)
+        if getattr(obj, 'role', None) is None:
+            user_info.role = cls._resolve_role(obj)
         return user_info
 
     @staticmethod
     def _resolve_role(user: User) -> UserRole:
         """Определяет роль пользователя по данным модели."""
+        if getattr(user, 'role', None) is not None:
+            return UserRole(user.role)
         if user.is_superuser:
             return UserRole.ADMIN
         if getattr(user, 'managed_cafes', None):

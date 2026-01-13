@@ -198,6 +198,7 @@ class UserService:
                         extra={'field': 'role'},
                     )
                 update_data['is_superuser'] = role == UserRole.ADMIN
+                update_data['role'] = role
                 if role == UserRole.USER and managed_cafe_ids is None:
                     managed_cafe_ids = []
 

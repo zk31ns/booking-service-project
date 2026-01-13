@@ -10,7 +10,7 @@ from loguru import logger
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.constants import ErrorCode
+from app.core.constants import ErrorCode, UserRole
 from app.core.database import async_session_maker, get_session
 from app.core.exceptions import (
     AuthenticationException,
@@ -138,7 +138,7 @@ async def get_current_manager_or_superuser(
         HTTPException: 403 если пользователь не менеджер и не администратор
 
     """
-    if current_user.is_superuser:
+    if current_user.is_superuser or current_user.role == UserRole.MANAGER:
         return current_user
 
     # Проверяем, является ли пользователь менеджером хотя бы одного кафе

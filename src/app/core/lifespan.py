@@ -7,6 +7,7 @@ import redis.asyncio as redis
 from fastapi import FastAPI
 
 from app.core.config import settings
+from app.core.constants import UserRole
 from app.core.database import async_session_maker
 from app.core.redis_cache import RedisCache
 from app.repositories.users import UserRepository
@@ -22,6 +23,7 @@ async def ensure_superadmin() -> None:
         await user_repo.create_user({
             'username': settings.superadmin_username,
             'password': settings.superadmin_password,
+            'role': UserRole.ADMIN,
             'is_superuser': True,
             'is_blocked': False,
             'active': True,

@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
-from app.core.constants import Limits
+from app.core.constants import Limits, UserRole
 from app.core.security import get_password_hash, verify_password
 from app.models.users import User, cafe_managers
 from app.repositories.base import BaseCRUD
@@ -201,6 +201,16 @@ class UserRepository(BaseCRUD[User]):
         """
         user_data = user_data.copy()
 
+        role = user_data.get('role')
+        is_superuser = user_data.get('is_superuser')
+        if role is not None:
+            user_data['role'] = int(role)
+            user_data['is_superuser'] = role == UserRole.ADMIN
+        elif is_superuser:
+            user_data['role'] = int(UserRole.ADMIN)
+        else:
+            user_data.setdefault('role', int(UserRole.USER))
+
         if 'password' in user_data:
             password = user_data.pop('password')
             user_data['password_hash'] = get_password_hash(password)
@@ -237,6 +247,11 @@ class UserRepository(BaseCRUD[User]):
 
         """
         update_data = update_data.copy()
+
+        if 'role' in update_data:
+            role = update_data['role']
+            update_data['role'] = int(role)
+            update_data['is_superuser'] = role == UserRole.ADMIN
 
         if 'password' in update_data:
             password = update_data.pop('password')
@@ -448,6 +463,14 @@ class UserRepository(BaseCRUD[User]):
                 )
             )
         else:
+            role_query = select(self.model.role).where(
+                self.model.id == user_id
+            )
+            role_result = await self.session.execute(role_query)
+            role = role_result.scalar_one_or_none()
+            if role == UserRole.MANAGER:
+                return True
+
             manager = select(
                 exists().where(cafe_managers.c.user_id == user_id)
             )

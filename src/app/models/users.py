@@ -16,7 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base import Base, TimestampedModel
-from app.core.constants import Limits
+from app.core.constants import Limits, UserRole
 
 if TYPE_CHECKING:
     from app.models import Booking, Cafe
@@ -76,6 +76,11 @@ class User(TimestampedModel):
     )
     password_hash: Mapped[str] = mapped_column(
         String(Limits.MAX_PASSWORD_LENGTH), nullable=False
+    )
+    role: Mapped[int] = mapped_column(
+        Integer,
+        default=int(UserRole.USER),
+        nullable=False,
     )
     is_blocked: Mapped[bool] = mapped_column(Boolean, default=False)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)

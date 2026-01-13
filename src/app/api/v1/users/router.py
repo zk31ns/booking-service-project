@@ -124,6 +124,67 @@ async def create_user(
 
 
 @router.get(
+    '/users/me',
+    response_model=UserInfo,
+    summary='Получение информации о текущем пользователе',
+    description='Возвращает информацию о текущем пользователе. '
+    'Только для авторизированных пользователей.',
+)
+async def get_current_user_info(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> UserInfo:
+    """Получает информацию о текущем пользователе."""
+    return UserInfo.from_orm(current_user)
+
+
+@router.patch(
+    '/users/me',
+    response_model=UserInfo,
+    summary='Обновление информации о текущем пользователе',
+    description='Обновляет информацию о текущем пользователе.\n\n'
+    '**Ограничения:**\n'
+    '- Нельзя изменить поля `role`, `is_active`\n'
+    '- Нельзя изменить поле `managed_cafes`',
+)
+async def update_current_user(
+    user_update: UserUpdate,
+    service: Annotated[UserService, Depends(get_user_service)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> UserInfo:
+    """Обновляет информацию о текущем пользователе."""
+    try:
+        update_data = user_update.model_dump(exclude_unset=True)
+
+        protected_fields = [
+            'active',
+            'role',
+            'managed_cafes',
+        ]
+        for field in protected_fields:
+            if field in update_data:
+                raise ValidationException(
+                    ErrorCode.CANNOT_CHANGE_PRIVILEGES, extra={'field': field}
+                )
+
+        safe_update_data = {
+            k: v for k, v in update_data.items() if k not in protected_fields
+        }
+        safe_user_update = UserUpdate(**safe_update_data)
+
+        return await service.update_user(
+            user_id=current_user.id,
+            user_update=safe_user_update,
+            current_user=current_user,
+        )
+    except (
+        AuthorizationException,
+        ValidationException,
+        ConflictException,
+    ) as e:
+        raise e
+
+
+@router.get(
     '/users/{user_id}',
     response_model=UserInfo,
     summary='Получение информации о пользователе по его ID',
@@ -192,67 +253,6 @@ async def update_user(
         )
     except (
         NotFoundException,
-        AuthorizationException,
-        ValidationException,
-        ConflictException,
-    ) as e:
-        raise e
-
-
-@router.get(
-    '/users/me',
-    response_model=UserInfo,
-    summary='Получение информации о текущем пользователе',
-    description='Возвращает информацию о текущем пользователе. '
-    'Только для авторизированных пользователей.',
-)
-async def get_current_user_info(
-    current_user: Annotated[User, Depends(get_current_user)],
-) -> UserInfo:
-    """Получает информацию о текущем пользователе."""
-    return UserInfo.from_orm(current_user)
-
-
-@router.patch(
-    '/users/me',
-    response_model=UserInfo,
-    summary='Обновление информации о текущем пользователе',
-    description='Обновляет информацию о текущем пользователе.\n\n'
-    '**Ограничения:**\n'
-    '- Нельзя изменить поля `role`, `is_active`\n'
-    '- Нельзя изменить поле `managed_cafes`',
-)
-async def update_current_user(
-    user_update: UserUpdate,
-    service: Annotated[UserService, Depends(get_user_service)],
-    current_user: Annotated[User, Depends(get_current_user)],
-) -> UserInfo:
-    """Обновляет информацию о текущем пользователе."""
-    try:
-        update_data = user_update.model_dump(exclude_unset=True)
-
-        protected_fields = [
-            'active',
-            'role',
-            'managed_cafes',
-        ]
-        for field in protected_fields:
-            if field in update_data:
-                raise ValidationException(
-                    ErrorCode.CANNOT_CHANGE_PRIVILEGES, extra={'field': field}
-                )
-
-        safe_update_data = {
-            k: v for k, v in update_data.items() if k not in protected_fields
-        }
-        safe_user_update = UserUpdate(**safe_update_data)
-
-        return await service.update_user(
-            user_id=current_user.id,
-            user_update=safe_user_update,
-            current_user=current_user,
-        )
-    except (
         AuthorizationException,
         ValidationException,
         ConflictException,
